@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -25,6 +26,7 @@ type ParsedNodePreview struct {
 	Type           string `json:"type"`
 	Server         string `json:"server"`
 	Port           int    `json:"port"`
+	Fingerprint    string `json:"fingerprint"`
 	DuplicateScope string `json:"duplicate_scope"`
 }
 
@@ -102,7 +104,7 @@ func ParseAndStoreSourceConfig(input SourceUploadInput) (*SourceParseResponse, e
 	}, nil
 }
 
-func ImportSourceConfig(sourceConfigID int) (*SourceImportResult, error) {
+func ImportSourceConfig(sourceConfigID int, fingerprints []string) (*SourceImportResult, error) {
 	sourceConfig, err := model.GetSourceConfigByID(sourceConfigID)
 	if err != nil {
 		return nil, fmt.Errorf("导入记录不存在")
@@ -113,16 +115,21 @@ func ImportSourceConfig(sourceConfigID int) (*SourceImportResult, error) {
 		return nil, err
 	}
 
+	selectedNodes := filterParsedNodes(parseResult.Nodes, fingerprints)
+	if len(selectedNodes) == 0 {
+		return nil, fmt.Errorf("当前没有可导入的节点")
+	}
+
 	existingFingerprints, err := model.FindExistingNodeFingerprints(parsedFingerprints(parseResult.Nodes))
 	if err != nil {
 		return nil, err
 	}
 
 	batchFingerprints := make(map[string]struct{})
-	toCreate := make([]model.ProxyNode, 0, len(parseResult.Nodes))
+	toCreate := make([]model.ProxyNode, 0, len(selectedNodes))
 	skippedCount := 0
 
-	for _, item := range parseResult.Nodes {
+	for _, item := range selectedNodes {
 		if _, seen := batchFingerprints[item.Fingerprint]; seen {
 			skippedCount++
 			continue
@@ -163,6 +170,40 @@ func ImportSourceConfig(sourceConfigID int) (*SourceImportResult, error) {
 	}
 
 	return persistImportedNodes(sourceConfig, toCreate, skippedCount)
+}
+
+func TestSourceConfigNodes(ctx context.Context, sourceConfigID int, input NodeTestInput) ([]NodeTestExecution, error) {
+	sourceConfig, err := model.GetSourceConfigByID(sourceConfigID)
+	if err != nil {
+		return nil, fmt.Errorf("导入记录不存在")
+	}
+
+	parseResult, err := proxypkg.ParseYAML([]byte(sourceConfig.RawContent))
+	if err != nil {
+		return nil, err
+	}
+
+	selectedNodes := filterParsedNodes(parseResult.Nodes, input.NodeFingerprints)
+	if len(selectedNodes) == 0 {
+		return nil, fmt.Errorf("请先选择要测速的节点")
+	}
+
+	timeout := normalizeNodeTestTimeout(input.TimeoutMS)
+	testURL := normalizeNodeTestURL(input.TestURL)
+
+	results := make([]NodeTestExecution, 0, len(selectedNodes))
+	for _, item := range selectedNodes {
+		execution := executeMetadataNodeTest(ctx, metadataNodeTestInput{
+			Name:         item.Name,
+			Server:       item.Server,
+			Port:         item.Port,
+			MetadataJSON: item.MetadataJSON,
+			Timeout:      timeout,
+			TestURL:      testURL,
+		})
+		results = append(results, execution)
+	}
+	return results, nil
 }
 
 func persistImportedNodes(sourceConfig *model.SourceConfig, nodes []model.ProxyNode, skippedCount int) (*SourceImportResult, error) {
@@ -213,6 +254,7 @@ func buildPreviewNodes(nodes []proxypkg.ParsedNode, existingFingerprints map[str
 				Type:           item.Type,
 				Server:         item.Server,
 				Port:           item.Port,
+				Fingerprint:    item.Fingerprint,
 				DuplicateScope: scope,
 			})
 		}
@@ -227,6 +269,30 @@ func parsedFingerprints(nodes []proxypkg.ParsedNode) []string {
 		items = append(items, item.Fingerprint)
 	}
 	return items
+}
+
+func filterParsedNodes(nodes []proxypkg.ParsedNode, fingerprints []string) []proxypkg.ParsedNode {
+	if len(fingerprints) == 0 {
+		return nodes
+	}
+	selected := make(map[string]struct{}, len(fingerprints))
+	for _, item := range fingerprints {
+		if strings.TrimSpace(item) == "" {
+			continue
+		}
+		selected[strings.TrimSpace(item)] = struct{}{}
+	}
+	if len(selected) == 0 {
+		return nodes
+	}
+
+	filtered := make([]proxypkg.ParsedNode, 0, len(nodes))
+	for _, item := range nodes {
+		if _, ok := selected[item.Fingerprint]; ok {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
 }
 
 func checksum(content []byte) string {

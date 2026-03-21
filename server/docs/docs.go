@@ -277,6 +277,29 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/source-configs/test": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SourceImport"
+                ],
+                "summary": "Test selected parsed nodes before importing into node pool",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/status": {
             "get": {
                 "produces": [

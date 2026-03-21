@@ -24,9 +24,10 @@ type ProxyNodeListInput struct {
 }
 
 type NodeTestInput struct {
-	NodeIDs   []int  `json:"node_ids"`
-	TimeoutMS int    `json:"timeout_ms"`
-	TestURL   string `json:"test_url"`
+	NodeIDs          []int    `json:"node_ids"`
+	NodeFingerprints []string `json:"node_fingerprints"`
+	TimeoutMS        int      `json:"timeout_ms"`
+	TestURL          string   `json:"test_url"`
 }
 
 type NodeTestExecution struct {
@@ -70,17 +71,8 @@ func ExecuteNodeTests(ctx context.Context, input NodeTestInput) ([]NodeTestExecu
 	if strings.TrimSpace(common.MihomoBinaryPath) == "" {
 		return nil, fmt.Errorf("请先在系统设置中完成 Mihomo 二进制安装或路径校验")
 	}
-	timeout := time.Duration(input.TimeoutMS) * time.Millisecond
-	if timeout <= 0 {
-		timeout = 8 * time.Second
-	}
-	if timeout > 60*time.Second {
-		timeout = 60 * time.Second
-	}
-	testURL := strings.TrimSpace(input.TestURL)
-	if testURL == "" {
-		testURL = defaultNodeTestURL
-	}
+	timeout := normalizeNodeTestTimeout(input.TimeoutMS)
+	testURL := normalizeNodeTestURL(input.TestURL)
 
 	nodes, err := model.FindProxyNodesByIDs(input.NodeIDs)
 	if err != nil {
@@ -92,7 +84,15 @@ func ExecuteNodeTests(ctx context.Context, input NodeTestInput) ([]NodeTestExecu
 
 	results := make([]NodeTestExecution, 0, len(nodes))
 	for _, node := range nodes {
-		execution := testSingleNode(ctx, node, timeout, testURL)
+		execution := executeMetadataNodeTest(ctx, metadataNodeTestInput{
+			NodeID:       node.ID,
+			Name:         node.Name,
+			Server:       node.Server,
+			Port:         node.Port,
+			MetadataJSON: node.MetadataJSON,
+			Timeout:      timeout,
+			TestURL:      testURL,
+		})
 		if err := persistNodeTestExecution(node.ID, execution); err != nil {
 			return nil, err
 		}
@@ -109,24 +109,34 @@ func GetNodeTestResults(proxyNodeID int, limit int) ([]*model.NodeTestResult, er
 	return model.ListNodeTestResults(proxyNodeID, limit)
 }
 
-func testSingleNode(ctx context.Context, node *model.ProxyNode, timeout time.Duration, testURL string) NodeTestExecution {
+type metadataNodeTestInput struct {
+	NodeID       int
+	Name         string
+	Server       string
+	Port         int
+	MetadataJSON string
+	Timeout      time.Duration
+	TestURL      string
+}
+
+func executeMetadataNodeTest(ctx context.Context, input metadataNodeTestInput) NodeTestExecution {
 	startedAt := time.Now()
-	dialAddress := fmt.Sprintf("%s:%d", node.Server, node.Port)
+	dialAddress := fmt.Sprintf("%s:%d", input.Server, input.Port)
 
 	execution := NodeTestExecution{
-		NodeID:      node.ID,
-		NodeName:    node.Name,
-		TestURL:     testURL,
+		NodeID:      input.NodeID,
+		NodeName:    input.Name,
+		TestURL:     input.TestURL,
 		DialAddress: dialAddress,
 		StartedAt:   startedAt,
 	}
 
 	result, err := runNodeKernelTest(ctx, kernelpkg.MihomoNodeTestInput{
 		BinaryPath:   common.MihomoBinaryPath,
-		ProxyName:    node.Name,
-		MetadataJSON: node.MetadataJSON,
-		TestURL:      testURL,
-		Timeout:      timeout,
+		ProxyName:    input.Name,
+		MetadataJSON: input.MetadataJSON,
+		TestURL:      input.TestURL,
+		Timeout:      input.Timeout,
 	})
 	finishedAt := time.Now()
 	execution.FinishedAt = finishedAt
@@ -143,6 +153,24 @@ func testSingleNode(ctx context.Context, node *model.ProxyNode, timeout time.Dur
 	execution.LatencyMS = &latency
 	execution.LastTestedAt = &finishedAt
 	return execution
+}
+
+func normalizeNodeTestTimeout(timeoutMS int) time.Duration {
+	timeout := time.Duration(timeoutMS) * time.Millisecond
+	if timeout <= 0 {
+		timeout = 8 * time.Second
+	}
+	if timeout > 60*time.Second {
+		timeout = 60 * time.Second
+	}
+	return timeout
+}
+
+func normalizeNodeTestURL(testURL string) string {
+	if strings.TrimSpace(testURL) == "" {
+		return defaultNodeTestURL
+	}
+	return strings.TrimSpace(testURL)
 }
 
 func persistNodeTestExecution(nodeID int, execution NodeTestExecution) error {

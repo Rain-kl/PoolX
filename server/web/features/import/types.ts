@@ -19,6 +19,7 @@ export interface ParsedNodePreview {
   type: string;
   server: string;
   port: number;
+  fingerprint: string;
   duplicate_scope: 'none' | 'batch' | 'database';
 }
 
@@ -49,3 +50,15 @@ export interface SourceImportResult {
   skipped_nodes: number;
 }
 
+export interface ParsedNodeTestResult {
+  node_id: number;
+  node_name: string;
+  status: string;
+  latency_ms?: number;
+  error_message?: string;
+  test_url?: string;
+  dial_address: string;
+  started_at: string;
+  finished_at: string;
+  last_tested_at?: string;
+}

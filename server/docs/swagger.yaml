@@ -185,6 +185,21 @@ paths:
       summary: Upload YAML source and return parsed node preview
       tags:
       - SourceImport
+  /api/source-configs/test:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Test selected parsed nodes before importing into node pool
+      tags:
+      - SourceImport
   /api/status:
     get:
       produces:
