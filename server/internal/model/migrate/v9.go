@@ -3,7 +3,11 @@ package migrate
 import "gorm.io/gorm"
 
 func dropPortProfileEnabledColumns(db *gorm.DB, backend string) error {
-	_ = backend
+	if backend == "sqlite" {
+		// SQLite is already tolerant of extra columns for this schema, while
+		// glebarez/sqlite may panic during DropColumn table recreation.
+		return nil
+	}
 	if db.Migrator().HasColumn("port_profiles", "enabled") {
 		if err := db.Migrator().DropColumn("port_profiles", "enabled"); err != nil {
 			return err
