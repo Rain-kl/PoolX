@@ -18,17 +18,20 @@ const (
 )
 
 type PortProfilePayload struct {
-	Name                string `json:"name"`
-	ListenHost          string `json:"listen_host"`
-	MixedPort           int    `json:"mixed_port"`
-	SocksPort           int    `json:"socks_port"`
-	HTTPPort            int    `json:"http_port"`
-	StrategyType        string `json:"strategy_type"`
-	StrategyGroupName   string `json:"strategy_group_name"`
-	TestURL             string `json:"test_url"`
-	TestIntervalSeconds int    `json:"test_interval_seconds"`
-	IncludeInRuntime    bool   `json:"include_in_runtime"`
-	NodeIDs             []int  `json:"node_ids"`
+	Name                  string `json:"name"`
+	ListenHost            string `json:"listen_host"`
+	MixedPort             int    `json:"mixed_port"`
+	SocksPort             int    `json:"socks_port"`
+	HTTPPort              int    `json:"http_port"`
+	StrategyType          string `json:"strategy_type"`
+	StrategyGroupName     string `json:"strategy_group_name"`
+	TestURL               string `json:"test_url"`
+	TestIntervalSeconds   int    `json:"test_interval_seconds"`
+	LoadBalanceStrategy   string `json:"load_balance_strategy"`
+	LoadBalanceLazy       bool   `json:"load_balance_lazy"`
+	LoadBalanceDisableUDP bool   `json:"load_balance_disable_udp"`
+	IncludeInRuntime      bool   `json:"include_in_runtime"`
+	NodeIDs               []int  `json:"node_ids"`
 }
 
 type PortProfilePreview struct {
@@ -72,17 +75,20 @@ func CreatePortProfile(payload PortProfilePayload) (*model.PortProfileWithNodes,
 	}
 
 	profile := &model.PortProfile{
-		Name:                normalized.Name,
-		ListenHost:          normalized.ListenHost,
-		MixedPort:           normalized.MixedPort,
-		SocksPort:           normalized.SocksPort,
-		HTTPPort:            normalized.HTTPPort,
-		StrategyType:        normalized.StrategyType,
-		StrategyGroupName:   normalized.StrategyGroupName,
-		TestURL:             normalized.TestURL,
-		TestIntervalSeconds: normalized.TestIntervalSeconds,
-		IncludeInRuntime:    normalized.IncludeInRuntime,
-		KernelType:          common.KernelType,
+		Name:                  normalized.Name,
+		ListenHost:            normalized.ListenHost,
+		MixedPort:             normalized.MixedPort,
+		SocksPort:             normalized.SocksPort,
+		HTTPPort:              normalized.HTTPPort,
+		StrategyType:          normalized.StrategyType,
+		StrategyGroupName:     normalized.StrategyGroupName,
+		TestURL:               normalized.TestURL,
+		TestIntervalSeconds:   normalized.TestIntervalSeconds,
+		LoadBalanceStrategy:   normalized.LoadBalanceStrategy,
+		LoadBalanceLazy:       normalized.LoadBalanceLazy,
+		LoadBalanceDisableUDP: normalized.LoadBalanceDisableUDP,
+		IncludeInRuntime:      normalized.IncludeInRuntime,
+		KernelType:            common.KernelType,
 	}
 
 	if err := model.DB.Transaction(func(tx *gorm.DB) error {
@@ -116,6 +122,9 @@ func UpdatePortProfile(id int, payload PortProfilePayload) (*model.PortProfileWi
 	profile.StrategyGroupName = normalized.StrategyGroupName
 	profile.TestURL = normalized.TestURL
 	profile.TestIntervalSeconds = normalized.TestIntervalSeconds
+	profile.LoadBalanceStrategy = normalized.LoadBalanceStrategy
+	profile.LoadBalanceLazy = normalized.LoadBalanceLazy
+	profile.LoadBalanceDisableUDP = normalized.LoadBalanceDisableUDP
 	profile.IncludeInRuntime = normalized.IncludeInRuntime
 	profile.KernelType = common.KernelType
 
@@ -159,17 +168,20 @@ func PreviewPortProfile(payload PortProfilePayload) (*PortProfilePreview, error)
 		return nil, err
 	}
 	profile := model.PortProfile{
-		Name:                normalized.Name,
-		ListenHost:          normalized.ListenHost,
-		MixedPort:           normalized.MixedPort,
-		SocksPort:           normalized.SocksPort,
-		HTTPPort:            normalized.HTTPPort,
-		StrategyType:        normalized.StrategyType,
-		StrategyGroupName:   normalized.StrategyGroupName,
-		TestURL:             normalized.TestURL,
-		TestIntervalSeconds: normalized.TestIntervalSeconds,
-		IncludeInRuntime:    normalized.IncludeInRuntime,
-		KernelType:          common.KernelType,
+		Name:                  normalized.Name,
+		ListenHost:            normalized.ListenHost,
+		MixedPort:             normalized.MixedPort,
+		SocksPort:             normalized.SocksPort,
+		HTTPPort:              normalized.HTTPPort,
+		StrategyType:          normalized.StrategyType,
+		StrategyGroupName:     normalized.StrategyGroupName,
+		TestURL:               normalized.TestURL,
+		TestIntervalSeconds:   normalized.TestIntervalSeconds,
+		LoadBalanceStrategy:   normalized.LoadBalanceStrategy,
+		LoadBalanceLazy:       normalized.LoadBalanceLazy,
+		LoadBalanceDisableUDP: normalized.LoadBalanceDisableUDP,
+		IncludeInRuntime:      normalized.IncludeInRuntime,
+		KernelType:            common.KernelType,
 	}
 
 	rendered, err := runtimeconfig.RenderMihomoConfig(runtimeconfig.MihomoRenderInput{
@@ -196,17 +208,20 @@ func PreviewSavedPortProfile(id int) (*PortProfilePreview, error) {
 		return nil, err
 	}
 	return PreviewPortProfile(PortProfilePayload{
-		Name:                view.Profile.Name,
-		ListenHost:          view.Profile.ListenHost,
-		MixedPort:           view.Profile.MixedPort,
-		SocksPort:           view.Profile.SocksPort,
-		HTTPPort:            view.Profile.HTTPPort,
-		StrategyType:        view.Profile.StrategyType,
-		StrategyGroupName:   view.Profile.StrategyGroupName,
-		TestURL:             view.Profile.TestURL,
-		TestIntervalSeconds: view.Profile.TestIntervalSeconds,
-		IncludeInRuntime:    view.Profile.IncludeInRuntime,
-		NodeIDs:             view.NodeIDs,
+		Name:                  view.Profile.Name,
+		ListenHost:            view.Profile.ListenHost,
+		MixedPort:             view.Profile.MixedPort,
+		SocksPort:             view.Profile.SocksPort,
+		HTTPPort:              view.Profile.HTTPPort,
+		StrategyType:          view.Profile.StrategyType,
+		StrategyGroupName:     view.Profile.StrategyGroupName,
+		TestURL:               view.Profile.TestURL,
+		TestIntervalSeconds:   view.Profile.TestIntervalSeconds,
+		LoadBalanceStrategy:   view.Profile.LoadBalanceStrategy,
+		LoadBalanceLazy:       view.Profile.LoadBalanceLazy,
+		LoadBalanceDisableUDP: view.Profile.LoadBalanceDisableUDP,
+		IncludeInRuntime:      view.Profile.IncludeInRuntime,
+		NodeIDs:               view.NodeIDs,
 	})
 }
 
@@ -297,17 +312,20 @@ func normalizePortProfilePayload(payload PortProfilePayload) (*PortProfilePayloa
 	}
 
 	normalized := &PortProfilePayload{
-		Name:                name,
-		ListenHost:          fallbackPortProfileString(strings.TrimSpace(payload.ListenHost), "127.0.0.1"),
-		MixedPort:           payload.MixedPort,
-		SocksPort:           payload.SocksPort,
-		HTTPPort:            payload.HTTPPort,
-		StrategyType:        strategy,
-		StrategyGroupName:   fallbackPortProfileString(strings.TrimSpace(payload.StrategyGroupName), defaultPortProfileGroupName),
-		TestURL:             fallbackPortProfileString(strings.TrimSpace(payload.TestURL), defaultPortProfileTestURL),
-		TestIntervalSeconds: normalizePortProfilePositive(payload.TestIntervalSeconds, 300),
-		IncludeInRuntime:    payload.IncludeInRuntime,
-		NodeIDs:             deduplicateNodeIDs(payload.NodeIDs),
+		Name:                  name,
+		ListenHost:            fallbackPortProfileString(strings.TrimSpace(payload.ListenHost), "127.0.0.1"),
+		MixedPort:             payload.MixedPort,
+		SocksPort:             payload.SocksPort,
+		HTTPPort:              payload.HTTPPort,
+		StrategyType:          strategy,
+		StrategyGroupName:     fallbackPortProfileString(strings.TrimSpace(payload.StrategyGroupName), defaultPortProfileGroupName),
+		TestURL:               fallbackPortProfileString(strings.TrimSpace(payload.TestURL), defaultPortProfileTestURL),
+		TestIntervalSeconds:   normalizePortProfilePositive(payload.TestIntervalSeconds, 300),
+		LoadBalanceStrategy:   normalizeLoadBalanceStrategy(payload.LoadBalanceStrategy),
+		LoadBalanceLazy:       payload.LoadBalanceLazy,
+		LoadBalanceDisableUDP: payload.LoadBalanceDisableUDP,
+		IncludeInRuntime:      payload.IncludeInRuntime,
+		NodeIDs:               deduplicateNodeIDs(payload.NodeIDs),
 	}
 	if len(normalized.NodeIDs) == 0 {
 		return nil, fmt.Errorf("请先选择至少一个节点")
@@ -316,6 +334,15 @@ func normalizePortProfilePayload(payload PortProfilePayload) (*PortProfilePayloa
 		return nil, err
 	}
 	return normalized, nil
+}
+
+func normalizeLoadBalanceStrategy(value string) string {
+	switch strings.TrimSpace(value) {
+	case "round-robin":
+		return "round-robin"
+	default:
+		return "consistent-hashing"
+	}
 }
 
 func validatePortProfilePorts(payload *PortProfilePayload) error {

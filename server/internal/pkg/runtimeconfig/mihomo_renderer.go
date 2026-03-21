@@ -56,10 +56,13 @@ func RenderMihomoConfig(input MihomoRenderInput) (*RenderResult, error) {
 		},
 		"listeners": buildListeners(input.Profile),
 		"strategy": map[string]any{
-			"group_name":    groupName,
-			"type":          normalizeStrategyType(input.Profile.StrategyType),
-			"test_url":      fallbackString(strings.TrimSpace(input.Profile.TestURL), "https://cp.cloudflare.com/generate_204"),
-			"test_interval": normalizePositive(input.Profile.TestIntervalSeconds, 300),
+			"group_name":               groupName,
+			"type":                     normalizeStrategyType(input.Profile.StrategyType),
+			"test_url":                 fallbackString(strings.TrimSpace(input.Profile.TestURL), "https://cp.cloudflare.com/generate_204"),
+			"test_interval":            normalizePositive(input.Profile.TestIntervalSeconds, 300),
+			"load_balance_mode":        normalizeLoadBalanceStrategy(input.Profile.LoadBalanceStrategy),
+			"load_balance_lazy":        input.Profile.LoadBalanceLazy,
+			"load_balance_disable_udp": input.Profile.LoadBalanceDisableUDP,
 		},
 		"proxies": proxies,
 		"proxy-groups": []map[string]any{
@@ -127,10 +130,25 @@ func buildStrategyGroup(profile model.PortProfile, groupName string, proxyNames 
 	}
 
 	if profile.StrategyType == model.PortProfileStrategyLoadBalance {
-		result["strategy"] = "consistent-hashing"
+		result["strategy"] = normalizeLoadBalanceStrategy(profile.LoadBalanceStrategy)
+		if profile.LoadBalanceLazy {
+			result["lazy"] = true
+		}
+		if profile.LoadBalanceDisableUDP {
+			result["disable-udp"] = true
+		}
 	}
 
 	return result
+}
+
+func normalizeLoadBalanceStrategy(value string) string {
+	switch strings.TrimSpace(value) {
+	case "round-robin":
+		return "round-robin"
+	default:
+		return "consistent-hashing"
+	}
 }
 
 func normalizeStrategyType(value string) string {

@@ -26,6 +26,7 @@ import {
   updatePortProfile,
 } from '@/features/workspace/api/workspace';
 import type {
+  LoadBalanceStrategy,
   PortProfilePayload,
   PortProfileWithNodes,
   PortProfilePreview,
@@ -60,6 +61,9 @@ const defaultPayload: PortProfilePayload = {
   strategy_group_name: 'POOLX',
   test_url: 'https://cp.cloudflare.com/generate_204',
   test_interval_seconds: 300,
+  load_balance_strategy: 'consistent-hashing',
+  load_balance_lazy: false,
+  load_balance_disable_udp: false,
   include_in_runtime: true,
   node_ids: [],
 };
@@ -89,6 +93,9 @@ function toProfilePayload(item: PortProfileWithNodes): PortProfilePayload {
     strategy_group_name: item.profile.strategy_group_name,
     test_url: item.profile.test_url,
     test_interval_seconds: item.profile.test_interval_seconds,
+    load_balance_strategy: item.profile.load_balance_strategy,
+    load_balance_lazy: item.profile.load_balance_lazy,
+    load_balance_disable_udp: item.profile.load_balance_disable_udp,
     include_in_runtime: item.profile.include_in_runtime,
     node_ids: item.node_ids,
   };
@@ -155,6 +162,9 @@ export function WorkspacePage() {
       strategy_group_name: profile.strategy_group_name,
       test_url: profile.test_url,
       test_interval_seconds: profile.test_interval_seconds,
+      load_balance_strategy: profile.load_balance_strategy,
+      load_balance_lazy: profile.load_balance_lazy,
+      load_balance_disable_udp: profile.load_balance_disable_udp,
       include_in_runtime: profile.include_in_runtime,
       node_ids,
     })
@@ -311,7 +321,7 @@ export function WorkspacePage() {
     select: '手动选择固定出口',
     'url-test': '按 URL 延迟自动选择',
     fallback: '按优先级与可用性自动切换',
-    'load-balance': '按一致性哈希分散请求',
+    'load-balance': '按负载均衡策略分散请求，可切换一致性哈希或轮询',
   } satisfies Record<PortProfileStrategy, string>
 
   const applyTemplate = (item: PortProfileTemplateItem) => {
@@ -328,6 +338,9 @@ export function WorkspacePage() {
       strategy_group_name: item.template.strategy_group_name,
       test_url: item.template.test_url,
       test_interval_seconds: item.template.test_interval_seconds,
+      load_balance_strategy: item.template.load_balance_strategy,
+      load_balance_lazy: item.template.load_balance_lazy,
+      load_balance_disable_udp: item.template.load_balance_disable_udp,
       include_in_runtime: item.template.include_in_runtime,
       node_ids: item.node_ids,
     })
@@ -632,6 +645,66 @@ export function WorkspacePage() {
                   inputMode="numeric"
                 />
               </ResourceField>
+              {payload.strategy_type === 'load-balance' ? (
+                <>
+                  <ResourceField label="负载均衡策略" hint="一致性哈希会尽量让相同顶级域名走同一节点，轮询会平均分配请求。">
+                    <ResourceSelect
+                      value={payload.load_balance_strategy}
+                      onChange={(event) =>
+                        setPayload((current) => ({
+                          ...current,
+                          load_balance_strategy: event.target.value as LoadBalanceStrategy,
+                        }))
+                      }
+                    >
+                      <option value="consistent-hashing">consistent-hashing</option>
+                      <option value="round-robin">round-robin</option>
+                    </ResourceSelect>
+                  </ResourceField>
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="load-balance-lazy">延迟懒加载探测</Label>
+                          <p className="text-xs text-[var(--foreground-secondary)]">
+                            只在需要时触发健康检查，减少空载时的探测请求。
+                          </p>
+                        </div>
+                        <Switch
+                          id="load-balance-lazy"
+                          checked={payload.load_balance_lazy}
+                          onCheckedChange={(checked) =>
+                            setPayload((current) => ({
+                              ...current,
+                              load_balance_lazy: checked,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="load-balance-disable-udp">禁用 UDP</Label>
+                          <p className="text-xs text-[var(--foreground-secondary)]">
+                            为当前负载均衡组关闭 UDP 转发，适合只处理 TCP 的场景。
+                          </p>
+                        </div>
+                        <Switch
+                          id="load-balance-disable-udp"
+                          checked={payload.load_balance_disable_udp}
+                          onCheckedChange={(checked) =>
+                            setPayload((current) => ({
+                              ...current,
+                              load_balance_disable_udp: checked,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </div>
           </AppCard>
 

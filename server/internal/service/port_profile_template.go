@@ -45,17 +45,20 @@ func SavePortProfileTemplate(name string, payload PortProfilePayload) (*PortProf
 		return nil, fmt.Errorf("序列化模板节点失败: %v", err)
 	}
 	template := &model.PortProfileTemplate{
-		Name:                templateName,
-		ListenHost:          normalized.ListenHost,
-		MixedPort:           normalized.MixedPort,
-		SocksPort:           normalized.SocksPort,
-		HTTPPort:            normalized.HTTPPort,
-		StrategyType:        normalized.StrategyType,
-		StrategyGroupName:   normalized.StrategyGroupName,
-		TestURL:             normalized.TestURL,
-		TestIntervalSeconds: normalized.TestIntervalSeconds,
-		IncludeInRuntime:    normalized.IncludeInRuntime,
-		NodeIDsJSON:         string(nodeIDsJSON),
+		Name:                  templateName,
+		ListenHost:            normalized.ListenHost,
+		MixedPort:             normalized.MixedPort,
+		SocksPort:             normalized.SocksPort,
+		HTTPPort:              normalized.HTTPPort,
+		StrategyType:          normalized.StrategyType,
+		StrategyGroupName:     normalized.StrategyGroupName,
+		TestURL:               normalized.TestURL,
+		TestIntervalSeconds:   normalized.TestIntervalSeconds,
+		LoadBalanceStrategy:   normalized.LoadBalanceStrategy,
+		LoadBalanceLazy:       normalized.LoadBalanceLazy,
+		LoadBalanceDisableUDP: normalized.LoadBalanceDisableUDP,
+		IncludeInRuntime:      normalized.IncludeInRuntime,
+		NodeIDsJSON:           string(nodeIDsJSON),
 	}
 	if err := model.DB.Create(template).Error; err != nil {
 		return nil, err
