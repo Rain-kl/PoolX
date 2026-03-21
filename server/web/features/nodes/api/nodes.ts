@@ -29,6 +29,19 @@ export function updateProxyNodeStatus(id: number, enabled: boolean) {
   });
 }
 
+export function deleteProxyNode(id: number) {
+  return apiRequest<void>(`/proxy-nodes/${id}/delete`, {
+    method: 'POST',
+  });
+}
+
+export function deleteProxyNodes(nodeIds: number[]) {
+  return apiRequest<{ deleted: number }>('/proxy-nodes/delete', {
+    method: 'POST',
+    body: JSON.stringify({ node_ids: nodeIds }),
+  });
+}
+
 export function testProxyNodes(input: {
   nodeIds: number[];
   timeoutMs: number;

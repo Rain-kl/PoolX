@@ -28,6 +28,10 @@ type NodeTestInput struct {
 	TestURL          string   `json:"test_url"`
 }
 
+type ProxyNodeDeleteInput struct {
+	NodeIDs []int `json:"node_ids"`
+}
+
 type NodeTestExecution struct {
 	NodeID       int        `json:"node_id"`
 	NodeName     string     `json:"node_name"`
@@ -60,6 +64,42 @@ func SetProxyNodeEnabled(id int, enabled bool) error {
 	}
 	node.Enabled = enabled
 	return model.DB.Save(node).Error
+}
+
+func DeleteProxyNode(id int) error {
+	if id <= 0 {
+		return fmt.Errorf("无效的节点 ID")
+	}
+	if _, err := model.GetProxyNodeByID(id); err != nil {
+		return fmt.Errorf("节点不存在")
+	}
+	return model.DeleteProxyNodeByID(id)
+}
+
+func DeleteProxyNodes(ids []int) (int, error) {
+	if len(ids) == 0 {
+		return 0, fmt.Errorf("请先选择要删除的节点")
+	}
+
+	deleted := 0
+	seen := make(map[int]struct{}, len(ids))
+	for _, id := range ids {
+		if id <= 0 {
+			continue
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		if err := DeleteProxyNode(id); err != nil {
+			return deleted, err
+		}
+		deleted++
+	}
+	if deleted == 0 {
+		return 0, fmt.Errorf("请先选择要删除的节点")
+	}
+	return deleted, nil
 }
 
 func ExecuteNodeTests(ctx context.Context, input NodeTestInput) ([]NodeTestExecution, error) {

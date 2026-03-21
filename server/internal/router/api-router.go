@@ -94,8 +94,10 @@ func SetApiRouter(router *gin.Engine) {
 		proxyNodeRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
 		{
 			proxyNodeRoute.GET("", controller.GetProxyNodes)
+			proxyNodeRoute.POST("/delete", controller.DeleteProxyNodes)
 			proxyNodeRoute.POST("/test", controller.TestProxyNodes)
 			proxyNodeRoute.POST("/:id/status", controller.UpdateProxyNodeStatus)
+			proxyNodeRoute.POST("/:id/delete", controller.DeleteProxyNode)
 		}
 		logRoute := apiRouter.Group("/log")
 		logRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())

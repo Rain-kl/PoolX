@@ -69,6 +69,10 @@ func GetProxyNodeByID(id int) (*ProxyNode, error) {
 	return item, nil
 }
 
+func DeleteProxyNodeByID(id int) error {
+	return DB.Delete(&ProxyNode{}, "id = ?", id).Error
+}
+
 func FindProxyNodesByIDs(ids []int) ([]*ProxyNode, error) {
 	if len(ids) == 0 {
 		return []*ProxyNode{}, nil

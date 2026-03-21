@@ -10,12 +10,13 @@ import { LoadingState } from '@/components/feedback/loading-state';
 import { PageHeader } from '@/components/layout/page-header';
 import { AppCard } from '@/components/ui/app-card';
 import {
+  deleteProxyNode,
   getProxyNodes,
   testProxyNodes,
-  updateProxyNodeStatus,
 } from '@/features/nodes/api/nodes';
 import type { ProxyNodeItem } from '@/features/nodes/types';
 import {
+  DangerButton,
   PrimaryButton,
   ResourceField,
   ResourceInput,
@@ -69,14 +70,29 @@ export function NodesPage() {
       }),
   });
 
-  const toggleMutation = useMutation({
-    mutationFn: async ({ id, enabled }: { id: number; enabled: boolean }) =>
-      updateProxyNodeStatus(id, enabled),
-    onSuccess: async (_, variables) => {
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => deleteProxyNode(id),
+    onSuccess: async (_, id) => {
       setFeedback({
         tone: 'success',
-        message: variables.enabled ? '节点已启用。' : '节点已禁用。',
+        message: '节点已删除。',
       });
+      setSelectedIds((previous) => previous.filter((item) => item !== id));
+      await queryClient.invalidateQueries({ queryKey: proxyNodesQueryKey });
+    },
+    onError: (error) => {
+      setFeedback({ tone: 'danger', message: getErrorMessage(error) });
+    },
+  });
+
+  const batchDeleteMutation = useMutation({
+    mutationFn: async (nodeIds: number[]) => deleteProxyNodes(nodeIds),
+    onSuccess: async (result) => {
+      setFeedback({
+        tone: 'success',
+        message: `已删除 ${result.deleted} 个节点。`,
+      });
+      setSelectedIds([]);
       await queryClient.invalidateQueries({ queryKey: proxyNodesQueryKey });
     },
     onError: (error) => {
@@ -135,22 +151,11 @@ export function NodesPage() {
     <div className="space-y-6">
       <PageHeader
         title="节点池"
-        description="查看已导入节点、按条件筛选、启用或禁用节点，并通过内核发起真实代理请求测试。"
+        description="查看已导入节点、按条件筛选、删除节点，并通过内核发起真实代理请求测试。"
         action={
-          <PrimaryButton
-            type="button"
-            onClick={() => {
-              if (selectedIds.length === 0) {
-                setFeedback({ tone: 'danger', message: '请先选择至少一个节点。' });
-                return;
-              }
-              setFeedback(null);
-              testMutation.mutate(selectedIds);
-            }}
-            disabled={testMutation.isPending}
-          >
-            {testMutation.isPending ? '批量测试中...' : '批量测试选中节点'}
-          </PrimaryButton>
+          <div className="text-sm text-[var(--foreground-secondary)]">
+            当前已选择 {selectedIds.length} 个节点
+          </div>
         }
       />
 
@@ -216,6 +221,55 @@ export function NodesPage() {
       <AppCard
         title="节点列表"
         description="列表字段保留了后续工作台与运行控制会复用的标准化节点信息。"
+        action={
+          <div className="flex flex-wrap gap-2">
+            <SecondaryButton
+              type="button"
+              onClick={() => setSelectedIds(nodes.map((node) => node.id))}
+              disabled={nodes.length === 0}
+            >
+              全选
+            </SecondaryButton>
+            <SecondaryButton
+              type="button"
+              onClick={() => setSelectedIds([])}
+              disabled={selectedIds.length === 0}
+            >
+              取消全选
+            </SecondaryButton>
+            <PrimaryButton
+              type="button"
+              onClick={() => {
+                if (selectedIds.length === 0) {
+                  setFeedback({ tone: 'danger', message: '请先选择至少一个节点。' });
+                  return;
+                }
+                setFeedback(null);
+                testMutation.mutate(selectedIds);
+              }}
+              disabled={testMutation.isPending}
+            >
+              {testMutation.isPending ? '批量测试中...' : '批量测试'}
+            </PrimaryButton>
+            <DangerButton
+              type="button"
+              onClick={() => {
+                if (selectedIds.length === 0) {
+                  setFeedback({ tone: 'danger', message: '请先选择至少一个节点。' });
+                  return;
+                }
+                if (!window.confirm(`确认批量删除 ${selectedIds.length} 个节点吗？`)) {
+                  return;
+                }
+                setFeedback(null);
+                batchDeleteMutation.mutate(selectedIds);
+              }}
+              disabled={batchDeleteMutation.isPending}
+            >
+              {batchDeleteMutation.isPending ? '批量删除中...' : '批量删除'}
+            </DangerButton>
+          </div>
+        }
       >
         <div className="space-y-4">
           {nodesQuery.isLoading ? <LoadingState /> : null}
@@ -233,13 +287,13 @@ export function NodesPage() {
           ) : null}
 
           {!nodesQuery.isLoading && !nodesQuery.isError && nodes.length > 0 ? (
-            <div className="space-y-3">
+            <div className="grid gap-3 xl:grid-cols-2">
               {nodes.map((node) => (
                 <div
                   key={node.id}
-                  className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-4"
+                  className="h-full rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-4"
                 >
-                  <div className="flex flex-col gap-4">
+                  <div className="flex h-full flex-col gap-4">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                       <div className="flex gap-3">
                         <input
@@ -278,7 +332,7 @@ export function NodesPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 lg:justify-end">
                         <SecondaryButton
                           type="button"
                           onClick={() => {
@@ -289,18 +343,19 @@ export function NodesPage() {
                         >
                           测试
                         </SecondaryButton>
-                        <PrimaryButton
+                        <DangerButton
                           type="button"
-                          onClick={() =>
-                            toggleMutation.mutate({
-                              id: node.id,
-                              enabled: !node.enabled,
-                            })
-                          }
-                          disabled={toggleMutation.isPending}
+                          onClick={() => {
+                            if (!window.confirm(`确认删除节点“${node.name}”吗？`)) {
+                              return;
+                            }
+                            setFeedback(null);
+                            deleteMutation.mutate(node.id);
+                          }}
+                          disabled={deleteMutation.isPending}
                         >
-                          {node.enabled ? '禁用' : '启用'}
-                        </PrimaryButton>
+                          删除
+                        </DangerButton>
                       </div>
                     </div>
                   </div>
