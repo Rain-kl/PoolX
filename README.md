@@ -4,16 +4,16 @@
 
 <div align="center">
 
-# GinNextTemplate
+# PoolX
 
-Gin + Next.js 的后台管理模板工程，提供用户、邮箱、文件上传、安全、系统设置、应用日志和服务端升级等基础能力，适合作为新项目的起点。
+基于 Gin + Next.js 的 Proxy Kernel Control Plane，当前以 `GinNextTemplate` 作为工程底座，首期围绕 Mihomo 交付代理池控制端能力。
 </div>
 
 ## 项目定位
 
-`GinNextTemplate` 是一个已经完成主线收口的全栈模板工程。后续默认工作方向是围绕模板基线继续开发、维护与扩展，而不是回到历史业务工程模式。
+当前项目定位为面向代理池场景的后台管理系统。模板基础设施能力仍然保留，但主线目标已经切换为业务产品开发。
 
-当前长期保留模块：
+当前主线能力：
 
 * 用户与认证
 * 邮箱能力
@@ -22,6 +22,10 @@ Gin + Next.js 的后台管理模板工程，提供用户、邮箱、文件上传
 * 系统设置
 * 应用日志
 * 服务端版本升级
+* 配置导入
+* 节点池与节点测试
+* 工作台配置
+* 运行控制与状态查看
 
 ## 当前工程基线
 
@@ -46,7 +50,7 @@ pnpm build
 ```bash
 cd server
 export SESSION_SECRET='replace-with-random-string'
-export SQLITE_PATH='./ginnexttemplate.db'
+export SQLITE_PATH='./poolx.db'
 export LOG_LEVEL='info'
 go run ./cmd/server
 ```
@@ -101,6 +105,9 @@ pnpm build
 4. [docs/frontend-development-guidelines.md](./docs/frontend-development-guidelines.md)
 5. [docs/deployment.md](./docs/deployment.md)
 6. [docs/app-config.md](./docs/app-config.md)
+7. [docs/dev/Product.md](./docs/dev/Product.md)
+8. [docs/dev/Demand.md](./docs/dev/Demand.md)
+9. [docs/dev/Tech.md](./docs/dev/Tech.md)
 
 ## 开源协议
 
