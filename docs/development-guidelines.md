@@ -155,7 +155,6 @@ server/
 
 * `source_configs`
 * `proxy_nodes`
-* `node_test_results`
 * `port_profiles`
 * `port_profile_nodes`
 * `runtime_configs`

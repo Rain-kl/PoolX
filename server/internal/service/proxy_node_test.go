@@ -63,16 +63,8 @@ func TestExecuteNodeTestsPersistsResult(t *testing.T) {
 	if refreshed.LastTestStatus != model.NodeTestStatusSuccess {
 		t.Fatalf("expected node status to be updated, got %s", refreshed.LastTestStatus)
 	}
-
-	rows, err := model.ListNodeTestResults(node.ID, 10)
-	if err != nil {
-		t.Fatalf("ListNodeTestResults returned error: %v", err)
-	}
-	if len(rows) != 1 {
-		t.Fatalf("expected one persisted node test row, got %d", len(rows))
-	}
-	if rows[0].LatencyMS == nil || *rows[0].LatencyMS != 321 {
-		t.Fatalf("expected persisted latency to match kernel test result: %+v", rows[0])
+	if refreshed.LastLatencyMS == nil || *refreshed.LastLatencyMS != 321 {
+		t.Fatalf("expected node latency to be updated, got %+v", refreshed.LastLatencyMS)
 	}
 }
 
@@ -129,13 +121,8 @@ func TestExecuteNodeTestsPersistsFailureResult(t *testing.T) {
 	if refreshed.LastTestStatus != model.NodeTestStatusFailed {
 		t.Fatalf("expected node status to be updated, got %s", refreshed.LastTestStatus)
 	}
-
-	rows, err := model.ListNodeTestResults(node.ID, 10)
-	if err != nil {
-		t.Fatalf("ListNodeTestResults returned error: %v", err)
-	}
-	if len(rows) != 1 {
-		t.Fatalf("expected one persisted node test row, got %d", len(rows))
+	if refreshed.LastTestError == "" {
+		t.Fatal("expected node test error to be updated")
 	}
 }
 

@@ -10,7 +10,6 @@ import { LoadingState } from '@/components/feedback/loading-state';
 import { PageHeader } from '@/components/layout/page-header';
 import { AppCard } from '@/components/ui/app-card';
 import {
-  getNodeTestResults,
   getProxyNodes,
   testProxyNodes,
   updateProxyNodeStatus,
@@ -56,7 +55,6 @@ export function NodesPage() {
     'all',
   );
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [activeNodeId, setActiveNodeId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [testUrl, setTestUrl] = useState('https://cp.cloudflare.com/generate_204');
   const [timeoutMs, setTimeoutMs] = useState('8000');
@@ -69,12 +67,6 @@ export function NodesPage() {
         keyword,
         enabled: enabledFilter,
       }),
-  });
-
-  const recentResultsQuery = useQuery({
-    queryKey: ['proxy-nodes', 'results', activeNodeId],
-    queryFn: () => getNodeTestResults(activeNodeId as number),
-    enabled: activeNodeId !== null,
   });
 
   const toggleMutation = useMutation({
@@ -104,10 +96,7 @@ export function NodesPage() {
         tone: 'success',
         message: `测试已完成，共返回 ${result.length} 条结果。`,
       });
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: proxyNodesQueryKey }),
-        queryClient.invalidateQueries({ queryKey: ['proxy-nodes', 'results'] }),
-      ]);
+      await queryClient.invalidateQueries({ queryKey: proxyNodesQueryKey });
     },
     onError: (error) => {
       setFeedback({ tone: 'danger', message: getErrorMessage(error) });
@@ -224,176 +213,120 @@ export function NodesPage() {
         </div>
       </AppCard>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <AppCard
-          title="节点列表"
-          description="列表字段保留了后续工作台与运行控制会复用的标准化节点信息。"
-        >
-          <div className="space-y-4">
-            {nodesQuery.isLoading ? <LoadingState /> : null}
-            {nodesQuery.isError ? (
-              <ErrorState
-                title="加载节点失败"
-                description={getErrorMessage(nodesQuery.error)}
-              />
-            ) : null}
-            {!nodesQuery.isLoading && !nodesQuery.isError && nodes.length === 0 ? (
-              <EmptyState
-                title="暂无节点"
-                description="先去配置导入页上传 YAML 并完成导入。"
-              />
-            ) : null}
+      <AppCard
+        title="节点列表"
+        description="列表字段保留了后续工作台与运行控制会复用的标准化节点信息。"
+      >
+        <div className="space-y-4">
+          {nodesQuery.isLoading ? <LoadingState /> : null}
+          {nodesQuery.isError ? (
+            <ErrorState
+              title="加载节点失败"
+              description={getErrorMessage(nodesQuery.error)}
+            />
+          ) : null}
+          {!nodesQuery.isLoading && !nodesQuery.isError && nodes.length === 0 ? (
+            <EmptyState
+              title="暂无节点"
+              description="先去配置导入页上传 YAML 并完成导入。"
+            />
+          ) : null}
 
-            {!nodesQuery.isLoading && !nodesQuery.isError && nodes.length > 0 ? (
-              <div className="space-y-3">
-                {nodes.map((node) => (
-                  <div
-                    key={node.id}
-                    className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-4"
-                  >
-                    <div className="flex flex-col gap-4">
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="flex gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedIdSet.has(node.id)}
-                            onChange={(event) =>
-                              handleToggleSelection(node.id, event.target.checked)
-                            }
-                            className="mt-1 h-4 w-4 rounded border-[var(--border-default)] accent-[var(--brand-primary)]"
-                          />
-                          <div className="space-y-1">
-                            <p className="text-sm font-semibold text-[var(--foreground-primary)]">
-                              {node.name}
+          {!nodesQuery.isLoading && !nodesQuery.isError && nodes.length > 0 ? (
+            <div className="space-y-3">
+              {nodes.map((node) => (
+                <div
+                  key={node.id}
+                  className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-4"
+                >
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="flex gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIdSet.has(node.id)}
+                          onChange={(event) =>
+                            handleToggleSelection(node.id, event.target.checked)
+                          }
+                          className="mt-1 h-4 w-4 rounded border-[var(--border-default)] accent-[var(--brand-primary)]"
+                        />
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-[var(--foreground-primary)]">
+                            {node.name}
+                          </p>
+                          <p className="text-sm text-[var(--foreground-secondary)]">
+                            {node.type.toUpperCase()} · {node.server}:{node.port}
+                          </p>
+                          <div className="text-xs text-[var(--foreground-secondary)]">
+                            <p>来源：{node.source_config_name}</p>
+                            <p>{getStatusLabel(node)}</p>
+                            <p>
+                              最近耗时：
+                              {node.last_latency_ms !== undefined
+                                ? ` ${node.last_latency_ms} ms`
+                                : ' 未记录'}
                             </p>
-                            <p className="text-sm text-[var(--foreground-secondary)]">
-                              {node.type.toUpperCase()} · {node.server}:{node.port}
+                            <p>
+                              最近测试：
+                              {node.last_tested_at
+                                ? ` ${formatDateTime(node.last_tested_at)}`
+                                : ' 未执行'}
                             </p>
-                            <div className="text-xs text-[var(--foreground-secondary)]">
-                              <p>来源：{node.source_config_name}</p>
-                              <p>{getStatusLabel(node)}</p>
-                              <p>
-                                最近耗时：
-                                {node.last_latency_ms !== undefined
-                                  ? ` ${node.last_latency_ms} ms`
-                                  : ' 未记录'}
-                              </p>
-                              <p>
-                                最近测试：
-                                {node.last_tested_at
-                                  ? ` ${formatDateTime(node.last_tested_at)}`
-                                  : ' 未执行'}
-                              </p>
-                              {node.last_test_error ? (
-                                <p>最近错误：{node.last_test_error}</p>
-                              ) : null}
-                            </div>
+                            {node.last_test_error ? (
+                              <p>最近错误：{node.last_test_error}</p>
+                            ) : null}
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          <SecondaryButton
-                            type="button"
-                            onClick={() => setActiveNodeId(node.id)}
-                          >
-                            最近记录
-                          </SecondaryButton>
-                          <SecondaryButton
-                            type="button"
-                            onClick={() => {
-                              setFeedback(null);
-                              testMutation.mutate([node.id]);
-                            }}
-                            disabled={testMutation.isPending}
-                          >
-                            测试
-                          </SecondaryButton>
-                          <PrimaryButton
-                            type="button"
-                            onClick={() =>
-                              toggleMutation.mutate({
-                                id: node.id,
-                                enabled: !node.enabled,
-                              })
-                            }
-                            disabled={toggleMutation.isPending}
-                          >
-                            {node.enabled ? '禁用' : '启用'}
-                          </PrimaryButton>
-                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <SecondaryButton
+                          type="button"
+                          onClick={() => {
+                            setFeedback(null);
+                            testMutation.mutate([node.id]);
+                          }}
+                          disabled={testMutation.isPending}
+                        >
+                          测试
+                        </SecondaryButton>
+                        <PrimaryButton
+                          type="button"
+                          onClick={() =>
+                            toggleMutation.mutate({
+                              id: node.id,
+                              enabled: !node.enabled,
+                            })
+                          }
+                          disabled={toggleMutation.isPending}
+                        >
+                          {node.enabled ? '禁用' : '启用'}
+                        </PrimaryButton>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="flex justify-end gap-2">
-              <SecondaryButton
-                type="button"
-                onClick={() => setPage((previous) => Math.max(previous - 1, 0))}
-                disabled={page === 0 || nodesQuery.isLoading}
-              >
-                上一页
-              </SecondaryButton>
-              <PrimaryButton
-                type="button"
-                onClick={() => setPage((previous) => previous + 1)}
-                disabled={nodesQuery.isLoading || nodes.length === 0}
-              >
-                下一页
-              </PrimaryButton>
-            </div>
-          </div>
-        </AppCard>
-
-        <AppCard
-          title="最近测试记录"
-          description="用于验证测试结果已落库，可支撑后续的流式进度和历史回看。"
-        >
-          <div className="space-y-3">
-            {activeNodeId === null ? (
-              <p className="text-sm text-[var(--foreground-secondary)]">
-                从左侧选择一个节点查看最近记录。
-              </p>
-            ) : recentResultsQuery.isLoading ? (
-              <LoadingState />
-            ) : recentResultsQuery.isError ? (
-              <ErrorState
-                title="加载测试记录失败"
-                description={getErrorMessage(recentResultsQuery.error)}
-              />
-            ) : !recentResultsQuery.data || recentResultsQuery.data.length === 0 ? (
-              <EmptyState
-                title="暂无记录"
-                description="对节点执行测试后，结果会展示在这里。"
-              />
-            ) : (
-              recentResultsQuery.data.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-4"
-                >
-                  <p className="text-sm font-semibold text-[var(--foreground-primary)]">
-                    {item.status === 'success' ? '成功' : '失败'}
-                  </p>
-                  <div className="mt-2 text-xs leading-6 text-[var(--foreground-secondary)]">
-                    <p>目标：{item.dial_address}</p>
-                    <p>
-                      耗时：
-                      {item.latency_ms !== undefined
-                        ? ` ${item.latency_ms} ms`
-                        : ' 未记录'}
-                    </p>
-                    <p>开始：{formatDateTime(item.started_at)}</p>
-                    <p>结束：{formatDateTime(item.finished_at)}</p>
-                    {item.error_message ? <p>错误：{item.error_message}</p> : null}
-                  </div>
                 </div>
-              ))
-            )}
+              ))}
+            </div>
+          ) : null}
+
+          <div className="flex justify-end gap-2">
+            <SecondaryButton
+              type="button"
+              onClick={() => setPage((previous) => Math.max(previous - 1, 0))}
+              disabled={page === 0 || nodesQuery.isLoading}
+            >
+              上一页
+            </SecondaryButton>
+            <PrimaryButton
+              type="button"
+              onClick={() => setPage((previous) => previous + 1)}
+              disabled={nodesQuery.isLoading || nodes.length === 0}
+            >
+              下一页
+            </PrimaryButton>
           </div>
-        </AppCard>
-      </div>
+        </div>
+      </AppCard>
     </div>
   );
 }

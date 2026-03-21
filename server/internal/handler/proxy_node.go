@@ -13,11 +13,6 @@ type proxyNodeStatusRequest struct {
 	Enabled bool `json:"enabled"`
 }
 
-type proxyNodeTestResultsQuery struct {
-	ProxyNodeID int `form:"proxy_node_id"`
-	Limit       int `form:"limit"`
-}
-
 // GetProxyNodes godoc
 // @Summary List proxy nodes with paging and filters
 // @Tags ProxyNode
@@ -97,22 +92,5 @@ func TestProxyNodes(c *gin.Context) {
 		return
 	}
 
-	respondSuccess(c, results)
-}
-
-// GetNodeTestResults godoc
-// @Summary List recent test results for a proxy node
-// @Tags ProxyNode
-// @Produce json
-// @Success 200 {object} map[string]interface{}
-// @Router /api/node-test-results [get]
-func GetNodeTestResults(c *gin.Context) {
-	proxyNodeID, _ := strconv.Atoi(c.Query("proxy_node_id"))
-	limit, _ := strconv.Atoi(c.Query("limit"))
-	results, err := service.GetNodeTestResults(proxyNodeID, limit)
-	if err != nil {
-		respondFailure(c, err.Error())
-		return
-	}
 	respondSuccess(c, results)
 }

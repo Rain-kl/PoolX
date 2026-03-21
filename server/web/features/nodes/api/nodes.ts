@@ -2,7 +2,6 @@ import { apiRequest } from '@/lib/api/client';
 
 import type {
   NodeTestExecution,
-  NodeTestResultItem,
   ProxyNodeItem,
 } from '@/features/nodes/types';
 
@@ -43,14 +42,4 @@ export function testProxyNodes(input: {
       test_url: input.testUrl,
     }),
   });
-}
-
-export function getNodeTestResults(proxyNodeId: number, limit = 10) {
-  const searchParams = new URLSearchParams({
-    proxy_node_id: String(proxyNodeId),
-    limit: String(limit),
-  });
-  return apiRequest<NodeTestResultItem[]>(
-    `/node-test-results?${searchParams.toString()}`,
-  );
 }

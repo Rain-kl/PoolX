@@ -84,26 +84,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/node-test-results": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ProxyNode"
-                ],
-                "summary": "List recent test results for a proxy node",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/api/option/": {
             "get": {
                 "produces": [

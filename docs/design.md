@@ -145,7 +145,6 @@ server/
 
 * 配置源 `source_configs`
 * 代理节点 `proxy_nodes`
-* 节点测试结果 `node_test_results`
 * 监听入口 / 端口配置 `port_profiles`
 * 端口与节点绑定 `port_profile_nodes`
 * 运行配置快照 `runtime_configs`
@@ -209,7 +208,6 @@ server/
 * `app_logs`
 * `source_configs`
 * `proxy_nodes`
-* `node_test_results`
 * `port_profiles`
 * `port_profile_nodes`
 * `runtime_configs`

@@ -16,19 +16,6 @@ export interface ProxyNodeItem {
   updated_at: string;
 }
 
-export interface NodeTestResultItem {
-  id: number;
-  proxy_node_id: number;
-  status: string;
-  latency_ms?: number;
-  error_message?: string;
-  test_url?: string;
-  dial_address: string;
-  started_at: string;
-  finished_at: string;
-  created_at: string;
-}
-
 export interface NodeTestExecution {
   node_id: number;
   node_name: string;
@@ -41,4 +28,3 @@ export interface NodeTestExecution {
   finished_at: string;
   last_tested_at?: string;
 }
-

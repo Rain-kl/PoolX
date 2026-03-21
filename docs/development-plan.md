@@ -49,7 +49,7 @@
 
 服务端范围：
 
-* 设计并迁移 `source_configs`、`proxy_nodes`、`node_test_results`
+* 设计并迁移 `source_configs`、`proxy_nodes`
 * 建立 YAML 上传、解析、标准化、双层去重、确认导入服务
 * 建立节点分页查询、搜索筛选、启用禁用接口
 * 建立节点测试任务模型、结果存储与查询接口

@@ -59,19 +59,6 @@ paths:
       summary: Upload Mihomo binary, install it to target path and verify version
       tags:
       - Kernel
-  /api/node-test-results:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-      summary: List recent test results for a proxy node
-      tags:
-      - ProxyNode
   /api/option/:
     get:
       produces:

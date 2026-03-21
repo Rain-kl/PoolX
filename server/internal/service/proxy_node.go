@@ -8,8 +8,6 @@ import (
 	kernelpkg "poolx/internal/pkg/kernel"
 	"strings"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 const defaultNodeTestURL = "https://cp.cloudflare.com/generate_204"
@@ -102,13 +100,6 @@ func ExecuteNodeTests(ctx context.Context, input NodeTestInput) ([]NodeTestExecu
 	return results, nil
 }
 
-func GetNodeTestResults(proxyNodeID int, limit int) ([]*model.NodeTestResult, error) {
-	if proxyNodeID <= 0 {
-		return nil, fmt.Errorf("无效的节点 ID")
-	}
-	return model.ListNodeTestResults(proxyNodeID, limit)
-}
-
 type metadataNodeTestInput struct {
 	NodeID       int
 	Name         string
@@ -174,27 +165,11 @@ func normalizeNodeTestURL(testURL string) string {
 }
 
 func persistNodeTestExecution(nodeID int, execution NodeTestExecution) error {
-	return model.DB.Transaction(func(tx *gorm.DB) error {
-		result := &model.NodeTestResult{
-			ProxyNodeID:  nodeID,
-			Status:       execution.Status,
-			LatencyMS:    execution.LatencyMS,
-			ErrorMessage: execution.ErrorMessage,
-			TestURL:      execution.TestURL,
-			DialAddress:  execution.DialAddress,
-			StartedAt:    execution.StartedAt,
-			FinishedAt:   execution.FinishedAt,
-		}
-		if err := tx.Create(result).Error; err != nil {
-			return err
-		}
-
-		updates := map[string]any{
-			"last_test_status": execution.Status,
-			"last_latency_ms":  execution.LatencyMS,
-			"last_test_error":  execution.ErrorMessage,
-			"last_tested_at":   execution.LastTestedAt,
-		}
-		return tx.Model(&model.ProxyNode{}).Where("id = ?", nodeID).Updates(updates).Error
-	})
+	updates := map[string]any{
+		"last_test_status": execution.Status,
+		"last_latency_ms":  execution.LatencyMS,
+		"last_test_error":  execution.ErrorMessage,
+		"last_tested_at":   execution.LastTestedAt,
+	}
+	return model.DB.Model(&model.ProxyNode{}).Where("id = ?", nodeID).Updates(updates).Error
 }

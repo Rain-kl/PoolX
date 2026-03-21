@@ -97,11 +97,6 @@ func SetApiRouter(router *gin.Engine) {
 			proxyNodeRoute.POST("/test", controller.TestProxyNodes)
 			proxyNodeRoute.POST("/:id/status", controller.UpdateProxyNodeStatus)
 		}
-		nodeTestRoute := apiRouter.Group("/node-test-results")
-		nodeTestRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
-		{
-			nodeTestRoute.GET("", controller.GetNodeTestResults)
-		}
 		logRoute := apiRouter.Group("/log")
 		logRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
 		{

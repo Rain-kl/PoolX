@@ -32,7 +32,6 @@ func registeredModels() []any {
 		&Option{},
 		&SourceConfig{},
 		&ProxyNode{},
-		&NodeTestResult{},
 	}
 }
 
