@@ -27,10 +27,6 @@ RUN go build -trimpath -ldflags "-s -w -X 'poolx/internal/pkg/common.Version=$VE
 
 FROM alpine
 
-RUN apk update \
-    && apk upgrade \
-    && apk add --no-cache ca-certificates tzdata \
-    && update-ca-certificates 2>/dev/null || true
 ENV PORT=3000
 COPY --from=builder2 /build/poolx-server /
 EXPOSE 3000
