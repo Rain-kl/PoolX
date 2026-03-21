@@ -19,7 +19,7 @@ func TestRenderMihomoConfigBuildsMergeableFragment(t *testing.T) {
 			StrategyGroupName:   "POOLX-FALLBACK",
 			TestURL:             "https://cp.cloudflare.com/generate_204",
 			TestIntervalSeconds: 180,
-			Enabled:             true,
+			IncludeInRuntime:    true,
 			KernelType:          "mihomo",
 		},
 		Nodes: []*model.ProxyNode{

@@ -30,5 +30,6 @@ func BuildTemplateScheduler(
 		RegisterMigration(V5(hooks)).
 		RegisterMigration(V6(hooks)).
 		RegisterMigration(V7(hooks)).
-		RegisterMigration(V8(hooks))
+		RegisterMigration(V8(hooks)).
+		RegisterMigration(V9(hooks))
 }

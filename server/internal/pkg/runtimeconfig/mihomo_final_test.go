@@ -22,7 +22,6 @@ func TestRenderFinalMihomoConfigAggregatesProfiles(t *testing.T) {
 					StrategyGroupName:   "GROUP-A",
 					TestURL:             "https://cp.cloudflare.com/generate_204",
 					TestIntervalSeconds: 300,
-					Enabled:             true,
 					IncludeInRuntime:    true,
 				},
 				Nodes: []*model.ProxyNode{
@@ -43,7 +42,6 @@ func TestRenderFinalMihomoConfigAggregatesProfiles(t *testing.T) {
 					StrategyGroupName:   "GROUP-A",
 					TestURL:             "https://cp.cloudflare.com/generate_204",
 					TestIntervalSeconds: 300,
-					Enabled:             true,
 					IncludeInRuntime:    true,
 				},
 				Nodes: []*model.ProxyNode{
@@ -84,7 +82,6 @@ func TestRenderFinalMihomoConfigSkipsProfilesExcludedFromRuntime(t *testing.T) {
 					Name:             "excluded",
 					ListenHost:       "127.0.0.1",
 					MixedPort:        7890,
-					Enabled:          true,
 					IncludeInRuntime: false,
 				},
 				Nodes: []*model.ProxyNode{
@@ -101,7 +98,6 @@ func TestRenderFinalMihomoConfigSkipsProfilesExcludedFromRuntime(t *testing.T) {
 					Name:             "included",
 					ListenHost:       "127.0.0.1",
 					MixedPort:        7891,
-					Enabled:          true,
 					IncludeInRuntime: true,
 				},
 				Nodes: []*model.ProxyNode{

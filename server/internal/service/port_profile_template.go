@@ -54,7 +54,6 @@ func SavePortProfileTemplate(name string, payload PortProfilePayload) (*PortProf
 		StrategyGroupName:   normalized.StrategyGroupName,
 		TestURL:             normalized.TestURL,
 		TestIntervalSeconds: normalized.TestIntervalSeconds,
-		Enabled:             normalized.Enabled,
 		IncludeInRuntime:    normalized.IncludeInRuntime,
 		NodeIDsJSON:         string(nodeIDsJSON),
 	}

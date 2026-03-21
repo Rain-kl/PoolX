@@ -27,7 +27,6 @@ type PortProfilePayload struct {
 	StrategyGroupName   string `json:"strategy_group_name"`
 	TestURL             string `json:"test_url"`
 	TestIntervalSeconds int    `json:"test_interval_seconds"`
-	Enabled             bool   `json:"enabled"`
 	IncludeInRuntime    bool   `json:"include_in_runtime"`
 	NodeIDs             []int  `json:"node_ids"`
 }
@@ -82,7 +81,6 @@ func CreatePortProfile(payload PortProfilePayload) (*model.PortProfileWithNodes,
 		StrategyGroupName:   normalized.StrategyGroupName,
 		TestURL:             normalized.TestURL,
 		TestIntervalSeconds: normalized.TestIntervalSeconds,
-		Enabled:             normalized.Enabled,
 		IncludeInRuntime:    normalized.IncludeInRuntime,
 		KernelType:          common.KernelType,
 	}
@@ -118,7 +116,6 @@ func UpdatePortProfile(id int, payload PortProfilePayload) (*model.PortProfileWi
 	profile.StrategyGroupName = normalized.StrategyGroupName
 	profile.TestURL = normalized.TestURL
 	profile.TestIntervalSeconds = normalized.TestIntervalSeconds
-	profile.Enabled = normalized.Enabled
 	profile.IncludeInRuntime = normalized.IncludeInRuntime
 	profile.KernelType = common.KernelType
 
@@ -171,7 +168,6 @@ func PreviewPortProfile(payload PortProfilePayload) (*PortProfilePreview, error)
 		StrategyGroupName:   normalized.StrategyGroupName,
 		TestURL:             normalized.TestURL,
 		TestIntervalSeconds: normalized.TestIntervalSeconds,
-		Enabled:             normalized.Enabled,
 		IncludeInRuntime:    normalized.IncludeInRuntime,
 		KernelType:          common.KernelType,
 	}
@@ -209,7 +205,6 @@ func PreviewSavedPortProfile(id int) (*PortProfilePreview, error) {
 		StrategyGroupName:   view.Profile.StrategyGroupName,
 		TestURL:             view.Profile.TestURL,
 		TestIntervalSeconds: view.Profile.TestIntervalSeconds,
-		Enabled:             view.Profile.Enabled,
 		IncludeInRuntime:    view.Profile.IncludeInRuntime,
 		NodeIDs:             view.NodeIDs,
 	})
@@ -311,7 +306,6 @@ func normalizePortProfilePayload(payload PortProfilePayload) (*PortProfilePayloa
 		StrategyGroupName:   fallbackPortProfileString(strings.TrimSpace(payload.StrategyGroupName), defaultPortProfileGroupName),
 		TestURL:             fallbackPortProfileString(strings.TrimSpace(payload.TestURL), defaultPortProfileTestURL),
 		TestIntervalSeconds: normalizePortProfilePositive(payload.TestIntervalSeconds, 300),
-		Enabled:             payload.Enabled,
 		IncludeInRuntime:    payload.IncludeInRuntime,
 		NodeIDs:             deduplicateNodeIDs(payload.NodeIDs),
 	}

@@ -20,7 +20,6 @@ type PortProfile struct {
 	StrategyGroupName   string    `json:"strategy_group_name" gorm:"size:120;not null;default:POOLX"`
 	TestURL             string    `json:"test_url" gorm:"size:255;not null"`
 	TestIntervalSeconds int       `json:"test_interval_seconds" gorm:"not null;default:300"`
-	Enabled             bool      `json:"enabled" gorm:"index;not null;default:true"`
 	IncludeInRuntime    bool      `json:"include_in_runtime" gorm:"index;not null;default:true"`
 	KernelType          string    `json:"kernel_type" gorm:"size:32;not null;default:mihomo"`
 	CreatedAt           time.Time `json:"created_at" gorm:"index"`

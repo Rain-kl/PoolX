@@ -27,6 +27,7 @@ import {
 } from '@/features/workspace/api/workspace';
 import type {
   PortProfilePayload,
+  PortProfileWithNodes,
   PortProfilePreview,
   PortProfileStrategy,
   PortProfileTemplateItem,
@@ -39,7 +40,6 @@ import {
   ResourceInput,
   ResourceSelect,
   SecondaryButton,
-  ToggleField,
 } from '@/features/shared/components/resource-primitives';
 import { formatDateTime } from '@/lib/utils/date';
 
@@ -60,7 +60,6 @@ const defaultPayload: PortProfilePayload = {
   strategy_group_name: 'POOLX',
   test_url: 'https://cp.cloudflare.com/generate_204',
   test_interval_seconds: 300,
-  enabled: true,
   include_in_runtime: true,
   node_ids: [],
 };
@@ -76,6 +75,22 @@ function toPayload(state: PortProfilePayload) {
     listen_host: state.listen_host.trim(),
     strategy_group_name: state.strategy_group_name.trim(),
     test_url: state.test_url.trim(),
+  };
+}
+
+function toProfilePayload(item: PortProfileWithNodes): PortProfilePayload {
+  return {
+    name: item.profile.name,
+    listen_host: item.profile.listen_host,
+    mixed_port: item.profile.mixed_port,
+    socks_port: item.profile.socks_port,
+    http_port: item.profile.http_port,
+    strategy_type: item.profile.strategy_type,
+    strategy_group_name: item.profile.strategy_group_name,
+    test_url: item.profile.test_url,
+    test_interval_seconds: item.profile.test_interval_seconds,
+    include_in_runtime: item.profile.include_in_runtime,
+    node_ids: item.node_ids,
   };
 }
 
@@ -140,7 +155,6 @@ export function WorkspacePage() {
       strategy_group_name: profile.strategy_group_name,
       test_url: profile.test_url,
       test_interval_seconds: profile.test_interval_seconds,
-      enabled: profile.enabled,
       include_in_runtime: profile.include_in_runtime,
       node_ids,
     })
@@ -194,6 +208,33 @@ export function WorkspacePage() {
     },
     onError: (error) => {
       setFeedback({ tone: 'danger', message: getErrorMessage(error) })
+    },
+  })
+
+  const toggleRuntimeInclusionMutation = useMutation({
+    mutationFn: async ({
+      item,
+      checked,
+    }: {
+      item: PortProfileWithNodes;
+      checked: boolean;
+    }) =>
+      updatePortProfile(item.profile.id, {
+        ...toProfilePayload(item),
+        include_in_runtime: checked,
+      }),
+    onSuccess: async (_, variables) => {
+      const message = variables.checked
+        ? '端口配置已加入最终配置。'
+        : '端口配置已移出最终配置。';
+      setFeedback({ tone: 'success', message });
+      await queryClient.invalidateQueries({ queryKey: workspaceListQueryKey });
+      await queryClient.invalidateQueries({
+        queryKey: ['workspace', 'profile', variables.item.profile.id],
+      });
+    },
+    onError: (error) => {
+      setFeedback({ tone: 'danger', message: getErrorMessage(error) });
     },
   })
 
@@ -287,7 +328,6 @@ export function WorkspacePage() {
       strategy_group_name: item.template.strategy_group_name,
       test_url: item.template.test_url,
       test_interval_seconds: item.template.test_interval_seconds,
-      enabled: item.template.enabled,
       include_in_runtime: item.template.include_in_runtime,
       node_ids: item.node_ids,
     })
@@ -340,14 +380,38 @@ export function WorkspacePage() {
                       : 'border-[var(--border-default)] bg-[var(--surface-muted)] hover:bg-[var(--surface-base)]'
                   }`}
                 >
-                  <p className="text-sm font-semibold text-[var(--foreground-primary)]">
-                    {item.profile.name}
-                  </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-semibold text-[var(--foreground-primary)]">
+                      {item.profile.name}
+                    </p>
+                    <div
+                      className="flex items-center gap-2"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <Label
+                        htmlFor={`profile-runtime-${item.profile.id}`}
+                        className="text-xs text-[var(--foreground-secondary)]"
+                      >
+                        加入最终配置
+                      </Label>
+                      <Switch
+                        id={`profile-runtime-${item.profile.id}`}
+                        checked={item.profile.include_in_runtime}
+                        disabled={toggleRuntimeInclusionMutation.isPending}
+                        onCheckedChange={(checked) => {
+                          setFeedback(null)
+                          toggleRuntimeInclusionMutation.mutate({
+                            item,
+                            checked,
+                          })
+                        }}
+                      />
+                    </div>
+                  </div>
                   <div className="mt-2 text-xs leading-6 text-[var(--foreground-secondary)]">
                     <p>Mixed：{item.profile.mixed_port}</p>
                     <p>策略：{item.profile.strategy_type}</p>
                     <p>节点数：{item.node_ids.length}</p>
-                    <p>纳入运行：{item.profile.include_in_runtime ? '是' : '否'}</p>
                     <p>更新：{formatDateTime(item.profile.updated_at)}</p>
                   </div>
                 </button>
@@ -574,15 +638,6 @@ export function WorkspacePage() {
                   inputMode="numeric"
                 />
               </ResourceField>
-              <div className="xl:col-span-2">
-                <ToggleField
-                  label="启用此配置"
-                  checked={payload.enabled}
-                  onChange={(checked) =>
-                    setPayload((current) => ({ ...current, enabled: checked }))
-                  }
-                />
-              </div>
               <div className="xl:col-span-2">
                 <div className="flex items-center justify-between rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3">
                   <div className="space-y-1">

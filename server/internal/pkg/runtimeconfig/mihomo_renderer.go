@@ -50,7 +50,6 @@ func RenderMihomoConfig(input MihomoRenderInput) (*RenderResult, error) {
 		"profile": map[string]any{
 			"id":                 input.Profile.ID,
 			"name":               input.Profile.Name,
-			"enabled":            input.Profile.Enabled,
 			"include_in_runtime": input.Profile.IncludeInRuntime,
 			"kernel":             fallbackString(strings.TrimSpace(input.Profile.KernelType), "mihomo"),
 			"listen_host":        fallbackString(strings.TrimSpace(input.Profile.ListenHost), "127.0.0.1"),
@@ -92,11 +91,10 @@ func buildListeners(profile model.PortProfile) []map[string]any {
 			return
 		}
 		listeners = append(listeners, map[string]any{
-			"name":    buildListenerName(profile.Name, kind, port),
-			"type":    kind,
-			"listen":  host,
-			"port":    port,
-			"enabled": profile.Enabled,
+			"name":   buildListenerName(profile.Name, kind, port),
+			"type":   kind,
+			"listen": host,
+			"port":   port,
 		})
 	}
 	appendListener("mixed", profile.MixedPort)

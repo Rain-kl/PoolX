@@ -54,7 +54,7 @@ func TestStartRuntimeRejectsOccupiedListenerPort(t *testing.T) {
 		StrategyGroupName:   "POOLX",
 		TestURL:             "https://cp.cloudflare.com/generate_204",
 		TestIntervalSeconds: 300,
-		Enabled:             true,
+		IncludeInRuntime:    true,
 		NodeIDs:             []int{node.ID},
 	}); err != nil {
 		t.Fatalf("create port profile: %v", err)
@@ -123,7 +123,7 @@ func TestStartRuntimeIncludesRecentLogsWhenControllerWaitFails(t *testing.T) {
 		StrategyGroupName:   "POOLX",
 		TestURL:             "https://cp.cloudflare.com/generate_204",
 		TestIntervalSeconds: 300,
-		Enabled:             true,
+		IncludeInRuntime:    true,
 		NodeIDs:             []int{node.ID},
 	}); err != nil {
 		t.Fatalf("create port profile: %v", err)
