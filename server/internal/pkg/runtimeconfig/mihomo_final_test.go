@@ -9,6 +9,8 @@ import (
 
 func TestRenderFinalMihomoConfigAggregatesProfiles(t *testing.T) {
 	result, err := RenderFinalMihomoConfig(AggregatedMihomoInput{
+		AllowLAN:          false,
+		Mode:              "rule",
 		ControllerAddress: "127.0.0.1:19090",
 		ControllerSecret:  "secret",
 		Profiles: []*model.PortProfileWithNodes{
@@ -73,6 +75,8 @@ func TestRenderFinalMihomoConfigAggregatesProfiles(t *testing.T) {
 
 func TestRenderFinalMihomoConfigSkipsProfilesExcludedFromRuntime(t *testing.T) {
 	result, err := RenderFinalMihomoConfig(AggregatedMihomoInput{
+		AllowLAN:          false,
+		Mode:              "rule",
 		ControllerAddress: "127.0.0.1:19090",
 		ControllerSecret:  "secret",
 		Profiles: []*model.PortProfileWithNodes{
@@ -121,5 +125,47 @@ func TestRenderFinalMihomoConfigSkipsProfilesExcludedFromRuntime(t *testing.T) {
 	}
 	if !strings.Contains(result.Content, "7891") {
 		t.Fatalf("expected included listener to remain, got %s", result.Content)
+	}
+}
+
+func TestRenderFinalMihomoConfigUsesConfiguredClashSettings(t *testing.T) {
+	result, err := RenderFinalMihomoConfig(AggregatedMihomoInput{
+		AllowLAN:          true,
+		Mode:              "global",
+		ControllerAddress: "0.0.0.0:29090",
+		ControllerSecret:  "fixed-secret",
+		Profiles: []*model.PortProfileWithNodes{
+			{
+				Profile: model.PortProfile{
+					ID:               2,
+					Name:             "included",
+					ListenHost:       "127.0.0.1",
+					MixedPort:        7891,
+					IncludeInRuntime: true,
+				},
+				Nodes: []*model.ProxyNode{
+					{
+						ID:           12,
+						Name:         "jp-1",
+						MetadataJSON: `{"type":"ss","server":"2.2.2.2","port":443,"cipher":"aes-128-gcm","password":"secret-2"}`,
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("RenderFinalMihomoConfig returned error: %v", err)
+	}
+	if !strings.Contains(result.Content, "allow-lan: true") {
+		t.Fatalf("expected allow-lan in final config, got %s", result.Content)
+	}
+	if !strings.Contains(result.Content, "mode: global") {
+		t.Fatalf("expected mode in final config, got %s", result.Content)
+	}
+	if !strings.Contains(result.Content, "external-controller: 0.0.0.0:29090") {
+		t.Fatalf("expected controller address in final config, got %s", result.Content)
+	}
+	if !strings.Contains(result.Content, "secret: fixed-secret") {
+		t.Fatalf("expected secret in final config, got %s", result.Content)
 	}
 }

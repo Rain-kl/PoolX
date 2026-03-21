@@ -49,6 +49,10 @@ func InitOptionMap() {
 	common.OptionMap["MihomoBinarySource"] = common.MihomoBinarySource
 	common.OptionMap["NodeTestDefaultURL"] = common.NodeTestDefaultURL
 	common.OptionMap["NodeTestDefaultTimeoutMS"] = strconv.Itoa(common.NodeTestDefaultTimeoutMS)
+	common.OptionMap["ClashAllowLAN"] = strconv.FormatBool(common.ClashAllowLAN)
+	common.OptionMap["ClashExternalController"] = common.ClashExternalController
+	common.OptionMap["ClashMode"] = common.ClashMode
+	common.OptionMap["ClashSecret"] = common.ClashSecret
 	common.OptionMap["GeoIPProvider"] = common.GeoIPProvider
 	common.OptionMap["GitHubClientId"] = ""
 	common.OptionMap["GitHubClientSecret"] = ""
@@ -158,6 +162,20 @@ func updateOptionMap(key string, value string) {
 	case "NodeTestDefaultTimeoutMS":
 		if v, err := strconv.Atoi(value); err == nil && v > 0 {
 			common.NodeTestDefaultTimeoutMS = v
+		}
+	case "ClashAllowLAN":
+		common.ClashAllowLAN = value == "true"
+	case "ClashExternalController":
+		if strings.TrimSpace(value) != "" {
+			common.ClashExternalController = value
+		}
+	case "ClashMode":
+		if strings.TrimSpace(value) != "" {
+			common.ClashMode = value
+		}
+	case "ClashSecret":
+		if strings.TrimSpace(value) != "" {
+			common.ClashSecret = value
 		}
 	case "GeoIPProvider":
 		common.GeoIPProvider = value

@@ -56,6 +56,10 @@ const defaultSystemFields = {
   MihomoBinaryPath: '',
   MihomoBinaryVersion: '',
   MihomoBinarySource: '',
+  ClashAllowLAN: false,
+  ClashExternalController: '127.0.0.1:19090',
+  ClashMode: 'rule',
+  ClashSecret: '3ebc195c9fbe81c01eb9299e3c6bf644',
   NodeTestDefaultURL: 'https://cp.cloudflare.com/generate_204',
   NodeTestDefaultTimeoutMS: '8000',
   GeoIPProvider: 'disabled',
@@ -112,7 +116,7 @@ type FeedbackState = {
   message: string;
 };
 
-type SettingsTab = 'personal' | 'operation' | 'system' | 'other';
+type SettingsTab = 'personal' | 'operation' | 'clash' | 'system' | 'other';
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '请求失败，请稍后重试。';
@@ -275,6 +279,12 @@ export function SettingsPage() {
       MihomoBinaryPath: optionMap.MihomoBinaryPath ?? '',
       MihomoBinaryVersion: optionMap.MihomoBinaryVersion ?? '',
       MihomoBinarySource: optionMap.MihomoBinarySource ?? '',
+      ClashAllowLAN: toBoolean(optionMap.ClashAllowLAN, false),
+      ClashExternalController:
+        optionMap.ClashExternalController ?? '127.0.0.1:19090',
+      ClashMode: optionMap.ClashMode ?? 'rule',
+      ClashSecret:
+        optionMap.ClashSecret ?? '3ebc195c9fbe81c01eb9299e3c6bf644',
       NodeTestDefaultURL:
         optionMap.NodeTestDefaultURL ?? 'https://cp.cloudflare.com/generate_204',
       NodeTestDefaultTimeoutMS: optionMap.NodeTestDefaultTimeoutMS ?? '8000',
@@ -447,6 +457,11 @@ export function SettingsPage() {
       ...(isRoot
         ? [
             {
+              key: 'clash' as const,
+              label: 'Clash 设置',
+              description: '代理内核、控制接口与默认测速参数。',
+            },
+            {
               key: 'system' as const,
               label: '系统设置',
               description: '登录注册、SMTP、OAuth、更新源与归属设置。',
@@ -581,17 +596,8 @@ export function SettingsPage() {
     return installPath;
   };
 
-  const handleKernelTypeSave = () => {
-    void runBusyAction('kernel-type', async () => {
-      await saveOptionEntries(
-        [['KernelType', systemFields.KernelType]],
-        '内核类型已保存。',
-      );
-    });
-  };
-
-  const handleNodeTestDefaultsSave = () => {
-    void runBusyAction('node-test-defaults', async () => {
+  const handleClashSettingsSave = () => {
+    void runBusyAction('clash-settings', async () => {
       const timeout = Number.parseInt(systemFields.NodeTestDefaultTimeoutMS, 10);
       if (Number.isNaN(timeout) || timeout <= 0) {
         throw new Error('默认测速超时必须为大于 0 的整数。');
@@ -602,13 +608,30 @@ export function SettingsPage() {
       if (!systemFields.NodeTestDefaultURL.trim()) {
         throw new Error('默认测速 URL 不能为空。');
       }
+      if (!systemFields.ClashExternalController.trim()) {
+        throw new Error('external-controller 不能为空。');
+      }
+      if (!/^[^:]+:\d+$/.test(systemFields.ClashExternalController.trim())) {
+        throw new Error('external-controller 必须为 host:port 格式。');
+      }
+      if (!systemFields.ClashSecret.trim()) {
+        throw new Error('secret 不能为空。');
+      }
+      if (!['rule', 'global', 'direct'].includes(systemFields.ClashMode.trim())) {
+        throw new Error('mode 仅支持 rule、global 或 direct。');
+      }
 
       await saveOptionEntries(
         [
+          ['KernelType', systemFields.KernelType],
+          ['ClashAllowLAN', String(systemFields.ClashAllowLAN)],
+          ['ClashExternalController', systemFields.ClashExternalController.trim()],
+          ['ClashMode', systemFields.ClashMode.trim()],
+          ['ClashSecret', systemFields.ClashSecret.trim()],
           ['NodeTestDefaultURL', systemFields.NodeTestDefaultURL.trim()],
           ['NodeTestDefaultTimeoutMS', String(timeout)],
         ],
-        '默认测速参数已保存。',
+        'Clash 设置已保存。',
       );
     });
   };
@@ -976,7 +999,7 @@ export function SettingsPage() {
       );
     }
 
-    if (activeTab === 'system') {
+    if (activeTab === 'clash') {
       return (
         <div className="space-y-6">
           <AppCard
@@ -985,10 +1008,10 @@ export function SettingsPage() {
             action={
               <PrimaryButton
                 type="button"
-                onClick={handleKernelTypeSave}
-                disabled={busyKey === 'kernel-type'}
+                onClick={handleClashSettingsSave}
+                disabled={busyKey === 'clash-settings'}
               >
-                {busyKey === 'kernel-type' ? '保存中...' : '保存内核设置'}
+                {busyKey === 'clash-settings' ? '保存中...' : '保存 Clash 设置'}
               </PrimaryButton>
             }
           >
@@ -1147,19 +1170,75 @@ export function SettingsPage() {
           </AppCard>
 
           <AppCard
+            title="Clash 运行参数"
+            description="这些设置会参与最终 Mihomo 配置渲染，并在启动与热重载时生效。"
+          >
+            <div className="grid gap-5 xl:grid-cols-2">
+              <ResourceField
+                label="external-controller"
+                hint="控制接口监听地址，格式为 host:port。"
+              >
+                <ResourceInput
+                  value={systemFields.ClashExternalController}
+                  onChange={(event) =>
+                    setSystemFields((previous) => ({
+                      ...previous,
+                      ClashExternalController: event.target.value,
+                    }))
+                  }
+                  placeholder="127.0.0.1:19090"
+                />
+              </ResourceField>
+              <ResourceField
+                label="mode"
+                hint="控制最终 Clash 运行模式。"
+              >
+                <ResourceSelect
+                  value={systemFields.ClashMode}
+                  onChange={(event) =>
+                    setSystemFields((previous) => ({
+                      ...previous,
+                      ClashMode: event.target.value,
+                    }))
+                  }
+                >
+                  <option value="rule">rule</option>
+                  <option value="global">global</option>
+                  <option value="direct">direct</option>
+                </ResourceSelect>
+              </ResourceField>
+              <ResourceField
+                label="secret"
+                hint="控制接口访问密钥，运行控制和 API 探活都会使用它。"
+              >
+                <ResourceInput
+                  value={systemFields.ClashSecret}
+                  onChange={(event) =>
+                    setSystemFields((previous) => ({
+                      ...previous,
+                      ClashSecret: event.target.value,
+                    }))
+                  }
+                  placeholder="3ebc195c9fbe81c01eb9299e3c6bf644"
+                />
+              </ResourceField>
+              <ToggleField
+                label="allow-lan"
+                description="开启后允许局域网设备访问代理监听端口。"
+                checked={systemFields.ClashAllowLAN}
+                onChange={(checked) =>
+                  setSystemFields((previous) => ({
+                    ...previous,
+                    ClashAllowLAN: checked,
+                  }))
+                }
+              />
+            </div>
+          </AppCard>
+
+          <AppCard
             title="默认测速参数"
             description="配置导入和节点池的测速操作都会统一使用这里的默认 URL 与超时。"
-            action={
-              <PrimaryButton
-                type="button"
-                onClick={handleNodeTestDefaultsSave}
-                disabled={busyKey === 'node-test-defaults'}
-              >
-                {busyKey === 'node-test-defaults'
-                  ? '保存中...'
-                  : '保存测速参数'}
-              </PrimaryButton>
-            }
           >
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,220px)]">
               <ResourceField
@@ -1196,6 +1275,13 @@ export function SettingsPage() {
               </ResourceField>
             </div>
           </AppCard>
+        </div>
+      );
+    }
+
+    if (activeTab === 'system') {
+      return (
+        <div className="space-y-6">
 
           <AppCard
             title="登录与注册开关"

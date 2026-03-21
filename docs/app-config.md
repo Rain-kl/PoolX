@@ -71,6 +71,10 @@ go run . --port 3000 --log-dir ./logs
 | `MihomoBinaryPath` | Mihomo 二进制安装路径 | 空 |
 | `MihomoBinaryVersion` | 最近一次校验通过的 Mihomo 版本输出 | 空 |
 | `MihomoBinarySource` | Mihomo 二进制来源，支持 `upload` / `download` | 空 |
+| `ClashAllowLAN` | 最终 Mihomo 配置中的 `allow-lan` | `false` |
+| `ClashExternalController` | 最终 Mihomo 配置中的 `external-controller` | `127.0.0.1:19090` |
+| `ClashMode` | 最终 Mihomo 配置中的 `mode`，支持 `rule` / `global` / `direct` | `rule` |
+| `ClashSecret` | 最终 Mihomo 配置中的控制密钥 | `3ebc195c9fbe81c01eb9299e3c6bf644` |
 | `NodeTestDefaultURL` | 配置导入与节点池共享的默认测速 URL | `https://cp.cloudflare.com/generate_204` |
 | `NodeTestDefaultTimeoutMS` | 配置导入与节点池共享的默认测速超时（毫秒） | `8000` |
 | `GeoIPProvider` | IP 归属解析方式 | `disabled` |
@@ -98,10 +102,11 @@ go run . --port 3000 --log-dir ./logs
 
 说明：
 
-* Token、Secret 一类敏感配置不会通过选项列表直接回显
+* Token、Secret 一类敏感配置默认不会通过选项列表直接回显；`ClashSecret` 作为运行控制必需配置，允许在管理员设置页中直接维护
 * `ServerUpdateRepo` 默认值为 `Rain-kl/PoolX`，用于版本检查与自动升级；如使用自建发布仓库，可改为自己的 `owner/repo`
 * `KernelType` 当前仅允许设置为 `mihomo`，`xray` 与 `singbox` 仅保留前端预留入口
 * `MihomoBinaryPath`、`MihomoBinaryVersion` 与 `MihomoBinarySource` 由系统设置中的内核安装流程维护
+* `ClashAllowLAN`、`ClashExternalController`、`ClashMode` 与 `ClashSecret` 由设置页“Clash 设置”统一维护，并会在运行阶段参与最终 Mihomo 配置渲染
 * `NodeTestDefaultURL` 与 `NodeTestDefaultTimeoutMS` 由设置页统一维护，配置导入和节点池页不再单独提供测速参数表单
 * 已移除业务的运行时配置项只允许在兼容清理时兜底处理，不应重新作为正式选项暴露
 * 配置项如有增删，必须同步更新本文档

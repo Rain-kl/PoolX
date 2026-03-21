@@ -24,9 +24,8 @@ import (
 )
 
 const (
-	runtimeLogLimit          = 400
-	defaultRuntimeController = "127.0.0.1:19090"
-	runtimeConfigFileName    = "config.yaml"
+	runtimeLogLimit       = 400
+	runtimeConfigFileName = "config.yaml"
 )
 
 type RuntimeLogEntry struct {
@@ -87,11 +86,15 @@ func StartRuntime(ctx context.Context) (*RuntimeStatus, error) {
 	}
 	secret := strings.TrimSpace(instance.ControllerSecret)
 	if secret == "" {
+		secret = strings.TrimSpace(common.ClashSecret)
+	}
+	if secret == "" {
 		secret, err = randomSecret()
 		if err != nil {
 			return nil, err
 		}
 	}
+	controllerAddress := runtimeControllerAddress()
 	rendered, workDir, configPath, secret, err := buildFinalRuntimeConfig(secret, true)
 	if err != nil {
 		_ = persistRuntimeState(instance, model.KernelInstanceStatusError, "start", err.Error(), nil, nil)
@@ -113,7 +116,7 @@ func StartRuntime(ctx context.Context) (*RuntimeStatus, error) {
 	now := time.Now()
 	instance.WorkDir = workDir
 	instance.ConfigPath = configPath
-	instance.ControllerAddress = defaultRuntimeController
+	instance.ControllerAddress = controllerAddress
 	instance.ControllerSecret = secret
 	instance.ActiveConfigChecksum = rendered.Checksum
 	instance.ActiveProfileCount = rendered.ProfileCount
@@ -145,7 +148,7 @@ func StartRuntime(ctx context.Context) (*RuntimeStatus, error) {
 
 	readyCtx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
-	if err := waitForMihomoControllerReady(readyCtx, defaultRuntimeController, secret); err != nil {
+	if err := waitForMihomoControllerReady(readyCtx, controllerAddress, secret); err != nil {
 		_ = terminateProcess(cmd)
 		waitErr := formatRuntimeStartWaitError(err)
 		instance.Status = model.KernelInstanceStatusError
@@ -241,7 +244,7 @@ func ReloadRuntime(ctx context.Context) (*RuntimeStatus, error) {
 	instance.LastError = ""
 	instance.WorkDir = workDir
 	instance.ConfigPath = configPath
-	instance.ControllerAddress = defaultRuntimeController
+	instance.ControllerAddress = runtimeControllerAddress()
 	instance.ControllerSecret = secret
 	if err := model.DB.Save(instance).Error; err != nil {
 		return nil, err
@@ -349,7 +352,7 @@ func ensureKernelInstance() (*model.KernelInstance, error) {
 		Status:            model.KernelInstanceStatusStopped,
 		WorkDir:           workDir,
 		ConfigPath:        configPath,
-		ControllerAddress: defaultRuntimeController,
+		ControllerAddress: runtimeControllerAddress(),
 		ControllerSecret:  "",
 	}
 	if err := model.DB.Create(instance).Error; err != nil {
@@ -376,11 +379,17 @@ func buildFinalRuntimeConfig(existingSecret string, persistSnapshots bool) (*run
 	configPath := filepath.Join(workDir, runtimeConfigFileName)
 	secret := strings.TrimSpace(existingSecret)
 	if secret == "" {
+		secret = strings.TrimSpace(common.ClashSecret)
+	}
+	if secret == "" {
 		secret = "preview-secret"
 	}
+	controllerAddress := runtimeControllerAddress()
 	rendered, err := runtimeconfig.RenderFinalMihomoConfig(runtimeconfig.AggregatedMihomoInput{
 		Profiles:          enabled,
-		ControllerAddress: defaultRuntimeController,
+		AllowLAN:          common.ClashAllowLAN,
+		Mode:              runtimeMode(),
+		ControllerAddress: controllerAddress,
 		ControllerSecret:  secret,
 	})
 	if err != nil {
@@ -394,6 +403,24 @@ func buildFinalRuntimeConfig(existingSecret string, persistSnapshots bool) (*run
 		}
 	}
 	return rendered, workDir, configPath, secret, nil
+}
+
+func runtimeControllerAddress() string {
+	address := strings.TrimSpace(common.ClashExternalController)
+	if address == "" {
+		return common.DefaultClashExternalController
+	}
+	return address
+}
+
+func runtimeMode() string {
+	mode := strings.TrimSpace(strings.ToLower(common.ClashMode))
+	switch mode {
+	case "rule", "global", "direct":
+		return mode
+	default:
+		return common.DefaultClashMode
+	}
 }
 
 func randomSecret() (string, error) {

@@ -15,6 +15,9 @@ const DefaultKernelType = "mihomo"
 const DefaultMihomoReleaseRepo = "MetaCubeX/mihomo"
 const DefaultNodeTestURL = "https://cp.cloudflare.com/generate_204"
 const DefaultNodeTestTimeoutMS = 8000
+const DefaultClashExternalController = "127.0.0.1:19090"
+const DefaultClashMode = "rule"
+const DefaultClashSecret = "3ebc195c9fbe81c01eb9299e3c6bf644"
 
 var SystemName = "PoolX"
 var ServerAddress = "http://localhost:3000"
@@ -25,6 +28,10 @@ var MihomoBinaryVersion = ""
 var MihomoBinarySource = ""
 var NodeTestDefaultURL = DefaultNodeTestURL
 var NodeTestDefaultTimeoutMS = DefaultNodeTestTimeoutMS
+var ClashAllowLAN = false
+var ClashExternalController = DefaultClashExternalController
+var ClashMode = DefaultClashMode
+var ClashSecret = DefaultClashSecret
 var Footer = ""
 var HomePageLink = ""
 

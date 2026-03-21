@@ -13,6 +13,8 @@ import (
 
 type AggregatedMihomoInput struct {
 	Profiles          []*model.PortProfileWithNodes
+	AllowLAN          bool
+	Mode              string
 	ControllerAddress string
 	ControllerSecret  string
 }
@@ -117,8 +119,8 @@ func RenderFinalMihomoConfig(input AggregatedMihomoInput) (*FinalRenderResult, e
 	})
 
 	config := map[string]any{
-		"allow-lan":           false,
-		"mode":                "rule",
+		"allow-lan":           input.AllowLAN,
+		"mode":                fallbackString(strings.TrimSpace(input.Mode), "rule"),
 		"log-level":           "info",
 		"external-controller": input.ControllerAddress,
 		"secret":              input.ControllerSecret,

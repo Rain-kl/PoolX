@@ -146,3 +146,54 @@ func TestUpdateEditableOptionRejectsInvalidNodeTestDefaultTimeout(t *testing.T) 
 		t.Fatal("expected invalid timeout to fail")
 	}
 }
+
+func TestUpdateEditableOptionAppliesClashRuntimeSettings(t *testing.T) {
+	setupServiceTestDB(t)
+
+	originalAllowLAN := common.ClashAllowLAN
+	originalController := common.ClashExternalController
+	originalMode := common.ClashMode
+	originalSecret := common.ClashSecret
+	t.Cleanup(func() {
+		common.ClashAllowLAN = originalAllowLAN
+		common.ClashExternalController = originalController
+		common.ClashMode = originalMode
+		common.ClashSecret = originalSecret
+	})
+
+	for _, option := range []model.Option{
+		{Key: "ClashAllowLAN", Value: "true"},
+		{Key: "ClashExternalController", Value: "127.0.0.1:29090"},
+		{Key: "ClashMode", Value: "global"},
+		{Key: "ClashSecret", Value: "fixed-secret"},
+	} {
+		if err := UpdateEditableOption(option); err != nil {
+			t.Fatalf("update %s: %v", option.Key, err)
+		}
+	}
+
+	if !common.ClashAllowLAN {
+		t.Fatal("expected ClashAllowLAN to be true")
+	}
+	if common.ClashExternalController != "127.0.0.1:29090" {
+		t.Fatalf("unexpected ClashExternalController: %s", common.ClashExternalController)
+	}
+	if common.ClashMode != "global" {
+		t.Fatalf("unexpected ClashMode: %s", common.ClashMode)
+	}
+	if common.ClashSecret != "fixed-secret" {
+		t.Fatalf("unexpected ClashSecret: %s", common.ClashSecret)
+	}
+}
+
+func TestUpdateEditableOptionRejectsInvalidClashExternalController(t *testing.T) {
+	setupServiceTestDB(t)
+
+	err := UpdateEditableOption(model.Option{
+		Key:   "ClashExternalController",
+		Value: "127.0.0.1",
+	})
+	if err == nil {
+		t.Fatal("expected invalid ClashExternalController to fail")
+	}
+}

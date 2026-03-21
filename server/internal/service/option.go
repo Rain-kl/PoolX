@@ -73,7 +73,7 @@ func ListEditableOptions() []*model.Option {
 	defer common.OptionMapRWMutex.Unlock()
 
 	for key, value := range common.OptionMap {
-		if strings.Contains(key, "Token") || strings.Contains(key, "Secret") {
+		if strings.Contains(key, "Token") || (strings.Contains(key, "Secret") && key != "ClashSecret") {
 			continue
 		}
 		options = append(options, &model.Option{
@@ -129,6 +129,22 @@ func UpdateEditableOption(option model.Option) error {
 		}
 		if timeout > 60000 {
 			return fmt.Errorf("NodeTestDefaultTimeoutMS cannot exceed 60000")
+		}
+	case "ClashAllowLAN":
+		if option.Value != "true" && option.Value != "false" {
+			return fmt.Errorf("ClashAllowLAN must be true or false")
+		}
+	case "ClashExternalController":
+		if _, err := normalizeControllerAddress(option.Value); err != nil {
+			return err
+		}
+	case "ClashMode":
+		if err := validateClashMode(option.Value); err != nil {
+			return err
+		}
+	case "ClashSecret":
+		if strings.TrimSpace(option.Value) == "" {
+			return fmt.Errorf("ClashSecret cannot be empty")
 		}
 	}
 	if _, removed := removedTemplateOptionKeys[option.Key]; removed {
@@ -192,6 +208,34 @@ func validateMihomoBinarySource(value string) error {
 	default:
 		return fmt.Errorf("MihomoBinarySource is invalid")
 	}
+}
+
+func validateClashMode(value string) error {
+	switch strings.TrimSpace(strings.ToLower(value)) {
+	case "rule", "global", "direct":
+		return nil
+	default:
+		return fmt.Errorf("ClashMode is invalid")
+	}
+}
+
+func normalizeControllerAddress(value string) (string, error) {
+	controller := strings.TrimSpace(value)
+	if controller == "" {
+		return "", fmt.Errorf("ClashExternalController cannot be empty")
+	}
+	host, port, err := net.SplitHostPort(controller)
+	if err != nil {
+		return "", fmt.Errorf("ClashExternalController must be in host:port format")
+	}
+	if strings.TrimSpace(host) == "" {
+		return "", fmt.Errorf("ClashExternalController host cannot be empty")
+	}
+	portValue, err := strconv.Atoi(port)
+	if err != nil || portValue <= 0 || portValue > 65535 {
+		return "", fmt.Errorf("ClashExternalController port is invalid")
+	}
+	return net.JoinHostPort(host, strconv.Itoa(portValue)), nil
 }
 
 func PreviewGeoIPLookup(provider string, ipValue string) (*GeoIPLookupPreview, error) {
