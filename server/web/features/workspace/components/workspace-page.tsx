@@ -74,6 +74,7 @@ function toPayload(state: PortProfilePayload) {
 export function WorkspacePage() {
   const queryClient = useQueryClient();
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [payload, setPayload] = useState<PortProfilePayload>(defaultPayload);
   const [nodeSearch, setNodeSearch] = useState('');
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
@@ -96,11 +97,16 @@ export function WorkspacePage() {
   });
 
   useEffect(() => {
-    if (!profilesQuery.data || profilesQuery.data.length === 0 || selectedProfileId !== null) {
+    if (
+      isCreating ||
+      !profilesQuery.data ||
+      profilesQuery.data.length === 0 ||
+      selectedProfileId !== null
+    ) {
       return
     }
     setSelectedProfileId(profilesQuery.data[0].profile.id)
-  }, [profilesQuery.data, selectedProfileId])
+  }, [isCreating, profilesQuery.data, selectedProfileId])
 
   useEffect(() => {
     if (!detailQuery.data) {
@@ -138,6 +144,7 @@ export function WorkspacePage() {
     mutationFn: async () => createPortProfile(toPayload(payload)),
     onSuccess: async (result) => {
       setFeedback({ tone: 'success', message: '端口配置已创建。' })
+      setIsCreating(false)
       setSelectedProfileId(result.profile.id)
       await queryClient.invalidateQueries({ queryKey: workspaceListQueryKey })
     },
@@ -200,6 +207,7 @@ export function WorkspacePage() {
   const selectedNodeSet = useMemo(() => new Set(payload.node_ids), [payload.node_ids])
 
   const handleCreateNew = () => {
+    setIsCreating(true)
     setSelectedProfileId(null)
     setPayload(defaultPayload)
     setPreview(null)
@@ -257,6 +265,7 @@ export function WorkspacePage() {
                 key={item.profile.id}
                 type="button"
                 onClick={() => {
+                  setIsCreating(false)
                   setSelectedProfileId(item.profile.id)
                   setFeedback(null)
                 }}
@@ -296,7 +305,7 @@ export function WorkspacePage() {
                 >
                   {previewMutation.isPending ? '生成中...' : '生成片段预览'}
                 </PrimaryButton>
-                {selectedProfileId ? (
+                {!isCreating && selectedProfileId ? (
                   <>
                     <PrimaryButton
                       type="button"
