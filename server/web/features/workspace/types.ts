@@ -38,6 +38,7 @@ export interface PortProfileRecord {
   test_url: string;
   test_interval_seconds: number;
   enabled: boolean;
+  include_in_runtime: boolean;
   kernel_type: string;
   created_at: string;
   updated_at: string;
@@ -61,6 +62,7 @@ export interface PortProfilePayload {
   test_url: string;
   test_interval_seconds: number;
   enabled: boolean;
+  include_in_runtime: boolean;
   node_ids: number[];
 }
 
@@ -85,6 +87,7 @@ export interface PortProfileTemplateRecord {
   test_url: string;
   test_interval_seconds: number;
   enabled: boolean;
+  include_in_runtime: boolean;
   created_at: string;
   updated_at: string;
 }

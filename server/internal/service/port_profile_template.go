@@ -55,6 +55,7 @@ func SavePortProfileTemplate(name string, payload PortProfilePayload) (*PortProf
 		TestURL:             normalized.TestURL,
 		TestIntervalSeconds: normalized.TestIntervalSeconds,
 		Enabled:             normalized.Enabled,
+		IncludeInRuntime:    normalized.IncludeInRuntime,
 		NodeIDsJSON:         string(nodeIDsJSON),
 	}
 	if err := model.DB.Create(template).Error; err != nil {

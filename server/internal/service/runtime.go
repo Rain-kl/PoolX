@@ -365,12 +365,12 @@ func buildFinalRuntimeConfig(existingSecret string, persistSnapshots bool) (*run
 	}
 	enabled := make([]*model.PortProfileWithNodes, 0, len(profiles))
 	for _, profile := range profiles {
-		if profile.Profile.Enabled {
+		if profile.Profile.IncludeInRuntime {
 			enabled = append(enabled, profile)
 		}
 	}
 	if len(enabled) == 0 {
-		return nil, "", "", "", fmt.Errorf("当前没有启用的端口配置，无法启动 Mihomo")
+		return nil, "", "", "", fmt.Errorf("当前没有加入最终配置的端口配置，无法启动 Mihomo")
 	}
 	workDir := filepath.Join("data", "runtime", common.KernelType)
 	configPath := filepath.Join(workDir, runtimeConfigFileName)

@@ -28,6 +28,7 @@ type PortProfilePayload struct {
 	TestURL             string `json:"test_url"`
 	TestIntervalSeconds int    `json:"test_interval_seconds"`
 	Enabled             bool   `json:"enabled"`
+	IncludeInRuntime    bool   `json:"include_in_runtime"`
 	NodeIDs             []int  `json:"node_ids"`
 }
 
@@ -82,6 +83,7 @@ func CreatePortProfile(payload PortProfilePayload) (*model.PortProfileWithNodes,
 		TestURL:             normalized.TestURL,
 		TestIntervalSeconds: normalized.TestIntervalSeconds,
 		Enabled:             normalized.Enabled,
+		IncludeInRuntime:    normalized.IncludeInRuntime,
 		KernelType:          common.KernelType,
 	}
 
@@ -117,6 +119,7 @@ func UpdatePortProfile(id int, payload PortProfilePayload) (*model.PortProfileWi
 	profile.TestURL = normalized.TestURL
 	profile.TestIntervalSeconds = normalized.TestIntervalSeconds
 	profile.Enabled = normalized.Enabled
+	profile.IncludeInRuntime = normalized.IncludeInRuntime
 	profile.KernelType = common.KernelType
 
 	if err := model.DB.Transaction(func(tx *gorm.DB) error {
@@ -169,6 +172,7 @@ func PreviewPortProfile(payload PortProfilePayload) (*PortProfilePreview, error)
 		TestURL:             normalized.TestURL,
 		TestIntervalSeconds: normalized.TestIntervalSeconds,
 		Enabled:             normalized.Enabled,
+		IncludeInRuntime:    normalized.IncludeInRuntime,
 		KernelType:          common.KernelType,
 	}
 
@@ -206,6 +210,7 @@ func PreviewSavedPortProfile(id int) (*PortProfilePreview, error) {
 		TestURL:             view.Profile.TestURL,
 		TestIntervalSeconds: view.Profile.TestIntervalSeconds,
 		Enabled:             view.Profile.Enabled,
+		IncludeInRuntime:    view.Profile.IncludeInRuntime,
 		NodeIDs:             view.NodeIDs,
 	})
 }
@@ -307,6 +312,7 @@ func normalizePortProfilePayload(payload PortProfilePayload) (*PortProfilePayloa
 		TestURL:             fallbackPortProfileString(strings.TrimSpace(payload.TestURL), defaultPortProfileTestURL),
 		TestIntervalSeconds: normalizePortProfilePositive(payload.TestIntervalSeconds, 300),
 		Enabled:             payload.Enabled,
+		IncludeInRuntime:    payload.IncludeInRuntime,
 		NodeIDs:             deduplicateNodeIDs(payload.NodeIDs),
 	}
 	if len(normalized.NodeIDs) == 0 {

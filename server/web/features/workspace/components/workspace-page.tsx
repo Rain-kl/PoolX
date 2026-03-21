@@ -9,6 +9,8 @@ import { InlineMessage } from '@/components/feedback/inline-message';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { PageHeader } from '@/components/layout/page-header';
 import { AppCard } from '@/components/ui/app-card';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { getKernelCapability } from '@/features/capability/api/capability';
 import {
   createPortProfile,
@@ -59,6 +61,7 @@ const defaultPayload: PortProfilePayload = {
   test_url: 'https://cp.cloudflare.com/generate_204',
   test_interval_seconds: 300,
   enabled: true,
+  include_in_runtime: true,
   node_ids: [],
 };
 
@@ -138,6 +141,7 @@ export function WorkspacePage() {
       test_url: profile.test_url,
       test_interval_seconds: profile.test_interval_seconds,
       enabled: profile.enabled,
+      include_in_runtime: profile.include_in_runtime,
       node_ids,
     })
     if (detailQuery.data.runtime) {
@@ -284,6 +288,7 @@ export function WorkspacePage() {
       test_url: item.template.test_url,
       test_interval_seconds: item.template.test_interval_seconds,
       enabled: item.template.enabled,
+      include_in_runtime: item.template.include_in_runtime,
       node_ids: item.node_ids,
     })
   }
@@ -342,6 +347,7 @@ export function WorkspacePage() {
                     <p>Mixed：{item.profile.mixed_port}</p>
                     <p>策略：{item.profile.strategy_type}</p>
                     <p>节点数：{item.node_ids.length}</p>
+                    <p>纳入运行：{item.profile.include_in_runtime ? '是' : '否'}</p>
                     <p>更新：{formatDateTime(item.profile.updated_at)}</p>
                   </div>
                 </button>
@@ -576,6 +582,28 @@ export function WorkspacePage() {
                     setPayload((current) => ({ ...current, enabled: checked }))
                   }
                 />
+              </div>
+              <div className="xl:col-span-2">
+                <div className="flex items-center justify-between rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="include-in-runtime" className="text-sm font-medium text-[var(--foreground-primary)]">
+                      加入最终配置
+                    </Label>
+                    <p className="text-xs text-[var(--foreground-secondary)]">
+                      关闭后会保留当前端口配置与片段预览，但运行阶段不会把它聚合进最终 Mihomo 配置。
+                    </p>
+                  </div>
+                  <Switch
+                    id="include-in-runtime"
+                    checked={payload.include_in_runtime}
+                    onCheckedChange={(checked) =>
+                      setPayload((current) => ({
+                        ...current,
+                        include_in_runtime: checked,
+                      }))
+                    }
+                  />
+                </div>
               </div>
             </div>
           </AppCard>

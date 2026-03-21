@@ -14,6 +14,7 @@ type PortProfileTemplate struct {
 	TestURL             string    `json:"test_url" gorm:"size:255;not null"`
 	TestIntervalSeconds int       `json:"test_interval_seconds" gorm:"not null;default:300"`
 	Enabled             bool      `json:"enabled" gorm:"index;not null;default:true"`
+	IncludeInRuntime    bool      `json:"include_in_runtime" gorm:"index;not null;default:true"`
 	NodeIDsJSON         string    `json:"-" gorm:"type:text;not null"`
 	CreatedAt           time.Time `json:"created_at" gorm:"index"`
 	UpdatedAt           time.Time `json:"updated_at" gorm:"index"`

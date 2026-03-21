@@ -56,7 +56,7 @@ func RenderFinalMihomoConfig(input AggregatedMihomoInput) (*FinalRenderResult, e
 	groups := make([]map[string]any, 0)
 
 	for _, profile := range input.Profiles {
-		if profile == nil || !profile.Profile.Enabled {
+		if profile == nil || !profile.Profile.IncludeInRuntime {
 			continue
 		}
 		if len(profile.Nodes) == 0 {

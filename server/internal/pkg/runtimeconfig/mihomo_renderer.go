@@ -48,11 +48,12 @@ func RenderMihomoConfig(input MihomoRenderInput) (*RenderResult, error) {
 	fragment := map[string]any{
 		"fragment_kind": "port-profile",
 		"profile": map[string]any{
-			"id":          input.Profile.ID,
-			"name":        input.Profile.Name,
-			"enabled":     input.Profile.Enabled,
-			"kernel":      fallbackString(strings.TrimSpace(input.Profile.KernelType), "mihomo"),
-			"listen_host": fallbackString(strings.TrimSpace(input.Profile.ListenHost), "127.0.0.1"),
+			"id":                 input.Profile.ID,
+			"name":               input.Profile.Name,
+			"enabled":            input.Profile.Enabled,
+			"include_in_runtime": input.Profile.IncludeInRuntime,
+			"kernel":             fallbackString(strings.TrimSpace(input.Profile.KernelType), "mihomo"),
+			"listen_host":        fallbackString(strings.TrimSpace(input.Profile.ListenHost), "127.0.0.1"),
 		},
 		"listeners": buildListeners(input.Profile),
 		"strategy": map[string]any{
