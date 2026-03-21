@@ -16,6 +16,7 @@ type ProxyNode struct {
 	Type             string     `json:"type" gorm:"size:64;index;not null"`
 	Server           string     `json:"server" gorm:"size:255;index;not null"`
 	Port             int        `json:"port" gorm:"index;not null"`
+	Tags             string     `json:"tags" gorm:"size:255;index;not null;default:''"`
 	Fingerprint      string     `json:"-" gorm:"size:64;uniqueIndex;not null"`
 	MetadataJSON     string     `json:"metadata_json" gorm:"type:text;not null"`
 	Enabled          bool       `json:"enabled" gorm:"index;not null;default:true"`

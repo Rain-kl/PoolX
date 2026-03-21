@@ -6,11 +6,15 @@ import (
 	"poolx/internal/model"
 	"poolx/internal/pkg/common"
 	kernelpkg "poolx/internal/pkg/kernel"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
 const defaultNodeTestURL = "https://cp.cloudflare.com/generate_204"
+const nodeTestCacheTTL = 45 * time.Second
+const maxNodeTestParallelism = 4
 
 var runNodeKernelTest = kernelpkg.TestNodeWithMihomo
 
@@ -32,6 +36,11 @@ type ProxyNodeDeleteInput struct {
 	NodeIDs []int `json:"node_ids"`
 }
 
+type ProxyNodeTagsInput struct {
+	NodeIDs []int  `json:"node_ids"`
+	Tags    string `json:"tags"`
+}
+
 type NodeTestExecution struct {
 	NodeID       int        `json:"node_id"`
 	NodeName     string     `json:"node_name"`
@@ -40,6 +49,7 @@ type NodeTestExecution struct {
 	ErrorMessage string     `json:"error_message,omitempty"`
 	TestURL      string     `json:"test_url,omitempty"`
 	DialAddress  string     `json:"dial_address"`
+	Cached       bool       `json:"cached"`
 	StartedAt    time.Time  `json:"started_at"`
 	FinishedAt   time.Time  `json:"finished_at"`
 	LastTestedAt *time.Time `json:"last_tested_at,omitempty"`
@@ -102,6 +112,21 @@ func DeleteProxyNodes(ids []int) (int, error) {
 	return deleted, nil
 }
 
+func UpdateProxyNodeTags(ids []int, tags string) (int, error) {
+	if len(ids) == 0 {
+		return 0, fmt.Errorf("请先选择至少一个节点")
+	}
+	normalized := normalizeProxyNodeTags(tags)
+	result := model.DB.Model(&model.ProxyNode{}).Where("id IN ?", ids).Update("tags", normalized)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return 0, fmt.Errorf("未找到可更新的节点")
+	}
+	return int(result.RowsAffected), nil
+}
+
 func ExecuteNodeTests(ctx context.Context, input NodeTestInput) ([]NodeTestExecution, error) {
 	if len(input.NodeIDs) == 0 {
 		return nil, fmt.Errorf("请先选择要测试的节点")
@@ -120,21 +145,50 @@ func ExecuteNodeTests(ctx context.Context, input NodeTestInput) ([]NodeTestExecu
 		return nil, fmt.Errorf("未找到可测试的节点")
 	}
 
+	type indexedExecution struct {
+		index int
+		item  NodeTestExecution
+	}
+	jobs := make(chan int)
+	resultsCh := make(chan indexedExecution, len(nodes))
+	workerCount := minNodeTestWorkerCount(len(nodes), maxNodeTestParallelism)
+	if workerCount <= 0 {
+		workerCount = 1
+	}
+	var wg sync.WaitGroup
+	for worker := 0; worker < workerCount; worker++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for index := range jobs {
+				node := nodes[index]
+				execution := buildNodeTestExecution(ctx, node, timeout, testURL)
+				resultsCh <- indexedExecution{index: index, item: execution}
+			}
+		}()
+	}
+	for index := range nodes {
+		jobs <- index
+	}
+	close(jobs)
+	wg.Wait()
+	close(resultsCh)
+
 	results := make([]NodeTestExecution, 0, len(nodes))
-	for _, node := range nodes {
-		execution := executeMetadataNodeTest(ctx, metadataNodeTestInput{
-			NodeID:       node.ID,
-			Name:         node.Name,
-			Server:       node.Server,
-			Port:         node.Port,
-			MetadataJSON: node.MetadataJSON,
-			Timeout:      timeout,
-			TestURL:      testURL,
-		})
-		if err := persistNodeTestExecution(node.ID, execution); err != nil {
-			return nil, err
+	ordered := make([]indexedExecution, 0, len(nodes))
+	for item := range resultsCh {
+		ordered = append(ordered, item)
+	}
+	sort.Slice(ordered, func(left int, right int) bool {
+		return ordered[left].index < ordered[right].index
+	})
+	for _, item := range ordered {
+		if !item.item.Cached {
+			if err := persistNodeTestExecution(item.item.NodeID, item.item); err != nil {
+				return nil, err
+			}
 		}
-		results = append(results, execution)
+		results = append(results, item.item)
 	}
 
 	return results, nil
@@ -186,6 +240,45 @@ func executeMetadataNodeTest(ctx context.Context, input metadataNodeTestInput) N
 	return execution
 }
 
+func buildNodeTestExecution(ctx context.Context, node *model.ProxyNode, timeout time.Duration, testURL string) NodeTestExecution {
+	if cached := buildCachedNodeTestExecution(node, testURL); cached != nil {
+		return *cached
+	}
+	return executeMetadataNodeTest(ctx, metadataNodeTestInput{
+		NodeID:       node.ID,
+		Name:         node.Name,
+		Server:       node.Server,
+		Port:         node.Port,
+		MetadataJSON: node.MetadataJSON,
+		Timeout:      timeout,
+		TestURL:      testURL,
+	})
+}
+
+func buildCachedNodeTestExecution(node *model.ProxyNode, testURL string) *NodeTestExecution {
+	if node.LastTestedAt == nil {
+		return nil
+	}
+	if time.Since(*node.LastTestedAt) > nodeTestCacheTTL {
+		return nil
+	}
+	startedAt := *node.LastTestedAt
+	finishedAt := *node.LastTestedAt
+	return &NodeTestExecution{
+		NodeID:       node.ID,
+		NodeName:     node.Name,
+		Status:       node.LastTestStatus,
+		LatencyMS:    node.LastLatencyMS,
+		ErrorMessage: node.LastTestError,
+		TestURL:      testURL,
+		DialAddress:  fmt.Sprintf("%s:%d", node.Server, node.Port),
+		Cached:       true,
+		StartedAt:    startedAt,
+		FinishedAt:   finishedAt,
+		LastTestedAt: node.LastTestedAt,
+	}
+}
+
 func normalizeNodeTestTimeout(timeoutMS int) time.Duration {
 	timeout := time.Duration(timeoutMS) * time.Millisecond
 	if timeout <= 0 {
@@ -212,4 +305,34 @@ func persistNodeTestExecution(nodeID int, execution NodeTestExecution) error {
 		"last_tested_at":   execution.LastTestedAt,
 	}
 	return model.DB.Model(&model.ProxyNode{}).Where("id = ?", nodeID).Updates(updates).Error
+}
+
+func normalizeProxyNodeTags(tags string) string {
+	if strings.TrimSpace(tags) == "" {
+		return ""
+	}
+	parts := strings.FieldsFunc(tags, func(r rune) bool {
+		return r == ',' || r == '，' || r == ';' || r == '；' || r == '\n'
+	})
+	seen := make(map[string]struct{}, len(parts))
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		tag := strings.TrimSpace(part)
+		if tag == "" {
+			continue
+		}
+		if _, ok := seen[tag]; ok {
+			continue
+		}
+		seen[tag] = struct{}{}
+		result = append(result, tag)
+	}
+	return strings.Join(result, ", ")
+}
+
+func minNodeTestWorkerCount(left int, right int) int {
+	if left < right {
+		return left
+	}
+	return right
 }

@@ -42,6 +42,13 @@ export function deleteProxyNodes(nodeIds: number[]) {
   });
 }
 
+export function updateProxyNodeTags(nodeIds: number[], tags: string) {
+  return apiRequest<{ updated: number }>('/proxy-nodes/tags', {
+    method: 'POST',
+    body: JSON.stringify({ node_ids: nodeIds, tags }),
+  });
+}
+
 export function testProxyNodes(input: {
   nodeIds: number[];
   timeoutMs: number;

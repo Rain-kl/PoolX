@@ -9,6 +9,7 @@ import { InlineMessage } from '@/components/feedback/inline-message';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { PageHeader } from '@/components/layout/page-header';
 import { AppCard } from '@/components/ui/app-card';
+import { getKernelCapability } from '@/features/capability/api/capability';
 import {
   getRuntimeLogs,
   getRuntimeStatus,
@@ -54,11 +55,16 @@ export function RuntimePage() {
   const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [logs, setLogs] = useState<RuntimeLogItem[]>([]);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
+  const capabilityQuery = useQuery({
+    queryKey: ['capability'],
+    queryFn: getKernelCapability,
+  });
   const statusQuery = useQuery({
     queryKey: runtimeStatusQueryKey,
     queryFn: getRuntimeStatus,
-    refetchInterval: 5000,
+    refetchInterval: autoRefresh ? 5000 : false,
   });
 
   const logsQuery = useQuery({
@@ -75,6 +81,9 @@ export function RuntimePage() {
   const lastSeq = logs.length > 0 ? logs[logs.length - 1].seq : 0;
 
   useEffect(() => {
+    if (!autoRefresh) {
+      return;
+    }
     const timer = window.setInterval(async () => {
       try {
         const response = await getRuntimeLogs(lastSeq, 100);
@@ -86,7 +95,7 @@ export function RuntimePage() {
       }
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [lastSeq]);
+  }, [autoRefresh, lastSeq]);
 
   const startMutation = useMutation({
     mutationFn: startRuntime,
@@ -124,6 +133,7 @@ export function RuntimePage() {
   });
 
   const status = statusQuery.data;
+  const capability = capabilityQuery.data;
   const listenerSummary = useMemo(() => status?.listeners ?? [], [status?.listeners]);
 
   if (statusQuery.isLoading) {
@@ -152,7 +162,7 @@ export function RuntimePage() {
                 setFeedback(null);
                 startMutation.mutate();
               }}
-              disabled={startMutation.isPending || status.running}
+              disabled={startMutation.isPending || status.running || !capability?.supports_start}
             >
               {startMutation.isPending ? '启动中...' : '启动'}
             </PrimaryButton>
@@ -162,7 +172,7 @@ export function RuntimePage() {
                 setFeedback(null);
                 reloadMutation.mutate();
               }}
-              disabled={reloadMutation.isPending || !status.running}
+              disabled={reloadMutation.isPending || !status.running || !capability?.supports_reload}
             >
               {reloadMutation.isPending ? '重载中...' : '热重载'}
             </SecondaryButton>
@@ -176,11 +186,15 @@ export function RuntimePage() {
             >
               {stopMutation.isPending ? '停止中...' : '停止'}
             </DangerButton>
+            <SecondaryButton type="button" onClick={() => setAutoRefresh((value) => !value)}>
+              {autoRefresh ? '暂停自动刷新' : '开启自动刷新'}
+            </SecondaryButton>
           </div>
         }
       />
 
       {feedback ? <InlineMessage tone={feedback.tone} message={feedback.message} /> : null}
+      {capability ? <InlineMessage tone={capability.binary_exists ? 'info' : 'danger'} message={capability.message} /> : null}
 
       <div className="grid gap-4 lg:grid-cols-4">
         <AppCard title="进程状态" description="当前 Mihomo 进程是否正在运行。">

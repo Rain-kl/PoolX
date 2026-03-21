@@ -3,6 +3,7 @@ import { apiRequest } from '@/lib/api/client';
 import type {
   PortProfilePayload,
   PortProfilePreview,
+  PortProfileTemplateItem,
   PortProfileWithNodes,
   ProxyNodeOption,
   RuntimeConfigItem,
@@ -64,3 +65,19 @@ export function getProxyNodeOptions(keyword = '') {
   );
 }
 
+export function getPortProfileTemplates() {
+  return apiRequest<PortProfileTemplateItem[]>('/port-profile-templates');
+}
+
+export function savePortProfileTemplate(name: string, payload: PortProfilePayload) {
+  return apiRequest<PortProfileTemplateItem>('/port-profile-templates', {
+    method: 'POST',
+    body: JSON.stringify({ name, payload }),
+  });
+}
+
+export function deletePortProfileTemplate(id: number) {
+  return apiRequest<void>(`/port-profile-templates/${id}/delete`, {
+    method: 'POST',
+  });
+}

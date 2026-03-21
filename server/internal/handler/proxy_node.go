@@ -142,3 +142,24 @@ func TestProxyNodes(c *gin.Context) {
 
 	respondSuccess(c, results)
 }
+
+// UpdateProxyNodeTags godoc
+// @Summary Batch update selected proxy node tags
+// @Tags ProxyNode
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /api/proxy-nodes/tags [post]
+func UpdateProxyNodeTags(c *gin.Context) {
+	var request service.ProxyNodeTagsInput
+	if err := decodeJSONBody(c.Request.Body, &request); err != nil {
+		respondBadRequest(c, "无效的参数")
+		return
+	}
+	updated, err := service.UpdateProxyNodeTags(request.NodeIDs, request.Tags)
+	if err != nil {
+		respondFailure(c, err.Error())
+		return
+	}
+	respondSuccess(c, gin.H{"updated": updated})
+}

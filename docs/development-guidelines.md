@@ -156,6 +156,7 @@ server/
 * `source_configs`
 * `proxy_nodes`
 * `port_profiles`
+* `port_profile_templates`
 * `port_profile_nodes`
 * `runtime_configs`
 * `kernel_instances`

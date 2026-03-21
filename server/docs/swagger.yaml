@@ -13,6 +13,19 @@ info:
   title: PoolX Server API
   version: "3.0"
 paths:
+  /api/capabilities:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get current kernel capability negotiation result
+      tags:
+      - Capability
   /api/kernel/mihomo/download:
     post:
       consumes:
@@ -99,6 +112,46 @@ paths:
       summary: Update option
       tags:
       - Options
+  /api/port-profile-templates:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List saved workspace templates
+      tags:
+      - Workspace
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Save current workspace payload as template
+      tags:
+      - Workspace
+  /api/port-profile-templates/{id}/delete:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a workspace template
+      tags:
+      - Workspace
   /api/port-profiles:
     get:
       produces:
@@ -276,6 +329,21 @@ paths:
       summary: List proxy node options for selector
       tags:
       - Workspace
+  /api/proxy-nodes/tags:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Batch update selected proxy node tags
+      tags:
+      - ProxyNode
   /api/proxy-nodes/test:
     post:
       consumes:

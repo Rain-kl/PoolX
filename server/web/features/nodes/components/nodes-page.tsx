@@ -9,11 +9,13 @@ import { InlineMessage } from '@/components/feedback/inline-message';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { PageHeader } from '@/components/layout/page-header';
 import { AppCard } from '@/components/ui/app-card';
+import { getKernelCapability } from '@/features/capability/api/capability';
 import {
   deleteProxyNode,
   deleteProxyNodes,
   getProxyNodes,
   testProxyNodes,
+  updateProxyNodeTags,
 } from '@/features/nodes/api/nodes';
 import type { ProxyNodeItem } from '@/features/nodes/types';
 import {
@@ -60,6 +62,13 @@ export function NodesPage() {
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [testUrl, setTestUrl] = useState('https://cp.cloudflare.com/generate_204');
   const [timeoutMs, setTimeoutMs] = useState('8000');
+  const [tagsInput, setTagsInput] = useState('');
+  const [autoRefresh, setAutoRefresh] = useState(false);
+
+  const capabilityQuery = useQuery({
+    queryKey: ['capability'],
+    queryFn: getKernelCapability,
+  });
 
   const nodesQuery = useQuery({
     queryKey: [...proxyNodesQueryKey, page, keyword, enabledFilter],
@@ -69,6 +78,7 @@ export function NodesPage() {
         keyword,
         enabled: enabledFilter,
       }),
+    refetchInterval: autoRefresh ? 10000 : false,
   });
 
   const deleteMutation = useMutation({
@@ -120,6 +130,20 @@ export function NodesPage() {
     },
   });
 
+  const tagsMutation = useMutation({
+    mutationFn: async (nodeIds: number[]) => updateProxyNodeTags(nodeIds, tagsInput),
+    onSuccess: async (result) => {
+      setFeedback({
+        tone: 'success',
+        message: `已更新 ${result.updated} 个节点标签。`,
+      });
+      await queryClient.invalidateQueries({ queryKey: proxyNodesQueryKey });
+    },
+    onError: (error) => {
+      setFeedback({ tone: 'danger', message: getErrorMessage(error) });
+    },
+  });
+
   const nodes = useMemo(() => nodesQuery.data ?? [], [nodesQuery.data]);
 
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
@@ -154,14 +178,23 @@ export function NodesPage() {
         title="节点池"
         description="查看已导入节点、按条件筛选、删除节点，并通过内核发起真实代理请求测试。"
         action={
-          <div className="text-sm text-[var(--foreground-secondary)]">
-            当前已选择 {selectedIds.length} 个节点
+          <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--foreground-secondary)]">
+            <span>当前已选择 {selectedIds.length} 个节点</span>
+            <SecondaryButton type="button" onClick={() => setAutoRefresh((value) => !value)}>
+              {autoRefresh ? '暂停刷新' : '自动刷新'}
+            </SecondaryButton>
           </div>
         }
       />
 
       {feedback ? (
         <InlineMessage tone={feedback.tone} message={feedback.message} />
+      ) : null}
+      {capabilityQuery.data ? (
+        <InlineMessage
+          tone={capabilityQuery.data.binary_exists ? 'info' : 'danger'}
+          message={capabilityQuery.data.message}
+        />
       ) : null}
 
       <AppCard title="筛选条件" description="支持按节点名称、地址和启用状态筛选。">
@@ -198,7 +231,7 @@ export function NodesPage() {
 
       <AppCard
         title="测试参数"
-        description="服务端会临时拉起 Mihomo 进程，通过本地 mixed-port 代理请求测试 URL，返回真实链路结果。"
+        description="服务端会临时拉起 Mihomo 进程，通过本地 mixed-port 代理请求测试 URL，返回真实链路结果；短时间内重复测试会优先返回缓存。"
       >
         <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,180px)]">
           <ResourceField label="测试 URL">
@@ -216,6 +249,33 @@ export function NodesPage() {
               placeholder="8000"
             />
           </ResourceField>
+        </div>
+      </AppCard>
+
+      <AppCard
+        title="节点标签"
+        description="支持为当前选择的节点批量打标签，使用逗号分隔。"
+      >
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <ResourceInput
+            value={tagsInput}
+            onChange={(event) => setTagsInput(event.target.value)}
+            placeholder="例如：hk, premium, low-latency"
+          />
+          <PrimaryButton
+            type="button"
+            onClick={() => {
+              if (selectedIds.length === 0) {
+                setFeedback({ tone: 'danger', message: '请先选择至少一个节点。' })
+                return
+              }
+              setFeedback(null)
+              tagsMutation.mutate(selectedIds)
+            }}
+            disabled={tagsMutation.isPending}
+          >
+            {tagsMutation.isPending ? '保存中...' : '保存标签'}
+          </PrimaryButton>
         </div>
       </AppCard>
 
@@ -314,6 +374,7 @@ export function NodesPage() {
                           </p>
                           <div className="text-xs text-[var(--foreground-secondary)]">
                             <p>来源：{node.source_config_name}</p>
+                            <p>标签：{node.tags || '未设置'}</p>
                             <p>{getStatusLabel(node)}</p>
                             <p>
                               最近耗时：

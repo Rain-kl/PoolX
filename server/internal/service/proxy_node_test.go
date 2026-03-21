@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 
 	"poolx/internal/model"
 	"poolx/internal/pkg/common"
@@ -123,6 +124,69 @@ func TestExecuteNodeTestsPersistsFailureResult(t *testing.T) {
 	}
 	if refreshed.LastTestError == "" {
 		t.Fatal("expected node test error to be updated")
+	}
+}
+
+func TestExecuteNodeTestsUsesRecentCache(t *testing.T) {
+	setupServiceTestDB(t)
+
+	originalRunner := runNodeKernelTest
+	called := false
+	runNodeKernelTest = func(ctx context.Context, input kernelpkg.MihomoNodeTestInput) (*kernelpkg.MihomoNodeTestResult, error) {
+		called = true
+		return &kernelpkg.MihomoNodeTestResult{LatencyMS: 999}, nil
+	}
+	t.Cleanup(func() {
+		runNodeKernelTest = originalRunner
+	})
+
+	originalBinaryPath := common.MihomoBinaryPath
+	common.MihomoBinaryPath = "/tmp/fake-mihomo"
+	t.Cleanup(func() {
+		common.MihomoBinaryPath = originalBinaryPath
+	})
+
+	now := time.Now()
+	latency := 123
+	node := &model.ProxyNode{
+		SourceConfigID:   1,
+		SourceConfigName: "seed.yaml",
+		Name:             "cached-node",
+		Type:             "ss",
+		Server:           "127.0.0.1",
+		Port:             1,
+		Fingerprint:      "fingerprint-cached-node",
+		MetadataJSON:     `{"name":"cached-node"}`,
+		Enabled:          true,
+		LastTestStatus:   model.NodeTestStatusSuccess,
+		LastLatencyMS:    &latency,
+		LastTestedAt:     &now,
+	}
+	if err := model.DB.Create(node).Error; err != nil {
+		t.Fatalf("seed proxy node: %v", err)
+	}
+
+	results, err := ExecuteNodeTests(context.Background(), NodeTestInput{
+		NodeIDs: []int{node.ID},
+	})
+	if err != nil {
+		t.Fatalf("ExecuteNodeTests returned error: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected one test result, got %d", len(results))
+	}
+	if !results[0].Cached {
+		t.Fatalf("expected cached result, got %+v", results[0])
+	}
+	if called {
+		t.Fatal("expected cached node test to skip kernel runner")
+	}
+}
+
+func TestNormalizeProxyNodeTags(t *testing.T) {
+	result := normalizeProxyNodeTags(" hk, premium, hk，low-latency ; premium ")
+	if result != "hk, premium, low-latency" {
+		t.Fatalf("unexpected normalized tags: %s", result)
 	}
 }
 

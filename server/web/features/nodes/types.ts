@@ -6,6 +6,7 @@ export interface ProxyNodeItem {
   type: string;
   server: string;
   port: number;
+  tags: string;
   metadata_json: string;
   enabled: boolean;
   last_test_status: string;
@@ -24,6 +25,7 @@ export interface NodeTestExecution {
   error_message?: string;
   test_url?: string;
   dial_address: string;
+  cached: boolean;
   started_at: string;
   finished_at: string;
   last_tested_at?: string;

@@ -9,13 +9,17 @@ import { InlineMessage } from '@/components/feedback/inline-message';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { PageHeader } from '@/components/layout/page-header';
 import { AppCard } from '@/components/ui/app-card';
+import { getKernelCapability } from '@/features/capability/api/capability';
 import {
   createPortProfile,
+  deletePortProfileTemplate,
   deletePortProfile,
   getPortProfile,
   getPortProfiles,
+  getPortProfileTemplates,
   getProxyNodeOptions,
   previewPortProfile,
+  savePortProfileTemplate,
   saveRuntimeConfig,
   updatePortProfile,
 } from '@/features/workspace/api/workspace';
@@ -23,6 +27,7 @@ import type {
   PortProfilePayload,
   PortProfilePreview,
   PortProfileStrategy,
+  PortProfileTemplateItem,
 } from '@/features/workspace/types';
 import {
   CodeBlock,
@@ -79,10 +84,19 @@ export function WorkspacePage() {
   const [nodeSearch, setNodeSearch] = useState('');
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [preview, setPreview] = useState<PortProfilePreview | null>(null);
+  const [templateName, setTemplateName] = useState('');
 
+  const capabilityQuery = useQuery({
+    queryKey: ['capability'],
+    queryFn: getKernelCapability,
+  });
   const profilesQuery = useQuery({
     queryKey: workspaceListQueryKey,
     queryFn: getPortProfiles,
+  });
+  const templatesQuery = useQuery({
+    queryKey: ['workspace', 'templates'],
+    queryFn: getPortProfileTemplates,
   });
 
   const detailQuery = useQuery({
@@ -202,9 +216,34 @@ export function WorkspacePage() {
     },
   })
 
+  const saveTemplateMutation = useMutation({
+    mutationFn: async () => savePortProfileTemplate(templateName, toPayload(payload)),
+    onSuccess: async () => {
+      setFeedback({ tone: 'success', message: '工作台模板已保存。' })
+      setTemplateName('')
+      await queryClient.invalidateQueries({ queryKey: ['workspace', 'templates'] })
+    },
+    onError: (error) => {
+      setFeedback({ tone: 'danger', message: getErrorMessage(error) })
+    },
+  })
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (id: number) => deletePortProfileTemplate(id),
+    onSuccess: async () => {
+      setFeedback({ tone: 'success', message: '工作台模板已删除。' })
+      await queryClient.invalidateQueries({ queryKey: ['workspace', 'templates'] })
+    },
+    onError: (error) => {
+      setFeedback({ tone: 'danger', message: getErrorMessage(error) })
+    },
+  })
+
   const profileList = profilesQuery.data ?? []
+  const templateList = templatesQuery.data ?? []
   const nodeOptions = nodeOptionsQuery.data ?? []
   const selectedNodeSet = useMemo(() => new Set(payload.node_ids), [payload.node_ids])
+  const capability = capabilityQuery.data
 
   const handleCreateNew = () => {
     setIsCreating(true)
@@ -230,6 +269,25 @@ export function WorkspacePage() {
     'load-balance': '按一致性哈希分散请求',
   } satisfies Record<PortProfileStrategy, string>
 
+  const applyTemplate = (item: PortProfileTemplateItem) => {
+    setIsCreating(true)
+    setSelectedProfileId(null)
+    setPreview(null)
+    setPayload({
+      name: item.template.name,
+      listen_host: item.template.listen_host,
+      mixed_port: item.template.mixed_port,
+      socks_port: item.template.socks_port,
+      http_port: item.template.http_port,
+      strategy_type: item.template.strategy_type,
+      strategy_group_name: item.template.strategy_group_name,
+      test_url: item.template.test_url,
+      test_interval_seconds: item.template.test_interval_seconds,
+      enabled: item.template.enabled,
+      node_ids: item.node_ids,
+    })
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -243,51 +301,114 @@ export function WorkspacePage() {
       />
 
       {feedback ? <InlineMessage tone={feedback.tone} message={feedback.message} /> : null}
+      {capability ? <InlineMessage tone='info' message={capability.message} /> : null}
 
       <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <AppCard
-          title="端口配置"
-          description="左侧维护当前工作台的端口配置集合。"
-        >
-          <div className="space-y-3">
-            {profilesQuery.isLoading ? <LoadingState /> : null}
-            {profilesQuery.isError ? (
-              <ErrorState
-                title="加载端口配置失败"
-                description={getErrorMessage(profilesQuery.error)}
-              />
-            ) : null}
-            {!profilesQuery.isLoading && !profilesQuery.isError && profileList.length === 0 ? (
-              <EmptyState title="暂无端口配置" description="点击右上角“新建端口配置”开始。" />
-            ) : null}
-            {profileList.map((item) => (
-              <button
-                key={item.profile.id}
-                type="button"
-                onClick={() => {
-                  setIsCreating(false)
-                  setSelectedProfileId(item.profile.id)
-                  setFeedback(null)
-                }}
-                className={`w-full rounded-2xl border p-4 text-left transition ${
-                  selectedProfileId === item.profile.id
-                    ? 'border-[var(--border-strong)] bg-[var(--accent-soft)]'
-                    : 'border-[var(--border-default)] bg-[var(--surface-muted)] hover:bg-[var(--surface-base)]'
-                }`}
-              >
-                <p className="text-sm font-semibold text-[var(--foreground-primary)]">
-                  {item.profile.name}
-                </p>
-                <div className="mt-2 text-xs leading-6 text-[var(--foreground-secondary)]">
-                  <p>Mixed：{item.profile.mixed_port}</p>
-                  <p>策略：{item.profile.strategy_type}</p>
-                  <p>节点数：{item.node_ids.length}</p>
-                  <p>更新：{formatDateTime(item.profile.updated_at)}</p>
+        <div className="space-y-6">
+          <AppCard
+            title="端口配置"
+            description="左侧维护当前工作台的端口配置集合。"
+          >
+            <div className="space-y-3">
+              {profilesQuery.isLoading ? <LoadingState /> : null}
+              {profilesQuery.isError ? (
+                <ErrorState
+                  title="加载端口配置失败"
+                  description={getErrorMessage(profilesQuery.error)}
+                />
+              ) : null}
+              {!profilesQuery.isLoading && !profilesQuery.isError && profileList.length === 0 ? (
+                <EmptyState title="暂无端口配置" description="点击右上角“新建端口配置”开始。" />
+              ) : null}
+              {profileList.map((item) => (
+                <button
+                  key={item.profile.id}
+                  type="button"
+                  onClick={() => {
+                    setIsCreating(false)
+                    setSelectedProfileId(item.profile.id)
+                    setFeedback(null)
+                  }}
+                  className={`w-full rounded-2xl border p-4 text-left transition ${
+                    selectedProfileId === item.profile.id
+                      ? 'border-[var(--border-strong)] bg-[var(--accent-soft)]'
+                      : 'border-[var(--border-default)] bg-[var(--surface-muted)] hover:bg-[var(--surface-base)]'
+                  }`}
+                >
+                  <p className="text-sm font-semibold text-[var(--foreground-primary)]">
+                    {item.profile.name}
+                  </p>
+                  <div className="mt-2 text-xs leading-6 text-[var(--foreground-secondary)]">
+                    <p>Mixed：{item.profile.mixed_port}</p>
+                    <p>策略：{item.profile.strategy_type}</p>
+                    <p>节点数：{item.node_ids.length}</p>
+                    <p>更新：{formatDateTime(item.profile.updated_at)}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </AppCard>
+
+          <AppCard
+            title="模板"
+            description="保存常用工作台配置，后续可直接套用。"
+          >
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <ResourceInput
+                  value={templateName}
+                  onChange={(event) => setTemplateName(event.target.value)}
+                  placeholder="模板名称，留空时使用当前配置名称"
+                />
+                <PrimaryButton
+                  type="button"
+                  onClick={() => {
+                    setFeedback(null)
+                    saveTemplateMutation.mutate()
+                  }}
+                  disabled={saveTemplateMutation.isPending || !capability?.supports_templates}
+                >
+                  {saveTemplateMutation.isPending ? '保存中...' : '保存模板'}
+                </PrimaryButton>
+              </div>
+              {templateList.length === 0 ? (
+                <EmptyState title="暂无模板" description="保存一个常用工作台配置作为模板。" />
+              ) : (
+                <div className="space-y-3">
+                  {templateList.map((item) => (
+                    <div
+                      key={item.template.id}
+                      className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-[var(--foreground-primary)]">
+                            {item.template.name}
+                          </p>
+                          <p className="text-xs text-[var(--foreground-secondary)]">
+                            {item.template.strategy_type} · 节点 {item.node_ids.length} 个
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <SecondaryButton type="button" onClick={() => applyTemplate(item)}>
+                            套用
+                          </SecondaryButton>
+                          <DangerButton
+                            type="button"
+                            onClick={() => deleteTemplateMutation.mutate(item.template.id)}
+                            disabled={deleteTemplateMutation.isPending}
+                          >
+                            删除
+                          </DangerButton>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </button>
-            ))}
-          </div>
-        </AppCard>
+              )}
+            </div>
+          </AppCard>
+        </div>
 
         <div className="space-y-6">
           <AppCard
@@ -411,10 +532,9 @@ export function WorkspacePage() {
                     }))
                   }
                 >
-                  <option value="select">select</option>
-                  <option value="url-test">url-test</option>
-                  <option value="fallback">fallback</option>
-                  <option value="load-balance">load-balance</option>
+                  {(capability?.supported_strategies ?? ['select', 'url-test', 'fallback', 'load-balance']).map((strategy) => (
+                    <option key={strategy} value={strategy}>{strategy}</option>
+                  ))}
                 </ResourceSelect>
               </ResourceField>
               <ResourceField label="策略组名称" hint={strategyDescription[payload.strategy_type]}>
@@ -500,7 +620,7 @@ export function WorkspacePage() {
                           {node.type.toUpperCase()} · {node.server}:{node.port}
                         </p>
                         <p className="text-xs text-[var(--foreground-secondary)]">
-                          来源：{node.source_config_name} · 最近状态：{node.last_test_status}
+                          来源：{node.source_config_name} · 标签：{node.tags || '未设置'} · 最近状态：{node.last_test_status}
                         </p>
                       </div>
                     </label>

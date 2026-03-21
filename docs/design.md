@@ -29,9 +29,9 @@
 * 应用日志记录与管理端查看
 * 服务端版本检查、手动上传升级包和服务端升级流程
 * 配置源上传、解析、节点标准化、双层去重与导入确认
-* 节点池管理、搜索筛选、启用禁用、批量测试、测试结果展示
-* 工作台配置，包括监听入口、节点集合、策略、测试 URL、间隔与片段预览
-* 运行配置渲染、片段快照、片段合并、校验和比较、启动、停止、热重载、运行状态与日志
+* 节点池管理、搜索筛选、节点标签、批量测试、测试结果展示
+* 工作台配置，包括监听入口、节点集合、策略、测试 URL、间隔、模板保存与片段预览
+* 运行配置渲染、片段快照、片段合并、校验和比较、启动、停止、热重载、运行状态、自动刷新与日志
 * 内核能力发现、能力协商与按能力降级的前端体验
 
 当前明确不纳入 MVP：
@@ -146,6 +146,7 @@ server/
 * 配置源 `source_configs`
 * 代理节点 `proxy_nodes`
 * 监听入口 / 端口配置 `port_profiles`
+* 工作台模板 `port_profile_templates`
 * 端口与节点绑定 `port_profile_nodes`
 * 工作台配置片段快照 `runtime_configs`
 * 内核实例 `kernel_instances`
@@ -215,6 +216,7 @@ server/
 * `source_configs`
 * `proxy_nodes`
 * `port_profiles`
+* `port_profile_templates`
 * `port_profile_nodes`
 * `runtime_configs`
 * `kernel_instances`

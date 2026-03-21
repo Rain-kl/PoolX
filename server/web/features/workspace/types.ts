@@ -20,6 +20,7 @@ export interface ProxyNodeOption {
   type: string;
   server: string;
   port: number;
+  tags: string;
   source_config_name: string;
   enabled: boolean;
   last_test_status: string;
@@ -72,3 +73,23 @@ export interface PortProfilePreview {
   content: string;
 }
 
+export interface PortProfileTemplateRecord {
+  id: number;
+  name: string;
+  listen_host: string;
+  mixed_port: number;
+  socks_port: number;
+  http_port: number;
+  strategy_type: PortProfileStrategy;
+  strategy_group_name: string;
+  test_url: string;
+  test_interval_seconds: number;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PortProfileTemplateItem {
+  template: PortProfileTemplateRecord;
+  node_ids: number[];
+}
