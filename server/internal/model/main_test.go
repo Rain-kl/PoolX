@@ -183,33 +183,6 @@ func TestEnsureDatabaseSchemaUpToDateUpgradesLegacyDatabase(t *testing.T) {
 	}
 }
 
-func TestV2MigrationBackfillsEmptyAppLogLevels(t *testing.T) {
-	db := openTestSQLiteDB(t, "app-log-level-backfill.db")
-
-	if err := db.Create(&AppLog{
-		Classification: AppLogClassificationSystem,
-		Level:          "",
-		Message:        "legacy log",
-	}).Error; err != nil {
-		t.Fatalf("seed app log: %v", err)
-	}
-
-	if err := migratepkg.V2(migratepkg.Hooks{
-		ApplySchema:    migrationHooks().ApplySchema,
-		ValidateSchema: migrationHooks().ValidateSchema,
-	}).Migrate(db, "sqlite"); err != nil {
-		t.Fatalf("V2 migration: %v", err)
-	}
-
-	var row AppLog
-	if err := db.First(&row).Error; err != nil {
-		t.Fatalf("query migrated app log: %v", err)
-	}
-	if row.Level != AppLogLevelInfo {
-		t.Fatalf("unexpected app log level: got %q want %q", row.Level, AppLogLevelInfo)
-	}
-}
-
 func TestRunDatabaseSchemaMigrationDoesNotAdvanceVersionWhenValidationFails(t *testing.T) {
 	db := openBareTestSQLiteDB(t, "failed-validation.db")
 	loadVersion, saveVersion := migratepkg.NewSchemaVersionStore((&DatabaseSchemaVersion{}).TableName(), databaseSchemaVersionRowID)
@@ -254,5 +227,38 @@ func TestRunDatabaseSchemaMigrationDoesNotAdvanceVersionWhenValidationFails(t *t
 	}
 	if exists {
 		t.Fatal("expected schema version to remain unset after failed validation")
+	}
+}
+
+func TestEnsureDatabaseSchemaUpToDateNormalizesHigherRecordedVersionToCurrentBaseline(t *testing.T) {
+	db := openBareTestSQLiteDB(t, "normalized-schema-version.db")
+	if err := migratepkg.ComposeAutoMigrator(schemaMetadataModels()...)(db); err != nil {
+		t.Fatalf("auto migrate schema metadata: %v", err)
+	}
+	if err := migratepkg.ComposeAutoMigrator(registeredModels()...)(db); err != nil {
+		t.Fatalf("auto migrate business schema: %v", err)
+	}
+
+	if err := db.Create(&DatabaseSchemaVersion{
+		ID:      databaseSchemaVersionRowID,
+		Version: 10,
+	}).Error; err != nil {
+		t.Fatalf("seed schema version: %v", err)
+	}
+
+	if err := ensureDatabaseSchemaUpToDate(db, "sqlite"); err != nil {
+		t.Fatalf("ensureDatabaseSchemaUpToDate: %v", err)
+	}
+
+	loadVersion, _ := migratepkg.NewSchemaVersionStore((&DatabaseSchemaVersion{}).TableName(), databaseSchemaVersionRowID)
+	version, exists, err := loadVersion(db)
+	if err != nil {
+		t.Fatalf("loadDatabaseSchemaVersion: %v", err)
+	}
+	if !exists {
+		t.Fatal("expected schema version record to exist")
+	}
+	if version != currentDatabaseSchemaVersion {
+		t.Fatalf("unexpected normalized schema version: got %d want %d", version, currentDatabaseSchemaVersion)
 	}
 }

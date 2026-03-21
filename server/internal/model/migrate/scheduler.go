@@ -97,7 +97,10 @@ func (s *Scheduler) initializeFresh() error {
 
 func (s *Scheduler) upgrade(version int) error {
 	if version > s.latestVersion {
-		return fmt.Errorf("database schema version %d is newer than application version %d", version, s.latestVersion)
+		if err := s.initializer.Validate(s.db, s.backend); err != nil {
+			return fmt.Errorf("database schema version %d is newer than application version %d and current schema validation failed: %w", version, s.latestVersion, err)
+		}
+		return s.saveVersion(s.db, s.latestVersion)
 	}
 	if version == s.latestVersion {
 		return s.initializer.Validate(s.db, s.backend)

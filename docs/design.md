@@ -191,10 +191,11 @@ server/
 迁移实现约束：
 
 * `server/internal/model/migrate/` 下的公共迁移基础设施应集中维护，不按单个小方法零散拆文件
-* 每个版本文件负责自身版本的升级步骤、执行顺序和校验逻辑
+* 当前正式版 schema 基线重置为 `v1`，不再继续维护 pre-release 历史版本的逐级升级链路
+* 每个版本文件负责当前 release 仍然有效的初始化、校验或版本归一逻辑
 * `server/internal/model/main.go` 只负责迁移接入，不承载具体版本升级实现
 * `server/internal/model/migrate/scheduler.go` 只负责通用调度，不承载业务化迁移步骤
-* 升级过程按版本顺序逐级推进，遵循类似 Android 数据库升级的演进方式
+* 已存在且 schema 合法的数据库可以在启动时把历史版本号归一到当前正式版基线
 
 ### 6.6 安全默认
 
