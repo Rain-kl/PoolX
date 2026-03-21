@@ -93,7 +93,7 @@ func buildListeners(profile model.PortProfile) []map[string]any {
 		listeners = append(listeners, map[string]any{
 			"name":    buildListenerName(profile.Name, kind, port),
 			"type":    kind,
-			"host":    host,
+			"listen":  host,
 			"port":    port,
 			"enabled": profile.Enabled,
 		})

@@ -3,7 +3,7 @@ package model
 import "time"
 
 const (
-	currentDatabaseSchemaVersion = 5
+	currentDatabaseSchemaVersion = 6
 	databaseSchemaVersionRowID   = 1
 )
 

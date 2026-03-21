@@ -112,6 +112,15 @@ func SetApiRouter(router *gin.Engine) {
 			portProfileRoute.POST("/:id/runtime/save", controller.SaveRuntimeConfig)
 			portProfileRoute.POST("/:id/delete", controller.DeletePortProfile)
 		}
+		runtimeRoute := apiRouter.Group("/runtime")
+		runtimeRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
+		{
+			runtimeRoute.GET("/status", controller.GetRuntimeStatus)
+			runtimeRoute.GET("/logs", controller.GetRuntimeLogs)
+			runtimeRoute.POST("/start", controller.StartRuntime)
+			runtimeRoute.POST("/stop", controller.StopRuntime)
+			runtimeRoute.POST("/reload", controller.ReloadRuntime)
+		}
 		logRoute := apiRouter.Group("/log")
 		logRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
 		{

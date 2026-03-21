@@ -22,6 +22,11 @@ export const dashboardNavigation: NavigationItem[] = [
         icon: 'workspace',
     },
     {
+        href: '/runtime',
+        label: '运行状态',
+        icon: 'runtime',
+    },
+    {
         href: '/file',
         label: '文件',
         icon: 'file',

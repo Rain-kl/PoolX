@@ -3,6 +3,7 @@ export type NavigationIconKey =
   | 'import'
   | 'node'
   | 'workspace'
+  | 'runtime'
   | 'log'
   | 'file'
   | 'user'

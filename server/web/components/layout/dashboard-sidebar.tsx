@@ -60,6 +60,15 @@ function SidebarIcon({ icon }: { icon: NavigationIconKey }) {
           <path d="M6.5 13.5h.01" />
         </svg>
       );
+    case 'runtime':
+      return (
+        <svg {...commonProps}>
+          <path d="M5 6.5h14v11H5z" />
+          <path d="M8.5 10.5 11 13l4.5-4.5" />
+          <path d="M9 3.5v3" />
+          <path d="M15 3.5v3" />
+        </svg>
+      );
     case 'file':
       return (
         <svg {...commonProps}>

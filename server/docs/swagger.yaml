@@ -291,6 +291,71 @@ paths:
       summary: Test selected proxy nodes and persist the result
       tags:
       - ProxyNode
+  /api/runtime/logs:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get runtime log stream
+      tags:
+      - Runtime
+  /api/runtime/reload:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Reload Mihomo runtime
+      tags:
+      - Runtime
+  /api/runtime/start:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Start Mihomo runtime
+      tags:
+      - Runtime
+  /api/runtime/status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get Mihomo runtime status
+      tags:
+      - Runtime
+  /api/runtime/stop:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Stop Mihomo runtime
+      tags:
+      - Runtime
   /api/source-configs/import:
     post:
       consumes:

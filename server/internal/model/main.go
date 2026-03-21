@@ -35,6 +35,7 @@ func registeredModels() []any {
 		&PortProfile{},
 		&PortProfileNode{},
 		&RuntimeConfig{},
+		&KernelInstance{},
 	}
 }
 
