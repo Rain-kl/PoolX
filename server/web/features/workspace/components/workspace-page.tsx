@@ -388,12 +388,6 @@ export function WorkspacePage() {
                       className="flex items-center gap-2"
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <Label
-                        htmlFor={`profile-runtime-${item.profile.id}`}
-                        className="text-xs text-[var(--foreground-secondary)]"
-                      >
-                        加入最终配置
-                      </Label>
                       <Switch
                         id={`profile-runtime-${item.profile.id}`}
                         checked={item.profile.include_in_runtime}
@@ -638,28 +632,6 @@ export function WorkspacePage() {
                   inputMode="numeric"
                 />
               </ResourceField>
-              <div className="xl:col-span-2">
-                <div className="flex items-center justify-between rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="include-in-runtime" className="text-sm font-medium text-[var(--foreground-primary)]">
-                      加入最终配置
-                    </Label>
-                    <p className="text-xs text-[var(--foreground-secondary)]">
-                      关闭后会保留当前端口配置与片段预览，但运行阶段不会把它聚合进最终 Mihomo 配置。
-                    </p>
-                  </div>
-                  <Switch
-                    id="include-in-runtime"
-                    checked={payload.include_in_runtime}
-                    onCheckedChange={(checked) =>
-                      setPayload((current) => ({
-                        ...current,
-                        include_in_runtime: checked,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
             </div>
           </AppCard>
 
