@@ -1,8 +1,8 @@
 package router
 
 import (
-	"ginnexttemplate/internal/middleware"
 	"io/fs"
+	"poolx/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"

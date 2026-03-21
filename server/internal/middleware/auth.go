@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"ginnexttemplate/internal/model"
-	"ginnexttemplate/internal/pkg/common"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"poolx/internal/model"
+	"poolx/internal/pkg/common"
 )
 
 func authHelper(c *gin.Context, minRole int) {

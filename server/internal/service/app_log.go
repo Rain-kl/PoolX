@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"ginnexttemplate/internal/model"
+	"poolx/internal/model"
 	"strings"
 )
 

@@ -23,7 +23,7 @@ WORKDIR /build
 COPY . .
 COPY --from=builder /build/build ./web/build
 RUN go mod download
-RUN go build -trimpath -ldflags "-s -w -X 'ginnexttemplate/internal/pkg/common.Version=$VERSION'" -o ginnexttemplate-server ./cmd/server
+RUN go build -trimpath -ldflags "-s -w -X 'poolx/internal/pkg/common.Version=$VERSION'" -o poolx-server ./cmd/server
 
 FROM alpine
 
@@ -32,7 +32,7 @@ RUN apk update \
     && apk add --no-cache ca-certificates tzdata \
     && update-ca-certificates 2>/dev/null || true
 ENV PORT=3000
-COPY --from=builder2 /build/ginnexttemplate-server /
+COPY --from=builder2 /build/poolx-server /
 EXPOSE 3000
 WORKDIR /data
-ENTRYPOINT ["/ginnexttemplate-server"]
+ENTRYPOINT ["/poolx-server"]

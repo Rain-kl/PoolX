@@ -44,20 +44,20 @@ export function AboutPage() {
   const status = statusQuery.data;
 
   if (!status) {
-    return <EmptyState title='暂无系统信息' description='未能获取模板工程的公开状态信息。' />;
+    return <EmptyState title='暂无系统信息' description='未能获取当前系统的公开状态信息。' />;
   }
 
   return (
     <div className='space-y-6'>
       <AppCard
-        title='关于 GinNextTemplate'
-        description='公开展示当前模板工程的简介、版本信息与项目入口。'
+        title='关于 PoolX'
+        description='公开展示当前系统的简介、版本信息与项目入口。'
         action={<StatusBadge label={status.version || 'dev'} variant='info' />}
       >
         <div className='grid gap-4 md:grid-cols-3'>
           <div className='rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-4'>
             <p className='text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]'>系统名称</p>
-            <p className='mt-2 text-sm font-medium text-[var(--foreground-primary)]'>{status.system_name || 'GinNextTemplate'}</p>
+            <p className='mt-2 text-sm font-medium text-[var(--foreground-primary)]'>{status.system_name || 'PoolX'}</p>
           </div>
           <div className='rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-4'>
             <p className='text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]'>Server 启动时间</p>
@@ -68,7 +68,7 @@ export function AboutPage() {
           <div className='rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-4 py-4'>
             <p className='text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]'>项目仓库</p>
             <a
-              href='https://github.com/Rain-kl/GinNextTemplate'
+              href='https://github.com/Rain-kl/PoolX'
               target='_blank'
               rel='noreferrer'
               className='mt-2 block text-sm font-medium text-[var(--brand-primary)] transition hover:opacity-80'

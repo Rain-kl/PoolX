@@ -1,6 +1,6 @@
-# GinNextTemplate Web
+# PoolX Web
 
-GinNextTemplate 管理端前端采用 Next.js App Router + TypeScript + Tailwind CSS 工程。
+PoolX 管理端前端采用 Next.js App Router + TypeScript + Tailwind CSS 工程。
 
 ## 常用命令
 

@@ -4,8 +4,8 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	"ginnexttemplate/internal/pkg/common"
 	"net/smtp"
+	"poolx/internal/pkg/common"
 	"strings"
 )
 

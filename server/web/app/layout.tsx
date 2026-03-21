@@ -9,11 +9,11 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'GinNextTemplate 控制台',
-    template: '%s | GinNextTemplate',
+    default: 'PoolX 控制台',
+    template: '%s | PoolX',
   },
-  description: 'GinNextTemplate 管理端模板工程',
-  applicationName: 'GinNextTemplate',
+  description: 'PoolX 代理池控制台',
+  applicationName: 'PoolX',
 };
 
 interface RootLayoutProps {

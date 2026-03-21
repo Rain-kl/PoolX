@@ -2,12 +2,12 @@ package middleware
 
 import (
 	"encoding/json"
-	"ginnexttemplate/internal/pkg/common"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"poolx/internal/pkg/common"
 )
 
 type turnstileCheckResponse struct {

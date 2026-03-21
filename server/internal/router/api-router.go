@@ -1,8 +1,8 @@
 package router
 
 import (
-	"ginnexttemplate/internal/handler"
-	"ginnexttemplate/internal/middleware"
+	"poolx/internal/handler"
+	"poolx/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )

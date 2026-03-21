@@ -2,7 +2,7 @@ package migrate
 
 import "gorm.io/gorm"
 
-// BuildTemplateScheduler assembles the GinNextTemplate schema migration plan.
+// BuildTemplateScheduler assembles the PoolX schema migration plan.
 // Concrete upgrade logic lives in v0.go, v1.go, v2.go... while Scheduler only
 // performs version traversal, following an Android-style step-by-step upgrade flow.
 func BuildTemplateScheduler(

@@ -1,7 +1,7 @@
 package model
 
 import (
-	"ginnexttemplate/internal/pkg/common"
+	"poolx/internal/pkg/common"
 	"strconv"
 	"strings"
 )

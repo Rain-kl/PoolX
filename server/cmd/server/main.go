@@ -1,9 +1,9 @@
 package main
 
 import (
-	"ginnexttemplate/internal/app"
 	"io/fs"
 	"os"
+	"poolx/internal/app"
 )
 
 func main() {

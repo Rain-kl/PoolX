@@ -156,6 +156,6 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 server.listen(port, hostname, () => {
-  console.log(`GinNextTemplate web dev server listening on http://${hostname}:${port}`);
+  console.log(`PoolX web dev server listening on http://${hostname}:${port}`);
   console.log(`Proxying /api/* and websocket upgrades to ${backendBaseUrl.href}`);
 });

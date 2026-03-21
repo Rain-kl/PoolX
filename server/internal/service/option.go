@@ -2,11 +2,11 @@ package service
 
 import (
 	"fmt"
-	"ginnexttemplate/internal/model"
-	"ginnexttemplate/internal/pkg/common"
-	"ginnexttemplate/internal/pkg/utils"
-	"ginnexttemplate/internal/pkg/utils/geoip"
 	"net"
+	"poolx/internal/model"
+	"poolx/internal/pkg/common"
+	"poolx/internal/pkg/utils"
+	"poolx/internal/pkg/utils/geoip"
 	"regexp"
 	"strconv"
 	"strings"
@@ -108,7 +108,7 @@ func UpdateEditableOption(option model.Option) error {
 		}
 	}
 	if _, removed := removedTemplateOptionKeys[option.Key]; removed {
-		return fmt.Errorf("%s has been removed from GinNextTemplate options", option.Key)
+		return fmt.Errorf("%s has been removed from PoolX options", option.Key)
 	}
 	if err := validateRateLimitOption(option.Key, option.Value); err != nil {
 		return err

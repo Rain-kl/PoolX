@@ -10,7 +10,7 @@ export function PageHeader({title, description, action}: PageHeaderProps) {
     return (
         <div className='flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between'>
             <div className='space-y-3'>
-                <p className='text-sm font-medium uppercase tracking-[0.24em] text-[var(--brand-primary)]'>GinNextTemplate</p>
+                <p className='text-sm font-medium uppercase tracking-[0.24em] text-[var(--brand-primary)]'>PoolX</p>
                 <div className='space-y-2'>
                     <h1 className='text-3xl font-semibold tracking-tight text-[var(--foreground-primary)]'>{title}</h1>
                     {description ? (

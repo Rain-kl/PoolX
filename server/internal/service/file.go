@@ -2,11 +2,11 @@ package service
 
 import (
 	"fmt"
-	"ginnexttemplate/internal/model"
-	"ginnexttemplate/internal/pkg/common"
-	"ginnexttemplate/internal/pkg/utils"
 	"mime/multipart"
 	"path/filepath"
+	"poolx/internal/model"
+	"poolx/internal/pkg/common"
+	"poolx/internal/pkg/utils"
 	"strings"
 	"time"
 )

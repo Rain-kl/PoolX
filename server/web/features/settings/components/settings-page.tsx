@@ -42,10 +42,11 @@ import {
 import { formatDateTime } from '@/lib/utils/date';
 
 const settingsQueryKey = ['settings', 'options'] as const;
+const defaultServerUpdateRepo = 'Rain-kl/PoolX';
 
 const defaultSystemFields = {
   ServerAddress: '',
-  ServerUpdateRepo: 'Rain-kl/GinNextTemplate',
+  ServerUpdateRepo: defaultServerUpdateRepo,
   GeoIPProvider: 'disabled',
   PasswordLoginEnabled: true,
   PasswordRegisterEnabled: true,
@@ -249,7 +250,7 @@ export function SettingsPage() {
 
     setSystemFields({
       ServerAddress: resolvedServerAddress,
-      ServerUpdateRepo: optionMap.ServerUpdateRepo ?? 'Rain-kl/GinNextTemplate',
+      ServerUpdateRepo: optionMap.ServerUpdateRepo ?? defaultServerUpdateRepo,
       GeoIPProvider: optionMap.GeoIPProvider ?? 'disabled',
       PasswordLoginEnabled: toBoolean(optionMap.PasswordLoginEnabled, true),
       PasswordRegisterEnabled: toBoolean(
@@ -893,7 +894,7 @@ export function SettingsPage() {
               <div className="space-y-5">
                 <ResourceField
                   label="上游更新仓库"
-                  hint="用于版本检查与自动升级请求，格式为 owner/repo。"
+                  hint="默认使用 Rain-kl/PoolX，也可按 owner/repo 格式改为你自己的发布仓库。"
                 >
                   <ResourceInput
                     value={systemFields.ServerUpdateRepo}
@@ -903,7 +904,7 @@ export function SettingsPage() {
                         ServerUpdateRepo: event.target.value,
                       }))
                     }
-                    placeholder="Rain-kl/GinNextTemplate"
+                    placeholder={defaultServerUpdateRepo}
                   />
                 </ResourceField>
               </div>

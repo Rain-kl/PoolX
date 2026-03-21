@@ -1,4 +1,4 @@
-export const THEME_STORAGE_KEY = 'ginnexttemplate-theme-mode';
+export const THEME_STORAGE_KEY = 'poolx-theme-mode';
 export const THEME_MEDIA_QUERY = '(prefers-color-scheme: dark)';
 
 export const themeModes = ['light', 'dark', 'system'] as const;

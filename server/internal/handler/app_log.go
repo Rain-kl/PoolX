@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"ginnexttemplate/internal/service"
+	"poolx/internal/service"
 	"strconv"
 
 	"github.com/gin-gonic/gin"

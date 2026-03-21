@@ -7,13 +7,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"ginnexttemplate/internal/pkg/common"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"poolx/internal/pkg/common"
 	"runtime"
 	"strconv"
 	"strings"
@@ -388,7 +388,7 @@ func newGitHubReleaseRequest(ctx context.Context, url string) (*http.Request, er
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "GinNextTemplate-Server")
+	req.Header.Set("User-Agent", "PoolX-Server")
 	return req, nil
 }
 
@@ -484,14 +484,14 @@ func prepareServerUpgrade(ctx context.Context, channel ReleaseChannel) (*prepare
 func configuredServerReleaseRepo() string {
 	repo := strings.TrimSpace(common.ServerUpdateRepo)
 	if repo == "" {
-		return "Rain-kl/GinNextTemplate"
+		return common.DefaultServerUpdateRepo
 	}
 	return repo
 }
 
 func verifyExecutableDirectoryWritable(execPath string) error {
 	dir := filepath.Dir(execPath)
-	tempFile, err := os.CreateTemp(dir, "ginnexttemplate-server-upgrade-check-*")
+	tempFile, err := os.CreateTemp(dir, "poolx-server-upgrade-check-*")
 	if err != nil {
 		return fmt.Errorf("当前服务二进制目录不可写，无法升级: %v", err)
 	}
@@ -516,7 +516,7 @@ func executeServerUpgrade(task *preparedServerUpgrade) error {
 		return err
 	}
 	req.Header.Set("Accept", "application/octet-stream")
-	req.Header.Set("User-Agent", "GinNextTemplate-Server")
+	req.Header.Set("User-Agent", "PoolX-Server")
 
 	resp, err := updateHTTPClient.Do(req)
 	if err != nil {
@@ -549,7 +549,7 @@ func executeServerBinaryCandidateUpgrade(task *manualServerBinaryCandidate, sour
 }
 
 func serverAssetName(goos string, goarch string) string {
-	name := fmt.Sprintf("ginnexttemplate-server-%s-%s", goos, goarch)
+	name := fmt.Sprintf("poolx-server-%s-%s", goos, goarch)
 	if goos == "windows" {
 		return name + ".exe"
 	}
@@ -815,7 +815,7 @@ func persistUploadedServerBinary(tempDir string, fileName string, reader io.Read
 	if tempDir == "" {
 		tempDir = os.TempDir()
 	}
-	tempFile, err := os.CreateTemp(tempDir, "ginnexttemplate-server-manual-upgrade-*"+suffix)
+	tempFile, err := os.CreateTemp(tempDir, "poolx-server-manual-upgrade-*"+suffix)
 	if err != nil {
 		return "", fmt.Errorf("创建临时升级文件失败: %v", err)
 	}

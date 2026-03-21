@@ -2,11 +2,11 @@ package middleware
 
 import (
 	"context"
-	"ginnexttemplate/internal/pkg/common"
-	"ginnexttemplate/internal/pkg/utils/ratelimit"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
+	"poolx/internal/pkg/common"
+	"poolx/internal/pkg/utils/ratelimit"
 	"time"
 )
 

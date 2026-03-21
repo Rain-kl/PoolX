@@ -2,8 +2,8 @@ package main
 
 import (
 	"embed"
-	_ "ginnexttemplate/docs"
-	"ginnexttemplate/internal/app"
+	_ "poolx/docs"
+	"poolx/internal/app"
 )
 
 //go:embed all:web/build
@@ -12,9 +12,9 @@ var buildFS embed.FS
 //go:embed web/build/index.html
 var indexPage []byte
 
-// @title GinNextTemplate Server API
+// @title PoolX Server API
 // @version 3.0
-// @description GinNextTemplate Server API documentation.
+// @description PoolX Server API documentation.
 // @BasePath /
 // @schemes http https
 // @securityDefinitions.apikey BearerAuth

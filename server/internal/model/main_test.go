@@ -1,8 +1,8 @@
 package model
 
 import (
-	migratepkg "ginnexttemplate/internal/model/migrate"
 	"path/filepath"
+	migratepkg "poolx/internal/model/migrate"
 	"testing"
 
 	"github.com/glebarez/sqlite"
@@ -97,7 +97,7 @@ func TestMigrateTableDataCopiesRows(t *testing.T) {
 	}
 	option := Option{
 		Key:   "SystemName",
-		Value: "GinNextTemplate",
+		Value: "PoolX",
 	}
 
 	if err := source.Create(&user).Error; err != nil {

@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"ginnexttemplate/internal/pkg/common"
-	"ginnexttemplate/internal/service"
+	"poolx/internal/pkg/common"
+	"poolx/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,14 +1,14 @@
 package router
 
 import (
-	"ginnexttemplate/internal/handler"
-	"ginnexttemplate/internal/middleware"
-	"ginnexttemplate/internal/pkg/utils/embedfs"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"io/fs"
 	"net/http"
 	pathpkg "path"
+	"poolx/internal/handler"
+	"poolx/internal/middleware"
+	"poolx/internal/pkg/utils/embedfs"
 	"strings"
 )
 

@@ -9,16 +9,19 @@ import (
 
 var StartTime = time.Now().Unix() // unit: second
 var Version = "dev"               // release builds inject the tag version via ldflags
-var SystemName = "GinNextTemplate"
+
+const DefaultServerUpdateRepo = "Rain-kl/PoolX"
+
+var SystemName = "PoolX"
 var ServerAddress = "http://localhost:3000"
-var ServerUpdateRepo = "Rain-kl/GinNextTemplate"
+var ServerUpdateRepo = DefaultServerUpdateRepo
 var Footer = ""
 var HomePageLink = ""
 
 // Any options with "Secret", "Token" in its key won't be return by GetOptions
 
 var SessionSecret = uuid.New().String()
-var SQLitePath = "ginnexttemplate.db"
+var SQLitePath = "poolx.db"
 var SQLDSN = ""
 
 var OptionMap map[string]string

@@ -2,8 +2,8 @@ package model
 
 import (
 	"errors"
-	"ginnexttemplate/internal/pkg/common"
-	"ginnexttemplate/internal/pkg/utils/security"
+	"poolx/internal/pkg/common"
+	"poolx/internal/pkg/utils/security"
 	"strings"
 )
 

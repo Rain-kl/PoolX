@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ginnexttemplate/internal/model"
-	"ginnexttemplate/internal/pkg/common"
-	"ginnexttemplate/internal/pkg/utils/geoip"
+	"poolx/internal/model"
+	"poolx/internal/pkg/common"
+	"poolx/internal/pkg/utils/geoip"
 )
 
 type fakeGeoIPProvider struct {

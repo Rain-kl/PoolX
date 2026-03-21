@@ -6,7 +6,7 @@
 
 # PoolX
 
-基于 Gin + Next.js 的 Proxy Kernel Control Plane，当前以 `GinNextTemplate` 作为工程底座，首期围绕 Mihomo 交付代理池控制端能力。
+基于 Gin + Next.js 的 Proxy Kernel Control Plane，首期围绕 Mihomo 交付代理池控制端能力。
 </div>
 
 ## 项目定位

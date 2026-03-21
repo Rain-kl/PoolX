@@ -2,9 +2,9 @@ package geoip
 
 import (
 	"fmt"
-	"ginnexttemplate/internal/pkg/common"
 	"log/slog"
 	"net"
+	"poolx/internal/pkg/common"
 	"strings"
 	"sync"
 	"time"

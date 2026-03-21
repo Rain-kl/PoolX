@@ -1,8 +1,8 @@
-# GinNextTemplate 配置项说明
+# PoolX 配置项说明
 
-本文档描述 `GinNextTemplate` 当前支持的服务端与前端配置项。
+本文档描述 `PoolX` 当前支持的服务端与前端配置项。
 
-当前配置说明仅面向模板工程保留能力，不再把 Agent、节点、OpenResty、观测分析相关配置视为正式配置基线。
+当前配置说明面向 PoolX 当前保留能力，不再把 Agent、OpenResty、观测分析等历史链路配置视为正式配置基线。
 
 ## 1. Server 配置
 
@@ -43,7 +43,7 @@ go run . --port 3000 --log-dir ./logs
 | `GIN_MODE` | Gin 运行模式 | 非 `debug` 时按 release |
 | `LOG_LEVEL` | 日志等级 | `info` |
 | `SESSION_SECRET` | Session 签名密钥 | 启动时随机生成 |
-| `SQLITE_PATH` | SQLite 数据库文件路径 | `ginnexttemplate.db` |
+| `SQLITE_PATH` | SQLite 数据库文件路径 | `poolx.db` |
 | `DSN` | PostgreSQL DSN，设置后优先于 SQLite | 空 |
 | `SQL_DSN` | 兼容旧命名的 PostgreSQL DSN，优先级低于 `DSN` | 空 |
 | `REDIS_CONN_STRING` | Redis 连接串 | 空 |
@@ -54,6 +54,7 @@ go run . --port 3000 --log-dir ./logs
 * `DSN` 与 `SQL_DSN` 同时存在时，优先使用 `DSN`
 * `SESSION_SECRET` 在生产环境必须显式配置
 * `REDIS_CONN_STRING` 未配置时，相关能力退化为进程内实现
+* 服务端升级默认从 `Rain-kl/PoolX` 查询发布版本，可通过运行时配置 `ServerUpdateRepo` 覆盖
 
 ### 1.3 运行时配置（Option）
 
@@ -65,7 +66,7 @@ go run . --port 3000 --log-dir ./logs
 | `PasswordRegisterEnabled` | 是否启用密码注册 | `true` |
 | `EmailVerificationEnabled` | 是否启用邮箱验证码流程 | `false` |
 | `RegisterEnabled` | 是否允许用户注册 | `true` |
-| `ServerUpdateRepo` | 服务端版本检查与升级使用的 GitHub 仓库，格式为 `owner/repo` | `Rain-kl/GinNextTemplate` |
+| `ServerUpdateRepo` | 服务端版本检查与升级使用的 GitHub 仓库，格式为 `owner/repo` | `Rain-kl/PoolX` |
 | `GeoIPProvider` | IP 归属解析方式 | `disabled` |
 | `GitHubOAuthEnabled` | 是否启用 GitHub OAuth 登录 | `false` |
 | `WeChatAuthEnabled` | 是否启用微信登录 | `false` |
@@ -74,7 +75,7 @@ go run . --port 3000 --log-dir ./logs
 | `SMTPPort` | SMTP 端口 | `587` |
 | `SMTPAccount` | SMTP 账号 | 空 |
 | `SMTPToken` | SMTP 密钥或授权码 | 空 |
-| `SystemName` | 系统名称 | `GinNextTemplate` |
+| `SystemName` | 系统名称 | `PoolX` |
 | `Notice` | 系统公告 | 空 |
 | `About` | 关于页内容 | 空 |
 | `Footer` | 页脚文案 | 默认值 |
@@ -92,6 +93,7 @@ go run . --port 3000 --log-dir ./logs
 说明：
 
 * Token、Secret 一类敏感配置不会通过选项列表直接回显
+* `ServerUpdateRepo` 默认值为 `Rain-kl/PoolX`，用于版本检查与自动升级；如使用自建发布仓库，可改为自己的 `owner/repo`
 * 已移除业务的运行时配置项只允许在兼容清理时兜底处理，不应重新作为正式选项暴露
 * 配置项如有增删，必须同步更新本文档
 

@@ -20,8 +20,8 @@ var (
 var UploadPath = "upload"
 
 func printHelp() {
-	fmt.Println("GinNextTemplate " + Version + " - Reusable Gin template backend.")
-	fmt.Println("Usage: ginnexttemplate [--port <port>] [--log-dir <log directory>] [--version] [--help]")
+	fmt.Println("PoolX " + Version + " - Proxy Kernel Control Plane backend.")
+	fmt.Println("Usage: poolx [--port <port>] [--log-dir <log directory>] [--version] [--help]")
 }
 
 func init() {

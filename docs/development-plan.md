@@ -4,7 +4,7 @@
 
 当前规划基于以下前提：
 
-* 以 `GinNextTemplate` 现有基础设施为底座
+* 以 `PoolX` 现有基础设施为底座
 * MVP 首期只交付单用户、单实例、单运行配置的 Mihomo 闭环
 * 前后端模型采用统一产品概念，不直接绑定 Mihomo 私有结构
 * 工程继续沿用当前 `server/internal/{handler,service,model,...}` 分层

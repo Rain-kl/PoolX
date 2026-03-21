@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"ginnexttemplate/internal/middleware"
+	"poolx/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )

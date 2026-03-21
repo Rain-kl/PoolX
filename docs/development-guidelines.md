@@ -1,6 +1,6 @@
 # Proxy Kernel Control Plane 开发规范
 
-本文档描述当前项目在“基于 `GinNextTemplate` 演进代理池控制端”阶段的开发基线。
+本文档描述当前项目在“基于 `PoolX` 演进代理池控制端”阶段的开发基线。
 
 当前前提是：模板底座仍然保留，但后续开发默认目标是交付 Proxy Kernel Control Plane，而不是继续把项目收敛为纯模板演示工程。
 

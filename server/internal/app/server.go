@@ -2,15 +2,15 @@ package app
 
 import (
 	"fmt"
-	"ginnexttemplate/internal/middleware"
-	"ginnexttemplate/internal/model"
-	"ginnexttemplate/internal/pkg/common"
-	"ginnexttemplate/internal/pkg/utils/geoip"
-	"ginnexttemplate/internal/router"
-	"ginnexttemplate/internal/service"
 	"io/fs"
 	"log/slog"
 	"os"
+	"poolx/internal/middleware"
+	"poolx/internal/model"
+	"poolx/internal/pkg/common"
+	"poolx/internal/pkg/utils/geoip"
+	"poolx/internal/router"
+	"poolx/internal/service"
 	"strconv"
 
 	"github.com/gin-contrib/sessions"
@@ -21,7 +21,7 @@ import (
 
 func RunServer(assetFS fs.FS, buildDir string, indexPage []byte) {
 	common.SetupGinLog()
-	slog.Info("GinNextTemplate started", "version", common.Version)
+	slog.Info("PoolX started", "version", common.Version)
 	if os.Getenv("GIN_MODE") != "debug" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -47,7 +47,7 @@ func RunServer(assetFS fs.FS, buildDir string, indexPage []byte) {
 
 	model.InitOptionMap()
 	geoip.InitGeoIP()
-	if err = service.AppLog.Push(model.AppLogClassificationSystem, model.AppLogLevelInfo, fmt.Sprintf("GinNextTemplate server started | version=%s | db_backend=%s | redis_enabled=%t", common.Version, dbBackend(common.SQLDSN), common.RedisEnabled)); err != nil {
+	if err = service.AppLog.Push(model.AppLogClassificationSystem, model.AppLogLevelInfo, fmt.Sprintf("PoolX server started | version=%s | db_backend=%s | redis_enabled=%t", common.Version, dbBackend(common.SQLDSN), common.RedisEnabled)); err != nil {
 		slog.Warn("write startup app log failed", "error", err)
 	}
 

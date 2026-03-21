@@ -1,7 +1,7 @@
 package service
 
 import (
-	"ginnexttemplate/internal/model"
+	"poolx/internal/model"
 	"testing"
 )
 

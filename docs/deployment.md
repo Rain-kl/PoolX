@@ -1,8 +1,8 @@
-# GinNextTemplate 部署说明
+# PoolX 部署说明
 
-本文档描述 `GinNextTemplate` 当前阶段的部署基线、启动方式和最小验证步骤。
+本文档描述 `PoolX` 当前阶段的部署基线、启动方式和最小验证步骤。
 
-当前模板工程只描述服务端与前端的部署，不包含 Agent、节点联调或 OpenResty 配置分发链路。
+当前文档只描述 PoolX 服务端与前端的部署，不包含 Agent、节点联调或 OpenResty 配置分发链路。
 
 ## 1. 前置条件
 
@@ -33,10 +33,10 @@ pnpm build
 ```bash
 cd server
 export SESSION_SECRET='replace-with-random-string'
-export SQLITE_PATH='./ginnexttemplate.db'
+export SQLITE_PATH='./poolx.db'
 export LOG_LEVEL='info'
 # 可选：使用 PostgreSQL
-# export DSN='postgres://template:secret@127.0.0.1:5432/ginnexttemplate?sslmode=disable'
+# export DSN='postgres://template:secret@127.0.0.1:5432/poolx?sslmode=disable'
 go run ./cmd/server
 ```
 
@@ -59,20 +59,20 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ginnexttemplate
-      POSTGRES_USER: ginnexttemplate
+      POSTGRES_DB: poolx
+      POSTGRES_USER: poolx
       POSTGRES_PASSWORD: replace-with-strong-password
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ginnexttemplate -d ginnexttemplate"]
+      test: ["CMD-SHELL", "pg_isready -U poolx -d poolx"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  ginnexttemplate:
-    image: your-registry/ginnexttemplate:latest
-    container_name: ginnexttemplate
+  poolx:
+    image: your-registry/poolx:latest
+    container_name: poolx
     restart: unless-stopped
     depends_on:
       postgres:
@@ -81,16 +81,16 @@ services:
       - "3000:3000"
     environment:
       SESSION_SECRET: replace-with-random-string
-      SQLITE_PATH: /data/ginnexttemplate.db
-      DSN: postgres://ginnexttemplate:replace-with-strong-password@postgres:5432/ginnexttemplate?sslmode=disable
+      SQLITE_PATH: /data/poolx.db
+      DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
       GIN_MODE: release
       LOG_LEVEL: info
     volumes:
-      - ginnexttemplate-data:/data
+      - poolx-data:/data
 
 volumes:
   postgres-data:
-  ginnexttemplate-data:
+  poolx-data:
 ```
 
 启动：
@@ -147,13 +147,15 @@ pnpm dev
 
 ## 7. 升级说明
 
-当前模板工程保留服务端升级能力：
+当前 PoolX 保留服务端升级能力：
 
 * 检查最新版本
 * 上传服务端二进制进行手动升级
 * 执行服务端升级流程
 
-当前模板工程不描述 Agent 升级、节点升级或 OpenResty 重载。
+默认升级仓库为 `Rain-kl/PoolX`，可在系统设置中通过 `ServerUpdateRepo` 改为自己的 GitHub 发布仓库，格式为 `owner/repo`。
+
+当前文档不描述 Agent 升级、节点升级或 OpenResty 重载。
 
 ## 8. 常用验证命令
 
@@ -161,7 +163,7 @@ pnpm dev
 
 ```bash
 cd server
-GOCACHE=/tmp/ginnexttemplate-go-cache go test ./...
+GOCACHE=/tmp/poolx-go-cache go test ./...
 ```
 
 ### 8.2 Frontend

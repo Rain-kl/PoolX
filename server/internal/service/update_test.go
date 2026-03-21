@@ -3,11 +3,11 @@ package service
 import (
 	"bytes"
 	"context"
-	"ginnexttemplate/internal/pkg/common"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"poolx/internal/pkg/common"
 	"runtime"
 	"strings"
 	"testing"
@@ -34,9 +34,9 @@ func resetServerUpgradeTestState(t *testing.T) {
 
 func fakeServerBinaryFixture(version string) (string, []byte) {
 	if runtime.GOOS == "windows" {
-		return "ginnexttemplate-server-test.cmd", []byte("@echo off\r\necho " + version + "\r\n")
+		return "poolx-server-test.cmd", []byte("@echo off\r\necho " + version + "\r\n")
 	}
-	return "ginnexttemplate-server-test.sh", []byte("#!/bin/sh\necho " + version + "\n")
+	return "poolx-server-test.sh", []byte("#!/bin/sh\necho " + version + "\n")
 }
 
 func TestIsVersionNewer(t *testing.T) {
@@ -85,7 +85,7 @@ func TestBuildLatestServerReleaseView(t *testing.T) {
 	view := buildLatestServerReleaseView(&githubReleaseResponse{
 		TagName:     "v0.5.0",
 		Body:        "release notes",
-		HTMLURL:     "https://github.com/Rain-kl/GinNextTemplate/releases/tag/v0.5.0",
+		HTMLURL:     "https://github.com/Rain-kl/PoolX/releases/tag/v0.5.0",
 		PublishedAt: "2026-03-11T00:00:00Z",
 	}, ReleaseChannelStable)
 
@@ -228,7 +228,7 @@ func TestUploadManualServerBinary(t *testing.T) {
 }
 
 func TestBuildUploadedServerBinaryViewAcceptsGitDescribeNewerThanTag(t *testing.T) {
-	info := buildUploadedServerBinaryView("ginnexttemplate-server-test", "v0.6.3", "v0.6.3-2-gf4d36be", time.Now())
+	info := buildUploadedServerBinaryView("poolx-server-test", "v0.6.3", "v0.6.3-2-gf4d36be", time.Now())
 	if !info.HasUpdate || !info.ReadyToUpgrade {
 		t.Fatalf("expected git describe binary to be upgradeable: %+v", info)
 	}
@@ -349,19 +349,19 @@ func TestScheduleServerUpgradeUsesDownloadedBinaryValidation(t *testing.T) {
 	SetUpdateHTTPClientForTest(&http.Client{
 		Transport: serverUpdateRoundTripFunc(func(req *http.Request) (*http.Response, error) {
 			switch req.URL.String() {
-			case "https://api.github.com/repos/Rain-kl/GinNextTemplate/releases/latest":
+			case "https://api.github.com/repos/Rain-kl/PoolX/releases/latest":
 				return &http.Response{
 					StatusCode: http.StatusOK,
 					Header:     make(http.Header),
 					Body: io.NopCloser(strings.NewReader(`{
 						"tag_name":"v0.5.0",
 						"body":"release notes",
-						"html_url":"https://github.com/Rain-kl/GinNextTemplate/releases/tag/v0.5.0",
+						"html_url":"https://github.com/Rain-kl/PoolX/releases/tag/v0.5.0",
 						"published_at":"2026-03-11T00:00:00Z",
-						"assets":[{"name":"ginnexttemplate-server-` + runtime.GOOS + `-` + runtime.GOARCH + `","browser_download_url":"https://downloads.example.com/ginnexttemplate-server"}]
+						"assets":[{"name":"poolx-server-` + runtime.GOOS + `-` + runtime.GOARCH + `","browser_download_url":"https://downloads.example.com/poolx-server"}]
 					}`)),
 				}, nil
-			case "https://downloads.example.com/ginnexttemplate-server":
+			case "https://downloads.example.com/poolx-server":
 				_, content := fakeServerBinaryFixture("v0.5.0")
 				return &http.Response{
 					StatusCode: http.StatusOK,

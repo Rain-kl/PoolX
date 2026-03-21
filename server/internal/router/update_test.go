@@ -3,13 +3,13 @@ package router_test
 import (
 	"bytes"
 	"encoding/json"
-	"ginnexttemplate/internal/pkg/common"
-	"ginnexttemplate/internal/router"
-	"ginnexttemplate/internal/service"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"poolx/internal/pkg/common"
+	"poolx/internal/router"
+	"poolx/internal/service"
 	"runtime"
 	"strings"
 	"testing"
@@ -45,7 +45,7 @@ func TestLatestReleaseProxy(t *testing.T) {
 			if req.Header.Get("Accept") != "application/vnd.github+json" {
 				t.Fatalf("unexpected accept header: %s", req.Header.Get("Accept"))
 			}
-			if req.Header.Get("User-Agent") != "GinNextTemplate-Server" {
+			if req.Header.Get("User-Agent") != "PoolX-Server" {
 				t.Fatalf("unexpected user-agent header: %s", req.Header.Get("User-Agent"))
 			}
 			return &http.Response{
@@ -54,7 +54,7 @@ func TestLatestReleaseProxy(t *testing.T) {
 				Body: io.NopCloser(strings.NewReader(`{
 					"tag_name":"v1.2.3",
 					"body":"release notes",
-					"html_url":"https://github.com/Rain-kl/GinNextTemplate/releases/tag/v1.2.3",
+					"html_url":"https://github.com/Rain-kl/PoolX/releases/tag/v1.2.3",
 					"published_at":"2026-03-11T00:00:00Z"
 				}`)),
 			}, nil
@@ -148,9 +148,9 @@ func loginRootAndBuildEngine(t *testing.T) (*gin.Engine, []*http.Cookie) {
 
 func fakeManualServerBinary(version string) (string, []byte) {
 	if runtime.GOOS == "windows" {
-		return "ginnexttemplate-server-test.cmd", []byte("@echo off\r\necho " + version + "\r\n")
+		return "poolx-server-test.cmd", []byte("@echo off\r\necho " + version + "\r\n")
 	}
-	return "ginnexttemplate-server-test.sh", []byte("#!/bin/sh\necho " + version + "\n")
+	return "poolx-server-test.sh", []byte("#!/bin/sh\necho " + version + "\n")
 }
 
 func TestManualUploadRoute(t *testing.T) {

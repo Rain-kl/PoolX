@@ -42,8 +42,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{"http", "https"},
-	Title:            "GinNextTemplate Server API",
-	Description:      "GinNextTemplate Server API documentation.",
+	Title:            "PoolX Server API",
+	Description:      "PoolX Server API documentation.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }

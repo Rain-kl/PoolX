@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"ginnexttemplate/internal/model"
-	"ginnexttemplate/internal/pkg/common"
+	"poolx/internal/model"
+	"poolx/internal/pkg/common"
 )
 
 type apiResponse struct {

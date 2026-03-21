@@ -145,7 +145,7 @@ export function LogsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ginnexttemplate-logs-${Date.now()}.txt`;
+    link.download = `poolx-logs-${Date.now()}.txt`;
     link.click();
     URL.revokeObjectURL(url);
     setFeedback('日志文件已生成。');

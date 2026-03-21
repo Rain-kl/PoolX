@@ -2,11 +2,11 @@ package model
 
 import (
 	"fmt"
-	migratepkg "ginnexttemplate/internal/model/migrate"
-	"ginnexttemplate/internal/pkg/common"
-	"ginnexttemplate/internal/pkg/utils/security"
 	"log/slog"
 	"os"
+	migratepkg "poolx/internal/model/migrate"
+	"poolx/internal/pkg/common"
+	"poolx/internal/pkg/utils/security"
 	"reflect"
 	"sync"
 

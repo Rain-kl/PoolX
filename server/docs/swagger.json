@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "description": "GinNextTemplate Server API documentation.",
-    "title": "GinNextTemplate Server API",
+    "description": "PoolX Server API documentation.",
+    "title": "PoolX Server API",
     "version": "3.0"
   },
   "basePath": "/",

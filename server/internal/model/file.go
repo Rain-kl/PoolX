@@ -1,10 +1,10 @@
 package model
 
 import (
-	"ginnexttemplate/internal/pkg/common"
 	"gorm.io/gorm"
 	"os"
 	"path"
+	"poolx/internal/pkg/common"
 )
 
 type File struct {
