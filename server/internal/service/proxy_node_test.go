@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"testing"
-	"time"
 
 	"poolx/internal/model"
 	"poolx/internal/pkg/common"
@@ -127,13 +126,13 @@ func TestExecuteNodeTestsPersistsFailureResult(t *testing.T) {
 	}
 }
 
-func TestExecuteNodeTestsUsesRecentCache(t *testing.T) {
+func TestExecuteNodeTestsAlwaysRunsKernelProbe(t *testing.T) {
 	setupServiceTestDB(t)
 
 	originalRunner := runNodeKernelTest
-	called := false
+	callCount := 0
 	runNodeKernelTest = func(ctx context.Context, input kernelpkg.MihomoNodeTestInput) (*kernelpkg.MihomoNodeTestResult, error) {
-		called = true
+		callCount++
 		return &kernelpkg.MihomoNodeTestResult{LatencyMS: 999}, nil
 	}
 	t.Cleanup(func() {
@@ -146,21 +145,19 @@ func TestExecuteNodeTestsUsesRecentCache(t *testing.T) {
 		common.MihomoBinaryPath = originalBinaryPath
 	})
 
-	now := time.Now()
 	latency := 123
 	node := &model.ProxyNode{
 		SourceConfigID:   1,
 		SourceConfigName: "seed.yaml",
-		Name:             "cached-node",
+		Name:             "probe-node",
 		Type:             "ss",
 		Server:           "127.0.0.1",
 		Port:             1,
-		Fingerprint:      "fingerprint-cached-node",
-		MetadataJSON:     `{"name":"cached-node"}`,
+		Fingerprint:      "fingerprint-probe-node",
+		MetadataJSON:     `{"name":"probe-node"}`,
 		Enabled:          true,
 		LastTestStatus:   model.NodeTestStatusSuccess,
 		LastLatencyMS:    &latency,
-		LastTestedAt:     &now,
 	}
 	if err := model.DB.Create(node).Error; err != nil {
 		t.Fatalf("seed proxy node: %v", err)
@@ -175,11 +172,11 @@ func TestExecuteNodeTestsUsesRecentCache(t *testing.T) {
 	if len(results) != 1 {
 		t.Fatalf("expected one test result, got %d", len(results))
 	}
-	if !results[0].Cached {
-		t.Fatalf("expected cached result, got %+v", results[0])
+	if results[0].Cached {
+		t.Fatalf("expected fresh result, got %+v", results[0])
 	}
-	if called {
-		t.Fatal("expected cached node test to skip kernel runner")
+	if callCount != 1 {
+		t.Fatalf("expected kernel runner to execute once, got %d", callCount)
 	}
 }
 

@@ -50,7 +50,7 @@ func GetKernelCapability() *KernelCapability {
 		SupportsTemplates:     true,
 		SupportsNodeTags:      true,
 		SupportsAutoRefresh:   true,
-		SupportsNodeTestCache: true,
+		SupportsNodeTestCache: false,
 		SupportsNodeTestBatch: true,
 		SupportedStrategies: []string{
 			"select",

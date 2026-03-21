@@ -12,7 +12,6 @@ import (
 	"time"
 )
 
-const nodeTestCacheTTL = 45 * time.Second
 const maxNodeTestParallelism = 4
 
 var runNodeKernelTest = kernelpkg.TestNodeWithMihomo
@@ -182,10 +181,8 @@ func ExecuteNodeTests(ctx context.Context, input NodeTestInput) ([]NodeTestExecu
 		return ordered[left].index < ordered[right].index
 	})
 	for _, item := range ordered {
-		if !item.item.Cached {
-			if err := persistNodeTestExecution(item.item.NodeID, item.item); err != nil {
-				return nil, err
-			}
+		if err := persistNodeTestExecution(item.item.NodeID, item.item); err != nil {
+			return nil, err
 		}
 		results = append(results, item.item)
 	}
@@ -240,9 +237,6 @@ func executeMetadataNodeTest(ctx context.Context, input metadataNodeTestInput) N
 }
 
 func buildNodeTestExecution(ctx context.Context, node *model.ProxyNode, timeout time.Duration, testURL string) NodeTestExecution {
-	if cached := buildCachedNodeTestExecution(node, testURL); cached != nil {
-		return *cached
-	}
 	return executeMetadataNodeTest(ctx, metadataNodeTestInput{
 		NodeID:       node.ID,
 		Name:         node.Name,
@@ -252,30 +246,6 @@ func buildNodeTestExecution(ctx context.Context, node *model.ProxyNode, timeout 
 		Timeout:      timeout,
 		TestURL:      testURL,
 	})
-}
-
-func buildCachedNodeTestExecution(node *model.ProxyNode, testURL string) *NodeTestExecution {
-	if node.LastTestedAt == nil {
-		return nil
-	}
-	if time.Since(*node.LastTestedAt) > nodeTestCacheTTL {
-		return nil
-	}
-	startedAt := *node.LastTestedAt
-	finishedAt := *node.LastTestedAt
-	return &NodeTestExecution{
-		NodeID:       node.ID,
-		NodeName:     node.Name,
-		Status:       node.LastTestStatus,
-		LatencyMS:    node.LastLatencyMS,
-		ErrorMessage: node.LastTestError,
-		TestURL:      testURL,
-		DialAddress:  fmt.Sprintf("%s:%d", node.Server, node.Port),
-		Cached:       true,
-		StartedAt:    startedAt,
-		FinishedAt:   finishedAt,
-		LastTestedAt: node.LastTestedAt,
-	}
 }
 
 func normalizeNodeTestTimeout(timeoutMS int) time.Duration {
