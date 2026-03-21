@@ -109,7 +109,7 @@ func DeletePortProfile(c *gin.Context) {
 }
 
 // PreviewPortProfile godoc
-// @Summary Generate workspace config preview from payload
+// @Summary Generate mergeable workspace config fragment preview from payload
 // @Tags Workspace
 // @Accept json
 // @Produce json
@@ -130,7 +130,7 @@ func PreviewPortProfile(c *gin.Context) {
 }
 
 // PreviewSavedPortProfile godoc
-// @Summary Generate preview for saved workspace port profile
+// @Summary Generate mergeable fragment preview for saved workspace port profile
 // @Tags Workspace
 // @Produce json
 // @Success 200 {object} map[string]interface{}
@@ -150,7 +150,7 @@ func PreviewSavedPortProfile(c *gin.Context) {
 }
 
 // SaveRuntimeConfig godoc
-// @Summary Persist preview as latest runtime snapshot
+// @Summary Persist latest workspace fragment preview as snapshot
 // @Tags Workspace
 // @Produce json
 // @Success 200 {object} map[string]interface{}

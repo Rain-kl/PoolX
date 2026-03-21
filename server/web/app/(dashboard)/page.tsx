@@ -17,7 +17,7 @@ const quickLinks = [
   {
     href: '/workspace',
     title: '工作台',
-    description: '维护端口配置、选择节点与策略，并生成配置预览。',
+    description: '维护端口配置、生成可合并片段，并为后续统一启动做准备。',
   },
 ];
 
@@ -26,7 +26,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <PageHeader
         title="PoolX 总览"
-        description="当前阶段进入 Phase 2，开始把节点池衔接到工作台配置、策略选择和配置预览。"
+        description="当前阶段进入 Phase 2，开始把节点池衔接到工作台配置、片段预览与后续统一启动。"
       />
 
       <div className="grid gap-4 lg:grid-cols-3">

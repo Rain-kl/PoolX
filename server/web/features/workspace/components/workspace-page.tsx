@@ -176,7 +176,7 @@ export function WorkspacePage() {
     mutationFn: async () => previewPortProfile(toPayload(payload)),
     onSuccess: (result) => {
       setPreview(result)
-      setFeedback({ tone: 'success', message: '配置预览已生成。' })
+      setFeedback({ tone: 'success', message: '配置片段预览已生成。' })
     },
     onError: (error) => {
       setFeedback({ tone: 'danger', message: getErrorMessage(error) })
@@ -186,7 +186,7 @@ export function WorkspacePage() {
   const saveRuntimeMutation = useMutation({
     mutationFn: async (id: number) => saveRuntimeConfig(id),
     onSuccess: async () => {
-      setFeedback({ tone: 'success', message: '最新预览已保存为运行快照。' })
+      setFeedback({ tone: 'success', message: '当前片段已保存为最新快照。' })
       await queryClient.invalidateQueries({ queryKey: workspaceListQueryKey })
       await queryClient.invalidateQueries({ queryKey: ['workspace', 'profile', selectedProfileId] })
     },
@@ -226,7 +226,7 @@ export function WorkspacePage() {
     <div className="space-y-6">
       <PageHeader
         title="工作台"
-        description="创建端口配置、选择节点与策略，并生成 Mihomo 配置预览。"
+        description="创建端口配置、选择节点与策略，并生成后续可合并的工作台配置片段。"
         action={
           <SecondaryButton type="button" onClick={handleCreateNew}>
             新建端口配置
@@ -283,7 +283,7 @@ export function WorkspacePage() {
         <div className="space-y-6">
           <AppCard
             title="端口配置表单"
-            description="保存前可先生成预览，确认策略和端口是否符合预期。"
+            description="保存前可先生成片段预览，确认监听入口、策略和节点绑定是否符合预期。"
             action={
               <div className="flex flex-wrap gap-2">
                 <PrimaryButton
@@ -294,7 +294,7 @@ export function WorkspacePage() {
                   }}
                   disabled={previewMutation.isPending}
                 >
-                  {previewMutation.isPending ? '生成中...' : '生成预览'}
+                  {previewMutation.isPending ? '生成中...' : '生成片段预览'}
                 </PrimaryButton>
                 {selectedProfileId ? (
                   <>
@@ -502,8 +502,8 @@ export function WorkspacePage() {
           </AppCard>
 
           <AppCard
-            title="配置预览"
-            description="生成后会返回 YAML 预览和校验和，可选择保存为最新运行快照。"
+            title="配置片段预览"
+            description="这里展示的是单个端口配置生成的可合并片段；最终启动文件会在运行阶段由多个片段聚合生成。"
             action={
               selectedProfileId && preview ? (
                 <PrimaryButton
@@ -514,30 +514,30 @@ export function WorkspacePage() {
                   }}
                   disabled={saveRuntimeMutation.isPending}
                 >
-                  {saveRuntimeMutation.isPending ? '保存中...' : '保存为运行快照'}
+                  {saveRuntimeMutation.isPending ? '保存中...' : '保存片段快照'}
                 </PrimaryButton>
               ) : null
             }
           >
             {!preview ? (
               <EmptyState
-                title="尚未生成预览"
-                description="填写表单并点击“生成预览”后，会在这里看到渲染结果。"
+                title="尚未生成片段预览"
+                description="填写表单并点击“生成片段预览”后，会在这里看到当前端口配置的合并片段。"
               />
             ) : (
               <div className="space-y-4">
                 <div className="grid gap-4 lg:grid-cols-3">
-                  <AppCard title="内核" description="当前预览使用的渲染器。">
+                  <AppCard title="内核" description="当前片段使用的渲染器。">
                     <p className="text-sm font-semibold text-[var(--foreground-primary)]">
                       {preview.kernel_type}
                     </p>
                   </AppCard>
-                  <AppCard title="校验和" description="用于后续比较配置是否变化。">
+                  <AppCard title="校验和" description="用于后续比较片段内容是否变化。">
                     <p className="break-all text-xs text-[var(--foreground-primary)]">
                       {preview.checksum}
                     </p>
                   </AppCard>
-                  <AppCard title="选中节点" description="本次参与渲染的节点数量。">
+                  <AppCard title="选中节点" description="本次参与片段渲染的节点数量。">
                     <p className="text-sm font-semibold text-[var(--foreground-primary)]">
                       {preview.node_ids.length}
                     </p>
@@ -554,4 +554,3 @@ export function WorkspacePage() {
     </div>
   )
 }
-

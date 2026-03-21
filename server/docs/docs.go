@@ -197,7 +197,7 @@ const docTemplate = `{
                 "tags": [
                     "Workspace"
                 ],
-                "summary": "Generate workspace config preview from payload",
+                "summary": "Generate mergeable workspace config fragment preview from payload",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -278,7 +278,7 @@ const docTemplate = `{
                 "tags": [
                     "Workspace"
                 ],
-                "summary": "Generate preview for saved workspace port profile",
+                "summary": "Generate mergeable fragment preview for saved workspace port profile",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -298,7 +298,7 @@ const docTemplate = `{
                 "tags": [
                     "Workspace"
                 ],
-                "summary": "Persist preview as latest runtime snapshot",
+                "summary": "Persist latest workspace fragment preview as snapshot",
                 "responses": {
                     "200": {
                         "description": "OK",

@@ -176,7 +176,7 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Generate preview for saved workspace port profile
+      summary: Generate mergeable fragment preview for saved workspace port profile
       tags:
       - Workspace
   /api/port-profiles/{id}/runtime/save:
@@ -189,7 +189,7 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Persist preview as latest runtime snapshot
+      summary: Persist latest workspace fragment preview as snapshot
       tags:
       - Workspace
   /api/port-profiles/preview:
@@ -204,7 +204,7 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Generate workspace config preview from payload
+      summary: Generate mergeable workspace config fragment preview from payload
       tags:
       - Workspace
   /api/proxy-nodes:
