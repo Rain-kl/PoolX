@@ -73,6 +73,9 @@ func CreatePortProfile(payload PortProfilePayload) (*model.PortProfileWithNodes,
 	if err != nil {
 		return nil, err
 	}
+	if err := validatePortProfileUniqueness(normalized, 0); err != nil {
+		return nil, err
+	}
 
 	profile := &model.PortProfile{
 		Name:                  normalized.Name,
@@ -106,6 +109,9 @@ func CreatePortProfile(payload PortProfilePayload) (*model.PortProfileWithNodes,
 func UpdatePortProfile(id int, payload PortProfilePayload) (*model.PortProfileWithNodes, error) {
 	normalized, err := normalizePortProfilePayload(payload)
 	if err != nil {
+		return nil, err
+	}
+	if err := validatePortProfileUniqueness(normalized, id); err != nil {
 		return nil, err
 	}
 	profile, err := model.GetPortProfileByID(id)
@@ -290,9 +296,9 @@ func buildPortProfileView(profile *model.PortProfile) (*model.PortProfileWithNod
 }
 
 func normalizePortProfilePayload(payload PortProfilePayload) (*PortProfilePayload, error) {
-	name := strings.TrimSpace(payload.Name)
-	if name == "" {
-		return nil, fmt.Errorf("名称不能为空")
+	groupName := fallbackPortProfileString(strings.TrimSpace(payload.StrategyGroupName), defaultPortProfileGroupName)
+	if groupName == "" {
+		return nil, fmt.Errorf("策略组名称不能为空")
 	}
 	if payload.MixedPort <= 0 {
 		return nil, fmt.Errorf("Mixed 端口必须大于 0")
@@ -312,13 +318,13 @@ func normalizePortProfilePayload(payload PortProfilePayload) (*PortProfilePayloa
 	}
 
 	normalized := &PortProfilePayload{
-		Name:                  name,
+		Name:                  groupName,
 		ListenHost:            fallbackPortProfileString(strings.TrimSpace(payload.ListenHost), "127.0.0.1"),
 		MixedPort:             payload.MixedPort,
 		SocksPort:             payload.SocksPort,
 		HTTPPort:              payload.HTTPPort,
 		StrategyType:          strategy,
-		StrategyGroupName:     fallbackPortProfileString(strings.TrimSpace(payload.StrategyGroupName), defaultPortProfileGroupName),
+		StrategyGroupName:     groupName,
 		TestURL:               fallbackPortProfileString(strings.TrimSpace(payload.TestURL), defaultPortProfileTestURL),
 		TestIntervalSeconds:   normalizePortProfilePositive(payload.TestIntervalSeconds, 300),
 		LoadBalanceStrategy:   normalizeLoadBalanceStrategy(payload.LoadBalanceStrategy),
@@ -334,6 +340,35 @@ func normalizePortProfilePayload(payload PortProfilePayload) (*PortProfilePayloa
 		return nil, err
 	}
 	return normalized, nil
+}
+
+func validatePortProfileUniqueness(payload *PortProfilePayload, currentID int) error {
+	var groupNameCount int64
+	groupNameQuery := model.DB.Model(&model.PortProfile{}).
+		Where("lower(strategy_group_name) = ?", strings.ToLower(payload.StrategyGroupName))
+	if currentID > 0 {
+		groupNameQuery = groupNameQuery.Where("id <> ?", currentID)
+	}
+	if err := groupNameQuery.Count(&groupNameCount).Error; err != nil {
+		return err
+	}
+	if groupNameCount > 0 {
+		return fmt.Errorf("策略组名称已存在，请使用其他名称")
+	}
+
+	var mixedPortCount int64
+	mixedPortQuery := model.DB.Model(&model.PortProfile{}).Where("mixed_port = ?", payload.MixedPort)
+	if currentID > 0 {
+		mixedPortQuery = mixedPortQuery.Where("id <> ?", currentID)
+	}
+	if err := mixedPortQuery.Count(&mixedPortCount).Error; err != nil {
+		return err
+	}
+	if mixedPortCount > 0 {
+		return fmt.Errorf("Mixed 端口已被其他端口配置占用")
+	}
+
+	return nil
 }
 
 func normalizeLoadBalanceStrategy(value string) string {

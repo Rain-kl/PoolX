@@ -75,7 +75,7 @@ function getErrorMessage(error: unknown) {
 function toPayload(state: PortProfilePayload) {
   return {
     ...state,
-    name: state.name.trim(),
+    name: state.strategy_group_name.trim(),
     listen_host: state.listen_host.trim(),
     strategy_group_name: state.strategy_group_name.trim(),
     test_url: state.test_url.trim(),
@@ -395,7 +395,7 @@ export function WorkspacePage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-sm font-semibold text-[var(--foreground-primary)]">
-                      {item.profile.name}
+                      {item.profile.strategy_group_name || item.profile.name}
                     </p>
                     <div
                       className="flex items-center gap-2"
@@ -435,7 +435,7 @@ export function WorkspacePage() {
                 <ResourceInput
                   value={templateName}
                   onChange={(event) => setTemplateName(event.target.value)}
-                  placeholder="模板名称，留空时使用当前配置名称"
+                  placeholder="模板名称，留空时使用当前策略组名称"
                 />
                 <PrimaryButton
                   type="button"
@@ -545,13 +545,17 @@ export function WorkspacePage() {
             }
           >
             <div className="grid gap-4 xl:grid-cols-2">
-              <ResourceField label="名称">
+              <ResourceField label="策略组名称" hint={`${strategyDescription[payload.strategy_type]}；该名称会作为端口配置名称，且必须唯一。`}>
                 <ResourceInput
-                  value={payload.name}
+                  value={payload.strategy_group_name}
                   onChange={(event) =>
-                    setPayload((current) => ({ ...current, name: event.target.value }))
+                    setPayload((current) => ({
+                      ...current,
+                      name: event.target.value,
+                      strategy_group_name: event.target.value,
+                    }))
                   }
-                  placeholder="例如：默认工作台"
+                  placeholder="例如：POOLX"
                 />
               </ResourceField>
               <ResourceField label="监听地址">
@@ -563,7 +567,7 @@ export function WorkspacePage() {
                   placeholder="127.0.0.1"
                 />
               </ResourceField>
-              <ResourceField label="Mixed 端口">
+              <ResourceField label="Mixed 端口" hint="该端口在工作台配置中必须唯一。">
                 <ResourceInput
                   value={String(payload.mixed_port)}
                   onChange={(event) =>
@@ -613,17 +617,6 @@ export function WorkspacePage() {
                     <option key={strategy} value={strategy}>{strategy}</option>
                   ))}
                 </ResourceSelect>
-              </ResourceField>
-              <ResourceField label="策略组名称" hint={strategyDescription[payload.strategy_type]}>
-                <ResourceInput
-                  value={payload.strategy_group_name}
-                  onChange={(event) =>
-                    setPayload((current) => ({
-                      ...current,
-                      strategy_group_name: event.target.value,
-                    }))
-                  }
-                />
               </ResourceField>
               <ResourceField label="测试 URL">
                 <ResourceInput

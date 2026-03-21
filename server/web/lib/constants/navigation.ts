@@ -7,8 +7,13 @@ export const dashboardNavigation: NavigationItem[] = [
         icon: 'runtime',
     },
     {
+        href: '/workspace',
+        label: '工作台',
+        icon: 'workspace',
+    },
+    {
         href: '/import',
-        label: '配置导入',
+        label: '导入',
         icon: 'import',
     },
     {
@@ -17,28 +22,18 @@ export const dashboardNavigation: NavigationItem[] = [
         icon: 'node',
     },
     {
-        href: '/workspace',
-        label: '工作台',
-        icon: 'workspace',
-    },
-    {
-        href: '/file',
-        label: '文件',
-        icon: 'file',
-    },
-    {
         href: '/log',
         label: '日志',
         icon: 'log',
     },
     {
-        href: '/setting',
-        label: '设置',
-        icon: 'setting',
-    },
-    {
         href: '/user',
         label: '用户',
         icon: 'user',
+    },
+    {
+        href: '/setting',
+        label: '设置',
+        icon: 'setting',
     },
 ];
