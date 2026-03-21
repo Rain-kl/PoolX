@@ -90,7 +90,7 @@ func TestProxyNodes(c *gin.Context) {
 		return
 	}
 
-	results, err := service.ExecuteNodeTests(request)
+	results, err := service.ExecuteNodeTests(c.Request.Context(), request)
 	if err != nil {
 		_ = service.AppLog.Push(model.AppLogClassificationBusiness, model.AppLogLevelWarn, "proxy node test failed | username="+c.GetString("username")+" | reason="+err.Error())
 		respondFailure(c, err.Error())

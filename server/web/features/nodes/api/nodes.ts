@@ -30,12 +30,17 @@ export function updateProxyNodeStatus(id: number, enabled: boolean) {
   });
 }
 
-export function testProxyNodes(nodeIds: number[], timeoutMs = 3000) {
+export function testProxyNodes(input: {
+  nodeIds: number[];
+  timeoutMs: number;
+  testUrl: string;
+}) {
   return apiRequest<NodeTestExecution[]>('/proxy-nodes/test', {
     method: 'POST',
     body: JSON.stringify({
-      node_ids: nodeIds,
-      timeout_ms: timeoutMs,
+      node_ids: input.nodeIds,
+      timeout_ms: input.timeoutMs,
+      test_url: input.testUrl,
     }),
   });
 }
@@ -49,4 +54,3 @@ export function getNodeTestResults(proxyNodeId: number, limit = 10) {
     `/node-test-results?${searchParams.toString()}`,
   );
 }
-

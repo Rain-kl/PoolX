@@ -1,16 +1,20 @@
 package service
 
 import (
+	"context"
 	"fmt"
-	"net"
 	"poolx/internal/model"
 	"poolx/internal/pkg/common"
-	"strconv"
+	kernelpkg "poolx/internal/pkg/kernel"
 	"strings"
 	"time"
 
 	"gorm.io/gorm"
 )
+
+const defaultNodeTestURL = "https://cp.cloudflare.com/generate_204"
+
+var runNodeKernelTest = kernelpkg.TestNodeWithMihomo
 
 type ProxyNodeListInput struct {
 	Page           int
@@ -59,16 +63,23 @@ func SetProxyNodeEnabled(id int, enabled bool) error {
 	return model.DB.Save(node).Error
 }
 
-func ExecuteNodeTests(input NodeTestInput) ([]NodeTestExecution, error) {
+func ExecuteNodeTests(ctx context.Context, input NodeTestInput) ([]NodeTestExecution, error) {
 	if len(input.NodeIDs) == 0 {
 		return nil, fmt.Errorf("请先选择要测试的节点")
 	}
+	if strings.TrimSpace(common.MihomoBinaryPath) == "" {
+		return nil, fmt.Errorf("请先在系统设置中完成 Mihomo 二进制安装或路径校验")
+	}
 	timeout := time.Duration(input.TimeoutMS) * time.Millisecond
 	if timeout <= 0 {
-		timeout = 3 * time.Second
+		timeout = 8 * time.Second
 	}
-	if timeout > 30*time.Second {
-		timeout = 30 * time.Second
+	if timeout > 60*time.Second {
+		timeout = 60 * time.Second
+	}
+	testURL := strings.TrimSpace(input.TestURL)
+	if testURL == "" {
+		testURL = defaultNodeTestURL
 	}
 
 	nodes, err := model.FindProxyNodesByIDs(input.NodeIDs)
@@ -81,7 +92,7 @@ func ExecuteNodeTests(input NodeTestInput) ([]NodeTestExecution, error) {
 
 	results := make([]NodeTestExecution, 0, len(nodes))
 	for _, node := range nodes {
-		execution := testSingleNode(node, timeout, strings.TrimSpace(input.TestURL))
+		execution := testSingleNode(ctx, node, timeout, testURL)
 		if err := persistNodeTestExecution(node.ID, execution); err != nil {
 			return nil, err
 		}
@@ -98,11 +109,9 @@ func GetNodeTestResults(proxyNodeID int, limit int) ([]*model.NodeTestResult, er
 	return model.ListNodeTestResults(proxyNodeID, limit)
 }
 
-func testSingleNode(node *model.ProxyNode, timeout time.Duration, testURL string) NodeTestExecution {
+func testSingleNode(ctx context.Context, node *model.ProxyNode, timeout time.Duration, testURL string) NodeTestExecution {
 	startedAt := time.Now()
-	dialAddress := net.JoinHostPort(node.Server, strconv.Itoa(node.Port))
-	conn, err := net.DialTimeout("tcp", dialAddress, timeout)
-	finishedAt := time.Now()
+	dialAddress := fmt.Sprintf("%s:%d", node.Server, node.Port)
 
 	execution := NodeTestExecution{
 		NodeID:      node.ID,
@@ -110,8 +119,17 @@ func testSingleNode(node *model.ProxyNode, timeout time.Duration, testURL string
 		TestURL:     testURL,
 		DialAddress: dialAddress,
 		StartedAt:   startedAt,
-		FinishedAt:  finishedAt,
 	}
+
+	result, err := runNodeKernelTest(ctx, kernelpkg.MihomoNodeTestInput{
+		BinaryPath:   common.MihomoBinaryPath,
+		ProxyName:    node.Name,
+		MetadataJSON: node.MetadataJSON,
+		TestURL:      testURL,
+		Timeout:      timeout,
+	})
+	finishedAt := time.Now()
+	execution.FinishedAt = finishedAt
 
 	if err != nil {
 		execution.Status = model.NodeTestStatusFailed
@@ -119,9 +137,8 @@ func testSingleNode(node *model.ProxyNode, timeout time.Duration, testURL string
 		execution.LastTestedAt = &finishedAt
 		return execution
 	}
-	_ = conn.Close()
 
-	latency := int(finishedAt.Sub(startedAt).Milliseconds())
+	latency := result.LatencyMS
 	execution.Status = model.NodeTestStatusSuccess
 	execution.LatencyMS = &latency
 	execution.LastTestedAt = &finishedAt
