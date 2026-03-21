@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { AppCard } from '@/components/ui/app-card';
 import {
   deleteProxyNode,
+  deleteProxyNodes,
   getProxyNodes,
   testProxyNodes,
 } from '@/features/nodes/api/nodes';

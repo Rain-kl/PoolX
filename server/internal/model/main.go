@@ -32,6 +32,9 @@ func registeredModels() []any {
 		&Option{},
 		&SourceConfig{},
 		&ProxyNode{},
+		&PortProfile{},
+		&PortProfileNode{},
+		&RuntimeConfig{},
 	}
 }
 

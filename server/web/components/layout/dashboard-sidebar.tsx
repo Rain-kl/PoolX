@@ -49,6 +49,17 @@ function SidebarIcon({ icon }: { icon: NavigationIconKey }) {
           <path d="M8.3 12.8 15.7 16.7" />
         </svg>
       );
+    case 'workspace':
+      return (
+        <svg {...commonProps}>
+          <path d="M4.5 6.5h15v11h-15z" />
+          <path d="M9 6.5v11" />
+          <path d="M13 10h4" />
+          <path d="M13 13.5h3" />
+          <path d="M6.5 10h.01" />
+          <path d="M6.5 13.5h.01" />
+        </svg>
+      );
     case 'file':
       return (
         <svg {...commonProps}>

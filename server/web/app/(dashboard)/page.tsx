@@ -15,9 +15,9 @@ const quickLinks = [
     description: '分页查看节点、筛选状态并执行连通性测试。',
   },
   {
-    href: '/setting',
-    title: '系统设置',
-    description: '维护内核路径、系统参数、安全策略和升级能力。',
+    href: '/workspace',
+    title: '工作台',
+    description: '维护端口配置、选择节点与策略，并生成配置预览。',
   },
 ];
 
@@ -26,7 +26,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <PageHeader
         title="PoolX 总览"
-        description="当前阶段以 Phase 1 为主线，先打通 YAML 导入、节点池管理和节点测试的最小可用闭环。"
+        description="当前阶段进入 Phase 2，开始把节点池衔接到工作台配置、策略选择和配置预览。"
       />
 
       <div className="grid gap-4 lg:grid-cols-3">

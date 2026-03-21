@@ -99,6 +99,114 @@ paths:
       summary: Update option
       tags:
       - Options
+  /api/port-profiles:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List workspace port profiles
+      tags:
+      - Workspace
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create workspace port profile
+      tags:
+      - Workspace
+  /api/port-profiles/{id}:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get one workspace port profile
+      tags:
+      - Workspace
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update workspace port profile
+      tags:
+      - Workspace
+  /api/port-profiles/{id}/delete:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete workspace port profile
+      tags:
+      - Workspace
+  /api/port-profiles/{id}/preview:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Generate preview for saved workspace port profile
+      tags:
+      - Workspace
+  /api/port-profiles/{id}/runtime/save:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Persist preview as latest runtime snapshot
+      tags:
+      - Workspace
+  /api/port-profiles/preview:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Generate workspace config preview from payload
+      tags:
+      - Workspace
   /api/proxy-nodes:
     get:
       produces:
@@ -110,6 +218,19 @@ paths:
             additionalProperties: true
             type: object
       summary: List proxy nodes with paging and filters
+      tags:
+      - ProxyNode
+  /api/proxy-nodes/{id}/delete:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a proxy node
       tags:
       - ProxyNode
   /api/proxy-nodes/{id}/status:
@@ -127,6 +248,34 @@ paths:
       summary: Enable or disable a proxy node
       tags:
       - ProxyNode
+  /api/proxy-nodes/delete:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete selected proxy nodes
+      tags:
+      - ProxyNode
+  /api/proxy-nodes/options:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List proxy node options for selector
+      tags:
+      - Workspace
   /api/proxy-nodes/test:
     post:
       consumes:

@@ -1,7 +1,7 @@
 package router
 
 import (
-	"poolx/internal/handler"
+	controller "poolx/internal/handler"
 	"poolx/internal/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -94,10 +94,23 @@ func SetApiRouter(router *gin.Engine) {
 		proxyNodeRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
 		{
 			proxyNodeRoute.GET("", controller.GetProxyNodes)
+			proxyNodeRoute.GET("/options", controller.GetProxyNodeOptions)
 			proxyNodeRoute.POST("/delete", controller.DeleteProxyNodes)
 			proxyNodeRoute.POST("/test", controller.TestProxyNodes)
 			proxyNodeRoute.POST("/:id/status", controller.UpdateProxyNodeStatus)
 			proxyNodeRoute.POST("/:id/delete", controller.DeleteProxyNode)
+		}
+		portProfileRoute := apiRouter.Group("/port-profiles")
+		portProfileRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
+		{
+			portProfileRoute.GET("", controller.GetPortProfiles)
+			portProfileRoute.POST("", controller.CreatePortProfile)
+			portProfileRoute.POST("/preview", controller.PreviewPortProfile)
+			portProfileRoute.GET("/:id", controller.GetPortProfile)
+			portProfileRoute.POST("/:id", controller.UpdatePortProfile)
+			portProfileRoute.GET("/:id/preview", controller.PreviewSavedPortProfile)
+			portProfileRoute.POST("/:id/runtime/save", controller.SaveRuntimeConfig)
+			portProfileRoute.POST("/:id/delete", controller.DeletePortProfile)
 		}
 		logRoute := apiRouter.Group("/log")
 		logRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
