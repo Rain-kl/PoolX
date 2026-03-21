@@ -101,6 +101,24 @@ func TestInspectMihomoBinary(t *testing.T) {
 	}
 }
 
+func TestResolveExecutableInstallPathUsesWorkingDirectoryDefault(t *testing.T) {
+	resolved, err := resolveExecutableInstallPath("", true)
+	if err != nil {
+		t.Fatalf("resolve executable install path: %v", err)
+	}
+
+	expectedPath, err := filepath.Abs(filepath.Join(".", "mihomo"))
+	if err != nil {
+		t.Fatalf("resolve expected path: %v", err)
+	}
+	if runtime.GOOS == "windows" {
+		expectedPath += ".exe"
+	}
+	if resolved != expectedPath {
+		t.Fatalf("unexpected default install path: got %s want %s", resolved, expectedPath)
+	}
+}
+
 func testExecutableFile(version string) (string, []byte) {
 	if runtime.GOOS == "windows" {
 		return "mihomo-test.cmd", []byte("@echo off\r\necho " + version + "\r\n")

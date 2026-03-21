@@ -256,7 +256,7 @@ func defaultMihomoInstallPath() string {
 	if runtime.GOOS == "windows" {
 		fileName += ".exe"
 	}
-	return filepath.Join(".", "data", fileName)
+	return filepath.Join(".", fileName)
 }
 
 func persistExecutableTempFile(tempDir string, patternPrefix string, fileName string, reader io.Reader) (string, error) {

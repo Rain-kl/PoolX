@@ -150,9 +150,9 @@ function getBrowserOrigin() {
 
 function defaultMihomoInstallPath() {
   if (typeof navigator !== 'undefined' && navigator.userAgent.includes('Windows')) {
-    return '.\\data\\mihomo.exe';
+    return '.\\mihomo.exe';
   }
-  return './data/mihomo';
+  return './mihomo';
 }
 
 function formatSecondsLabel(value: string) {
@@ -1019,7 +1019,7 @@ export function SettingsPage() {
 
                 <ResourceField
                   label="Mihomo 二进制路径"
-                  hint="可填写已存在的二进制路径并点击检查；如果留空，上传或自动下载时会默认安装到 ./data。"
+                  hint="可填写已存在的二进制路径并点击检查；如果留空，上传或自动下载时会默认安装到当前工作目录。"
                 >
                   <ResourceInput
                     value={systemFields.MihomoBinaryPath}
