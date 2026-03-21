@@ -1,0 +1,182 @@
+name: Release
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version/tag to publish, for example v1.0.0-beta"
+        required: false
+        type: string
+  push:
+    tags: ["v*"]
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.version.outputs.should_run }}
+      version: ${{ steps.version.outputs.version }}
+      is_prerelease: ${{ steps.version.outputs.is_prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version metadata
+        id: version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          SHOULD_RUN=true
+          POINTED_TAG="$(git tag --points-at HEAD --list 'v*' | sort -V | tail -n1)"
+          INPUT_VERSION="${INPUT_VERSION//[[:space:]]/}"
+
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          elif [[ -n "$INPUT_VERSION" ]]; then
+            VERSION="$INPUT_VERSION"
+          elif [[ -n "$POINTED_TAG" ]]; then
+            VERSION="$POINTED_TAG"
+          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            echo "workflow_dispatch requires an explicit version input when HEAD is not tagged" >&2
+            exit 1
+          elif [[ "${GITHUB_REF}" == refs/heads/main ]]; then
+            echo "main branch release requires the current commit to be tagged" >&2
+            exit 1
+          else
+            echo "unable to resolve release version from the current ref" >&2
+            exit 1
+          fi
+
+          echo "should_run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" =~ ^v[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-frontend:
+    needs: prepare
+    if: needs.prepare.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build Frontend
+        env:
+          CI: ""
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          cd server/web
+          corepack enable
+          pnpm install --frozen-lockfile
+          NEXT_PUBLIC_APP_VERSION="$VERSION" pnpm build
+
+      - name: Upload Frontend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: server/web/build
+          retention-days: 1
+
+  build-binaries:
+    needs:
+      - prepare
+      - build-frontend
+    if: needs.prepare.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            asset_name: ginnexttemplate-server-linux-amd64
+          - goos: linux
+            goarch: arm64
+            asset_name: ginnexttemplate-server-linux-arm64
+          - goos: darwin
+            goarch: amd64
+            asset_name: ginnexttemplate-server-darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            asset_name: ginnexttemplate-server-darwin-arm64
+          - goos: windows
+            goarch: amd64
+            asset_name: ginnexttemplate-server-windows-amd64.exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Frontend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: server/web/build
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+
+      - name: Build Server
+        working-directory: server
+        env:
+          CGO_ENABLED: 0
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          ASSET_NAME: ${{ matrix.asset_name }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          go mod download
+          mkdir -p ../dist
+          go build -trimpath -ldflags "-s -w -X 'ginnexttemplate/internal/pkg/common.Version=$VERSION'" -o "../dist/$ASSET_NAME" .
+
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/${{ matrix.asset_name }}
+          retention-days: 1
+
+  release:
+    needs:
+      - prepare
+      - build-binaries
+    if: needs.prepare.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Server Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "server-*"
+          path: dist
+          merge-multiple: true
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.prepare.outputs.version }}
+          name: ${{ needs.prepare.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          files: dist/*
+          draft: false
+          prerelease: ${{ needs.prepare.outputs.is_prerelease == 'true' }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

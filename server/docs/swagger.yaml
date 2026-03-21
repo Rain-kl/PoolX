@@ -1,0 +1,23 @@
+swagger: "2.0"
+info:
+  description: GinNextTemplate Server API documentation.
+  title: GinNextTemplate Server API
+  version: "3.0"
+basePath: /
+schemes:
+  - http
+  - https
+paths: {}
+definitions:
+  model.Option:
+    type: object
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+securityDefinitions:
+  BearerAuth:
+    type: apiKey
+    name: Authorization
+    in: header

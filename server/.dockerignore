@@ -1,0 +1,10 @@
+web/node_modules
+web/.next
+web/build
+web/out
+
+upload
+logs
+
+.git
+.github

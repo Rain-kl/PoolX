@@ -1,0 +1,28 @@
+package migrate
+
+import "gorm.io/gorm"
+
+// BuildTemplateScheduler assembles the GinNextTemplate schema migration plan.
+// Concrete upgrade logic lives in v0.go, v1.go, v2.go... while Scheduler only
+// performs version traversal, following an Android-style step-by-step upgrade flow.
+func BuildTemplateScheduler(
+	db *gorm.DB,
+	backend string,
+	loadVersion VersionLoader,
+	saveVersion VersionSaver,
+	isDatabaseEmpty EmptyChecker,
+	ensureSchemaMeta MetadataMigrator,
+	hooks Hooks,
+) *Scheduler {
+	return NewScheduler(
+		db,
+		backend,
+		loadVersion,
+		saveVersion,
+		isDatabaseEmpty,
+		ensureSchemaMeta,
+	).
+		RegisterInitializer(V0(hooks)).
+		RegisterMigration(V1(hooks)).
+		RegisterMigration(V2(hooks))
+}
