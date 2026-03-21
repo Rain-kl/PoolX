@@ -1,6 +1,5 @@
-import { SourceImportPage } from '@/features/import/components/source-import-page';
+import { redirect } from 'next/navigation';
 
 export default function ImportPage() {
-  return <SourceImportPage />;
+  redirect('/nodes');
 }
-

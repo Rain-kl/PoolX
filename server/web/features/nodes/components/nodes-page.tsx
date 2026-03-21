@@ -9,7 +9,9 @@ import { InlineMessage } from '@/components/feedback/inline-message';
 import { LoadingState } from '@/components/feedback/loading-state';
 import { PageHeader } from '@/components/layout/page-header';
 import { AppCard } from '@/components/ui/app-card';
+import { AppModal } from '@/components/ui/app-modal';
 import { getKernelCapability } from '@/features/capability/api/capability';
+import { SourceImportPanel } from '@/features/import/components/source-import-page';
 import {
   deleteProxyNode,
   deleteProxyNodes,
@@ -62,6 +64,7 @@ export function NodesPage() {
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [tagsInput, setTagsInput] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const capabilityQuery = useQuery({
     queryKey: ['capability'],
@@ -176,6 +179,9 @@ export function NodesPage() {
         action={
           <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--foreground-secondary)]">
             <span>当前已选择 {selectedIds.length} 个节点</span>
+            <PrimaryButton type="button" onClick={() => setIsImportModalOpen(true)}>
+              导入节点
+            </PrimaryButton>
             <SecondaryButton type="button" onClick={() => setAutoRefresh((value) => !value)}>
               {autoRefresh ? '暂停刷新' : '自动刷新'}
             </SecondaryButton>
@@ -225,32 +231,33 @@ export function NodesPage() {
         </div>
       </AppCard>
 
-      <AppCard
-        title="节点标签"
-        description="支持为当前选择的节点批量打标签，使用逗号分隔。"
-      >
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
-          <ResourceInput
-            value={tagsInput}
-            onChange={(event) => setTagsInput(event.target.value)}
-            placeholder="例如：hk, premium, low-latency"
-          />
-          <PrimaryButton
-            type="button"
-            onClick={() => {
-              if (selectedIds.length === 0) {
-                setFeedback({ tone: 'danger', message: '请先选择至少一个节点。' })
-                return
-              }
-              setFeedback(null)
-              tagsMutation.mutate(selectedIds)
-            }}
-            disabled={tagsMutation.isPending}
-          >
-            {tagsMutation.isPending ? '保存中...' : '保存标签'}
-          </PrimaryButton>
-        </div>
-      </AppCard>
+      {/*暂时不开放节点标签功能, 注释掉相关UI和接口调用, 后续根据需求再完善, 以下内容不要删除*/}
+      {/*<AppCard*/}
+      {/*  title="节点标签"*/}
+      {/*  description="支持为当前选择的节点批量打标签，使用逗号分隔。"*/}
+      {/*>*/}
+      {/*  <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">*/}
+      {/*    <ResourceInput*/}
+      {/*      value={tagsInput}*/}
+      {/*      onChange={(event) => setTagsInput(event.target.value)}*/}
+      {/*      placeholder="例如：hk, premium, low-latency"*/}
+      {/*    />*/}
+      {/*    <PrimaryButton*/}
+      {/*      type="button"*/}
+      {/*      onClick={() => {*/}
+      {/*        if (selectedIds.length === 0) {*/}
+      {/*          setFeedback({ tone: 'danger', message: '请先选择至少一个节点。' })*/}
+      {/*          return*/}
+      {/*        }*/}
+      {/*        setFeedback(null)*/}
+      {/*        tagsMutation.mutate(selectedIds)*/}
+      {/*      }}*/}
+      {/*      disabled={tagsMutation.isPending}*/}
+      {/*    >*/}
+      {/*      {tagsMutation.isPending ? '保存中...' : '保存标签'}*/}
+      {/*    </PrimaryButton>*/}
+      {/*  </div>*/}
+      {/*</AppCard>*/}
 
       <AppCard
         title="节点列表"
@@ -316,7 +323,7 @@ export function NodesPage() {
           {!nodesQuery.isLoading && !nodesQuery.isError && nodes.length === 0 ? (
             <EmptyState
               title="暂无节点"
-              description="先去配置导入页上传 YAML 并完成导入。"
+              description="点击右上角“导入节点”上传 YAML 并完成导入。"
             />
           ) : null}
 
@@ -417,6 +424,28 @@ export function NodesPage() {
           </div>
         </div>
       </AppCard>
+
+      <AppModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        title="导入节点"
+        description="上传 Clash/Mihomo YAML，完成解析、去重预检与导入确认后，会直接写入当前节点池。"
+        size="xl"
+      >
+        <SourceImportPanel
+          embedded
+          onImportSuccess={async (result) => {
+            setFeedback({
+              tone: 'success',
+              message: `导入完成，新增 ${result.imported_nodes} 个节点，跳过 ${result.skipped_nodes} 个重复节点。`,
+            });
+            setSelectedIds([]);
+            setPage(0);
+            await queryClient.invalidateQueries({ queryKey: proxyNodesQueryKey });
+            setIsImportModalOpen(false);
+          }}
+        />
+      </AppModal>
     </div>
   );
 }

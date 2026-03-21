@@ -12,11 +12,6 @@ export const dashboardNavigation: NavigationItem[] = [
         icon: 'workspace',
     },
     {
-        href: '/import',
-        label: '导入',
-        icon: 'import',
-    },
-    {
         href: '/nodes',
         label: '节点池',
         icon: 'node',

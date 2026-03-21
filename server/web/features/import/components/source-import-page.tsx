@@ -14,6 +14,7 @@ import {
 } from '@/features/import/api/source-import';
 import type {
   ParsedNodePreview,
+  SourceImportResult,
   ParsedNodeTestResult,
   SourceParseResult,
 } from '@/features/import/types';
@@ -27,6 +28,11 @@ type FeedbackState = {
   tone: 'success' | 'danger' | 'info';
   message: string;
 };
+
+interface SourceImportPanelProps {
+  embedded?: boolean;
+  onImportSuccess?: (result: SourceImportResult) => void;
+}
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '请求失败，请稍后重试。';
@@ -43,7 +49,10 @@ function duplicateScopeLabel(scope: string) {
   }
 }
 
-export function SourceImportPage() {
+export function SourceImportPanel({
+  embedded = false,
+  onImportSuccess,
+}: SourceImportPanelProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parseResult, setParseResult] = useState<SourceParseResult | null>(null);
   const [previewNodes, setPreviewNodes] = useState<ParsedNodePreview[]>([]);
@@ -98,6 +107,7 @@ export function SourceImportPage() {
       return importSourceConfig(parseResult.source_config.id, selectedFingerprints);
     },
     onSuccess: (result) => {
+      onImportSuccess?.(result);
       setFeedback({
         tone: 'success',
         message: `导入完成，新增 ${result.imported_nodes} 个节点，跳过 ${result.skipped_nodes} 个重复节点。`,
@@ -170,10 +180,12 @@ export function SourceImportPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="配置导入"
-        description="上传 Clash/Mihomo YAML，服务端会完成解析、标准化和去重预检，再将确认后的节点导入节点池。"
-      />
+      {!embedded ? (
+        <PageHeader
+          title="配置导入"
+          description="上传 Clash/Mihomo YAML，服务端会完成解析、标准化和去重预检，再将确认后的节点导入节点池。"
+        />
+      ) : null}
 
       {feedback ? (
         <InlineMessage tone={feedback.tone} message={feedback.message} />
@@ -441,4 +453,8 @@ export function SourceImportPage() {
       ) : null}
     </div>
   );
+}
+
+export function SourceImportPage() {
+  return <SourceImportPanel />;
 }
