@@ -48,3 +48,4 @@ go.work.sum
 .DS_Store
 .codex-cache
 /.gomodcache/
+/server/internal/service/data/

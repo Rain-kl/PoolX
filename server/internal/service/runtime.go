@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -102,6 +103,12 @@ func StartRuntime(ctx context.Context) (*RuntimeStatus, error) {
 	if err := os.WriteFile(configPath, []byte(rendered.Content), 0o644); err != nil {
 		return nil, fmt.Errorf("写入运行配置失败: %v", err)
 	}
+	if err := ensureRuntimeListenersAvailable(rendered.Listeners); err != nil {
+		instance.Status = model.KernelInstanceStatusError
+		instance.LastError = err.Error()
+		_ = model.DB.Save(instance).Error
+		return nil, err
+	}
 
 	now := time.Now()
 	instance.WorkDir = workDir
@@ -140,10 +147,11 @@ func StartRuntime(ctx context.Context) (*RuntimeStatus, error) {
 	defer cancel()
 	if err := waitForMihomoControllerReady(readyCtx, defaultRuntimeController, secret); err != nil {
 		_ = terminateProcess(cmd)
+		waitErr := formatRuntimeStartWaitError(err)
 		instance.Status = model.KernelInstanceStatusError
-		instance.LastError = fmt.Sprintf("等待 Mihomo 控制接口就绪失败: %v", err)
+		instance.LastError = waitErr.Error()
 		_ = model.DB.Save(instance).Error
-		return nil, fmt.Errorf("等待 Mihomo 控制接口就绪失败: %v", err)
+		return nil, waitErr
 	}
 
 	instance.Status = model.KernelInstanceStatusRunning
@@ -497,4 +505,44 @@ func terminateProcess(cmd *exec.Cmd) error {
 		time.Sleep(100 * time.Millisecond)
 	}
 	return cmd.Process.Kill()
+}
+
+func ensureRuntimeListenersAvailable(listeners []runtimeconfig.RuntimeListener) error {
+	for _, listener := range listeners {
+		address := net.JoinHostPort(listener.Listen, fmt.Sprintf("%d", listener.Port))
+		probe, err := net.Listen("tcp", address)
+		if err != nil {
+			return fmt.Errorf("监听端口已被占用，无法启动 Mihomo: %s (%s)", address, listener.Name)
+		}
+		_ = probe.Close()
+	}
+	return nil
+}
+
+func formatRuntimeStartWaitError(waitErr error) error {
+	message := fmt.Sprintf("等待 Mihomo 控制接口就绪失败: %v", waitErr)
+	logs := runtimeRegistry.recentLogSummary(8)
+	if logs == "" {
+		return fmt.Errorf("%s", message)
+	}
+	return fmt.Errorf("%s | 最近日志: %s", message, logs)
+}
+
+func (registry *runtimeProcessRegistry) recentLogSummary(limit int) string {
+	registry.mu.Lock()
+	defer registry.mu.Unlock()
+
+	if limit <= 0 || len(registry.logs) == 0 {
+		return ""
+	}
+	start := len(registry.logs) - limit
+	if start < 0 {
+		start = 0
+	}
+
+	messages := make([]string, 0, len(registry.logs)-start)
+	for _, entry := range registry.logs[start:] {
+		messages = append(messages, fmt.Sprintf("[%s] %s", entry.Stream, entry.Message))
+	}
+	return strings.Join(messages, " || ")
 }
