@@ -1,5 +1,5 @@
-import { RuntimePage } from '@/features/runtime/components/runtime-page';
+import { redirect } from 'next/navigation';
 
 export default function RuntimeRoutePage() {
-  return <RuntimePage />;
+  redirect('/');
 }
