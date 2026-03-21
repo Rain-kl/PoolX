@@ -5,19 +5,19 @@ import { PageHeader } from '@/components/layout/page-header';
 
 const quickLinks = [
   {
-    href: '/user',
-    title: '用户管理',
-    description: '查看、搜索和维护模板工程中的账号。',
+    href: '/import',
+    title: '配置导入',
+    description: '上传 YAML、查看解析摘要，并确认导入节点池。',
   },
   {
-    href: '/file',
-    title: '文件管理',
-    description: '上传附件、查看下载次数并执行删除。',
+    href: '/nodes',
+    title: '节点池',
+    description: '分页查看节点、筛选状态并执行连通性测试。',
   },
   {
     href: '/setting',
     title: '系统设置',
-    description: '维护登录开关、邮箱配置、安全策略和版本升级。',
+    description: '维护内核路径、系统参数、安全策略和升级能力。',
   },
 ];
 
@@ -25,8 +25,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="模板总览"
-        description="当前管理端已经收敛为模板工程口径，只保留用户、文件、设置与升级等通用能力。"
+        title="PoolX 总览"
+        description="当前阶段以 Phase 1 为主线，先打通 YAML 导入、节点池管理和节点测试的最小可用闭环。"
       />
 
       <div className="grid gap-4 lg:grid-cols-3">

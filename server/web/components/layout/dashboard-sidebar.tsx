@@ -30,6 +30,25 @@ function SidebarIcon({ icon }: { icon: NavigationIconKey }) {
           <path d="M9.5 21v-6h5v6" />
         </svg>
       );
+    case 'import':
+      return (
+        <svg {...commonProps}>
+          <path d="M12 4v10" />
+          <path d="m8.5 10.5 3.5 3.5 3.5-3.5" />
+          <path d="M5 18.5h14" />
+          <path d="M4.5 4.5h15v15h-15z" />
+        </svg>
+      );
+    case 'node':
+      return (
+        <svg {...commonProps}>
+          <circle cx="6.5" cy="12" r="2" />
+          <circle cx="17.5" cy="6.5" r="2" />
+          <circle cx="17.5" cy="17.5" r="2" />
+          <path d="M8.3 11.2 15.7 7.3" />
+          <path d="M8.3 12.8 15.7 16.7" />
+        </svg>
+      );
     case 'file':
       return (
         <svg {...commonProps}>
@@ -142,14 +161,14 @@ function SidebarContent({
     <div className="flex h-full flex-col gap-5">
       <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] px-3 py-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--brand-primary-soft)] text-sm font-semibold text-[var(--brand-primary)]">
-          AF
+          PX
         </div>
         {showLabel ? (
           <div>
             <p className="text-sm font-semibold text-[var(--foreground-primary)]">
-            GinNext
+            PoolX
             </p>
-            <p className="text-xs text-[var(--foreground-secondary)]">Template</p>
+            <p className="text-xs text-[var(--foreground-secondary)]">Control Plane</p>
           </div>
         ) : null}
       </div>

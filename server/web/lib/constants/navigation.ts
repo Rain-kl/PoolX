@@ -3,13 +3,18 @@ import type {NavigationItem} from '@/types/navigation';
 export const dashboardNavigation: NavigationItem[] = [
     {
         href: '/',
-        label: '模板',
+        label: '概览',
         icon: 'home',
     },
     {
-        href: '/user',
-        label: '用户',
-        icon: 'user',
+        href: '/import',
+        label: '配置导入',
+        icon: 'import',
+    },
+    {
+        href: '/nodes',
+        label: '节点池',
+        icon: 'node',
     },
     {
         href: '/file',
@@ -25,5 +30,10 @@ export const dashboardNavigation: NavigationItem[] = [
         href: '/setting',
         label: '设置',
         icon: 'setting',
+    },
+    {
+        href: '/user',
+        label: '用户',
+        icon: 'user',
     },
 ];

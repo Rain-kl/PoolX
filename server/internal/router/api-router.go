@@ -83,6 +83,24 @@ func SetApiRouter(router *gin.Engine) {
 			fileRoute.POST("/", middleware.UploadRateLimit(), controller.UploadFile)
 			fileRoute.POST("/:id/delete", controller.DeleteFile)
 		}
+		sourceConfigRoute := apiRouter.Group("/source-configs")
+		sourceConfigRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
+		{
+			sourceConfigRoute.POST("/parse", middleware.UploadRateLimit(), controller.ParseSourceConfig)
+			sourceConfigRoute.POST("/import", controller.ImportSourceConfig)
+		}
+		proxyNodeRoute := apiRouter.Group("/proxy-nodes")
+		proxyNodeRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
+		{
+			proxyNodeRoute.GET("", controller.GetProxyNodes)
+			proxyNodeRoute.POST("/test", controller.TestProxyNodes)
+			proxyNodeRoute.POST("/:id/status", controller.UpdateProxyNodeStatus)
+		}
+		nodeTestRoute := apiRouter.Group("/node-test-results")
+		nodeTestRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
+		{
+			nodeTestRoute.GET("", controller.GetNodeTestResults)
+		}
 		logRoute := apiRouter.Group("/log")
 		logRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
 		{

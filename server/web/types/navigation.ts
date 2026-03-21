@@ -1,5 +1,7 @@
 export type NavigationIconKey =
   | 'home'
+  | 'import'
+  | 'node'
   | 'log'
   | 'file'
   | 'user'

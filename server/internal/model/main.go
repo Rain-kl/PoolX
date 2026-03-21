@@ -30,6 +30,9 @@ func registeredModels() []any {
 		&File{},
 		&User{},
 		&Option{},
+		&SourceConfig{},
+		&ProxyNode{},
+		&NodeTestResult{},
 	}
 }
 
