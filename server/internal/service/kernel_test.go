@@ -35,6 +35,21 @@ func TestSelectMihomoReleaseAssetPrefersCurrentPlatform(t *testing.T) {
 	}
 }
 
+func TestSelectMihomoReleaseAssetSkipsPackageFormats(t *testing.T) {
+	assets := []githubAsset{
+		{Name: fmt.Sprintf("mihomo-%s-%s-v1.0.0.deb", runtime.GOOS, preferredMihomoArchKeywords()[0]), BrowserDownloadURL: "https://example.com/package"},
+		{Name: fmt.Sprintf("mihomo-%s-%s-v1.0.0.gz", runtime.GOOS, preferredMihomoArchKeywords()[0]), BrowserDownloadURL: "https://example.com/binary"},
+	}
+
+	asset, err := selectMihomoReleaseAsset(assets)
+	if err != nil {
+		t.Fatalf("expected asset selection to succeed: %v", err)
+	}
+	if asset.BrowserDownloadURL != "https://example.com/binary" {
+		t.Fatalf("expected gzip binary asset, got %s", asset.BrowserDownloadURL)
+	}
+}
+
 func TestInstallUploadedMihomoBinary(t *testing.T) {
 	setupServiceTestDB(t)
 

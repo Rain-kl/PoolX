@@ -166,6 +166,9 @@ func selectMihomoReleaseAsset(assets []githubAsset) (*githubAsset, error) {
 		if strings.Contains(name, "sha256") || strings.HasSuffix(name, ".txt") {
 			continue
 		}
+		if !isSupportedMihomoBinaryAsset(name) {
+			continue
+		}
 		normalizedAssets = append(normalizedAssets, asset)
 	}
 
@@ -184,6 +187,13 @@ func selectMihomoReleaseAsset(assets []githubAsset) (*githubAsset, error) {
 	}
 
 	return nil, fmt.Errorf("未找到适用于当前平台 %s/%s 的 Mihomo 发行包", runtime.GOOS, runtime.GOARCH)
+}
+
+func isSupportedMihomoBinaryAsset(name string) bool {
+	if !strings.HasPrefix(name, "mihomo-") {
+		return false
+	}
+	return strings.HasSuffix(name, ".gz")
 }
 
 func preferredMihomoArchKeywords() []string {
