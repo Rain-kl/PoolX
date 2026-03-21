@@ -13,6 +13,8 @@ var Version = "dev"               // release builds inject the tag version via l
 const DefaultServerUpdateRepo = "Rain-kl/PoolX"
 const DefaultKernelType = "mihomo"
 const DefaultMihomoReleaseRepo = "MetaCubeX/mihomo"
+const DefaultNodeTestURL = "https://cp.cloudflare.com/generate_204"
+const DefaultNodeTestTimeoutMS = 8000
 
 var SystemName = "PoolX"
 var ServerAddress = "http://localhost:3000"
@@ -21,6 +23,8 @@ var KernelType = DefaultKernelType
 var MihomoBinaryPath = ""
 var MihomoBinaryVersion = ""
 var MihomoBinarySource = ""
+var NodeTestDefaultURL = DefaultNodeTestURL
+var NodeTestDefaultTimeoutMS = DefaultNodeTestTimeoutMS
 var Footer = ""
 var HomePageLink = ""
 

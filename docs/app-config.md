@@ -71,6 +71,8 @@ go run . --port 3000 --log-dir ./logs
 | `MihomoBinaryPath` | Mihomo 二进制安装路径 | 空 |
 | `MihomoBinaryVersion` | 最近一次校验通过的 Mihomo 版本输出 | 空 |
 | `MihomoBinarySource` | Mihomo 二进制来源，支持 `upload` / `download` | 空 |
+| `NodeTestDefaultURL` | 配置导入与节点池共享的默认测速 URL | `https://cp.cloudflare.com/generate_204` |
+| `NodeTestDefaultTimeoutMS` | 配置导入与节点池共享的默认测速超时（毫秒） | `8000` |
 | `GeoIPProvider` | IP 归属解析方式 | `disabled` |
 | `GitHubOAuthEnabled` | 是否启用 GitHub OAuth 登录 | `false` |
 | `WeChatAuthEnabled` | 是否启用微信登录 | `false` |
@@ -100,6 +102,7 @@ go run . --port 3000 --log-dir ./logs
 * `ServerUpdateRepo` 默认值为 `Rain-kl/PoolX`，用于版本检查与自动升级；如使用自建发布仓库，可改为自己的 `owner/repo`
 * `KernelType` 当前仅允许设置为 `mihomo`，`xray` 与 `singbox` 仅保留前端预留入口
 * `MihomoBinaryPath`、`MihomoBinaryVersion` 与 `MihomoBinarySource` 由系统设置中的内核安装流程维护
+* `NodeTestDefaultURL` 与 `NodeTestDefaultTimeoutMS` 由设置页统一维护，配置导入和节点池页不再单独提供测速参数表单
 * 已移除业务的运行时配置项只允许在兼容清理时兜底处理，不应重新作为正式选项暴露
 * 配置项如有增删，必须同步更新本文档
 

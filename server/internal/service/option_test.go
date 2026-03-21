@@ -103,3 +103,46 @@ func TestUpdateEditableOptionRejectsInvalidServerUpdateRepo(t *testing.T) {
 		t.Fatal("expected invalid repo format to fail")
 	}
 }
+
+func TestUpdateEditableOptionAppliesNodeTestDefaults(t *testing.T) {
+	setupServiceTestDB(t)
+
+	originalURL := common.NodeTestDefaultURL
+	originalTimeout := common.NodeTestDefaultTimeoutMS
+	t.Cleanup(func() {
+		common.NodeTestDefaultURL = originalURL
+		common.NodeTestDefaultTimeoutMS = originalTimeout
+	})
+
+	if err := UpdateEditableOption(model.Option{
+		Key:   "NodeTestDefaultURL",
+		Value: "https://example.com/generate_204",
+	}); err != nil {
+		t.Fatalf("update node test default url: %v", err)
+	}
+	if err := UpdateEditableOption(model.Option{
+		Key:   "NodeTestDefaultTimeoutMS",
+		Value: "12000",
+	}); err != nil {
+		t.Fatalf("update node test default timeout: %v", err)
+	}
+
+	if common.NodeTestDefaultURL != "https://example.com/generate_204" {
+		t.Fatalf("unexpected NodeTestDefaultURL: %s", common.NodeTestDefaultURL)
+	}
+	if common.NodeTestDefaultTimeoutMS != 12000 {
+		t.Fatalf("unexpected NodeTestDefaultTimeoutMS: %d", common.NodeTestDefaultTimeoutMS)
+	}
+}
+
+func TestUpdateEditableOptionRejectsInvalidNodeTestDefaultTimeout(t *testing.T) {
+	setupServiceTestDB(t)
+
+	err := UpdateEditableOption(model.Option{
+		Key:   "NodeTestDefaultTimeoutMS",
+		Value: "0",
+	})
+	if err == nil {
+		t.Fatal("expected invalid timeout to fail")
+	}
+}

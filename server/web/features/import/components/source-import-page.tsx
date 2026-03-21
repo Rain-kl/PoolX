@@ -20,7 +20,6 @@ import type {
 import {
   PrimaryButton,
   ResourceField,
-  ResourceInput,
   SecondaryButton,
 } from '@/features/shared/components/resource-primitives';
 
@@ -51,8 +50,6 @@ export function SourceImportPage() {
   const [selectedFingerprints, setSelectedFingerprints] = useState<string[]>([]);
   const [testResults, setTestResults] = useState<ParsedNodeTestResult[]>([]);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [testUrl, setTestUrl] = useState('https://cp.cloudflare.com/generate_204');
-  const [timeoutMs, setTimeoutMs] = useState('8000');
 
   const importableNodes = useMemo(
     () => previewNodes.filter((node) => node.duplicate_scope === 'none'),
@@ -135,8 +132,6 @@ export function SourceImportPage() {
       return testParsedNodes({
         sourceConfigId: parseResult.source_config.id,
         fingerprints: selectedFingerprints,
-        timeoutMs: Number.parseInt(timeoutMs, 10) || 8000,
-        testUrl: testUrl.trim(),
       });
     },
     onSuccess: (result) => {
@@ -333,29 +328,6 @@ export function SourceImportPage() {
               >
                 删除选中预览
               </SecondaryButton>
-            </div>
-          </AppCard>
-
-          <AppCard
-            title="测速参数"
-            description="会在导入前临时拉起内核，对当前选择的解析节点做真实代理请求测试。"
-          >
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,180px)]">
-              <ResourceField label="测试 URL">
-                <ResourceInput
-                  value={testUrl}
-                  onChange={(event) => setTestUrl(event.target.value)}
-                  placeholder="https://cp.cloudflare.com/generate_204"
-                />
-              </ResourceField>
-              <ResourceField label="超时（毫秒）">
-                <ResourceInput
-                  value={timeoutMs}
-                  onChange={(event) => setTimeoutMs(event.target.value)}
-                  inputMode="numeric"
-                  placeholder="8000"
-                />
-              </ResourceField>
             </div>
           </AppCard>
 

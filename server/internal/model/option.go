@@ -47,6 +47,8 @@ func InitOptionMap() {
 	common.OptionMap["MihomoBinaryPath"] = common.MihomoBinaryPath
 	common.OptionMap["MihomoBinaryVersion"] = common.MihomoBinaryVersion
 	common.OptionMap["MihomoBinarySource"] = common.MihomoBinarySource
+	common.OptionMap["NodeTestDefaultURL"] = common.NodeTestDefaultURL
+	common.OptionMap["NodeTestDefaultTimeoutMS"] = strconv.Itoa(common.NodeTestDefaultTimeoutMS)
 	common.OptionMap["GeoIPProvider"] = common.GeoIPProvider
 	common.OptionMap["GitHubClientId"] = ""
 	common.OptionMap["GitHubClientSecret"] = ""
@@ -149,6 +151,14 @@ func updateOptionMap(key string, value string) {
 		common.MihomoBinaryVersion = value
 	case "MihomoBinarySource":
 		common.MihomoBinarySource = value
+	case "NodeTestDefaultURL":
+		if strings.TrimSpace(value) != "" {
+			common.NodeTestDefaultURL = value
+		}
+	case "NodeTestDefaultTimeoutMS":
+		if v, err := strconv.Atoi(value); err == nil && v > 0 {
+			common.NodeTestDefaultTimeoutMS = v
+		}
 	case "GeoIPProvider":
 		common.GeoIPProvider = value
 	case "GitHubClientId":

@@ -56,6 +56,8 @@ const defaultSystemFields = {
   MihomoBinaryPath: '',
   MihomoBinaryVersion: '',
   MihomoBinarySource: '',
+  NodeTestDefaultURL: 'https://cp.cloudflare.com/generate_204',
+  NodeTestDefaultTimeoutMS: '8000',
   GeoIPProvider: 'disabled',
   PasswordLoginEnabled: true,
   PasswordRegisterEnabled: true,
@@ -273,6 +275,9 @@ export function SettingsPage() {
       MihomoBinaryPath: optionMap.MihomoBinaryPath ?? '',
       MihomoBinaryVersion: optionMap.MihomoBinaryVersion ?? '',
       MihomoBinarySource: optionMap.MihomoBinarySource ?? '',
+      NodeTestDefaultURL:
+        optionMap.NodeTestDefaultURL ?? 'https://cp.cloudflare.com/generate_204',
+      NodeTestDefaultTimeoutMS: optionMap.NodeTestDefaultTimeoutMS ?? '8000',
       GeoIPProvider: optionMap.GeoIPProvider ?? 'disabled',
       PasswordLoginEnabled: toBoolean(optionMap.PasswordLoginEnabled, true),
       PasswordRegisterEnabled: toBoolean(
@@ -581,6 +586,29 @@ export function SettingsPage() {
       await saveOptionEntries(
         [['KernelType', systemFields.KernelType]],
         '内核类型已保存。',
+      );
+    });
+  };
+
+  const handleNodeTestDefaultsSave = () => {
+    void runBusyAction('node-test-defaults', async () => {
+      const timeout = Number.parseInt(systemFields.NodeTestDefaultTimeoutMS, 10);
+      if (Number.isNaN(timeout) || timeout <= 0) {
+        throw new Error('默认测速超时必须为大于 0 的整数。');
+      }
+      if (timeout > 60000) {
+        throw new Error('默认测速超时不能超过 60000 毫秒。');
+      }
+      if (!systemFields.NodeTestDefaultURL.trim()) {
+        throw new Error('默认测速 URL 不能为空。');
+      }
+
+      await saveOptionEntries(
+        [
+          ['NodeTestDefaultURL', systemFields.NodeTestDefaultURL.trim()],
+          ['NodeTestDefaultTimeoutMS', String(timeout)],
+        ],
+        '默认测速参数已保存。',
       );
     });
   };
@@ -1115,6 +1143,57 @@ export function SettingsPage() {
                   </p>
                 </div>
               </div>
+            </div>
+          </AppCard>
+
+          <AppCard
+            title="默认测速参数"
+            description="配置导入和节点池的测速操作都会统一使用这里的默认 URL 与超时。"
+            action={
+              <PrimaryButton
+                type="button"
+                onClick={handleNodeTestDefaultsSave}
+                disabled={busyKey === 'node-test-defaults'}
+              >
+                {busyKey === 'node-test-defaults'
+                  ? '保存中...'
+                  : '保存测速参数'}
+              </PrimaryButton>
+            }
+          >
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,220px)]">
+              <ResourceField
+                label="默认测速 URL"
+                hint="节点测试会通过代理访问该地址，建议使用返回体小、响应稳定的探测地址。"
+              >
+                <ResourceInput
+                  value={systemFields.NodeTestDefaultURL}
+                  onChange={(event) =>
+                    setSystemFields((previous) => ({
+                      ...previous,
+                      NodeTestDefaultURL: event.target.value,
+                    }))
+                  }
+                  placeholder="https://cp.cloudflare.com/generate_204"
+                />
+              </ResourceField>
+              <ResourceField
+                label="默认超时（毫秒）"
+                hint="建议保持在 3000 到 15000 之间。"
+              >
+                <ResourceInput
+                  type="number"
+                  value={systemFields.NodeTestDefaultTimeoutMS}
+                  onChange={(event) =>
+                    setSystemFields((previous) => ({
+                      ...previous,
+                      NodeTestDefaultTimeoutMS: event.target.value,
+                    }))
+                  }
+                  inputMode="numeric"
+                  placeholder="8000"
+                />
+              </ResourceField>
             </div>
           </AppCard>
 

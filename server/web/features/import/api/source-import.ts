@@ -32,16 +32,12 @@ export function importSourceConfig(
 export function testParsedNodes(input: {
   sourceConfigId: number;
   fingerprints: string[];
-  timeoutMs: number;
-  testUrl: string;
 }) {
   return apiRequest<ParsedNodeTestResult[]>('/source-configs/test', {
     method: 'POST',
     body: JSON.stringify({
       source_config_id: input.sourceConfigId,
       fingerprints: input.fingerprints,
-      timeout_ms: input.timeoutMs,
-      test_url: input.testUrl,
     }),
   });
 }

@@ -118,6 +118,18 @@ func UpdateEditableOption(option model.Option) error {
 		if !geoip.IsValidProvider(option.Value) {
 			return fmt.Errorf("GeoIPProvider is invalid")
 		}
+	case "NodeTestDefaultURL":
+		if strings.TrimSpace(option.Value) == "" {
+			return fmt.Errorf("NodeTestDefaultURL cannot be empty")
+		}
+	case "NodeTestDefaultTimeoutMS":
+		timeout, err := strconv.Atoi(strings.TrimSpace(option.Value))
+		if err != nil || timeout <= 0 {
+			return fmt.Errorf("NodeTestDefaultTimeoutMS must be a positive integer")
+		}
+		if timeout > 60000 {
+			return fmt.Errorf("NodeTestDefaultTimeoutMS cannot exceed 60000")
+		}
 	}
 	if _, removed := removedTemplateOptionKeys[option.Key]; removed {
 		return fmt.Errorf("%s has been removed from PoolX options", option.Key)

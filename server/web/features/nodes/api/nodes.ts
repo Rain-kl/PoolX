@@ -49,17 +49,11 @@ export function updateProxyNodeTags(nodeIds: number[], tags: string) {
   });
 }
 
-export function testProxyNodes(input: {
-  nodeIds: number[];
-  timeoutMs: number;
-  testUrl: string;
-}) {
+export function testProxyNodes(input: { nodeIds: number[] }) {
   return apiRequest<NodeTestExecution[]>('/proxy-nodes/test', {
     method: 'POST',
     body: JSON.stringify({
       node_ids: input.nodeIds,
-      timeout_ms: input.timeoutMs,
-      test_url: input.testUrl,
     }),
   });
 }

@@ -12,7 +12,6 @@ import (
 	"time"
 )
 
-const defaultNodeTestURL = "https://cp.cloudflare.com/generate_204"
 const nodeTestCacheTTL = 45 * time.Second
 const maxNodeTestParallelism = 4
 
@@ -280,6 +279,9 @@ func buildCachedNodeTestExecution(node *model.ProxyNode, testURL string) *NodeTe
 }
 
 func normalizeNodeTestTimeout(timeoutMS int) time.Duration {
+	if timeoutMS <= 0 {
+		timeoutMS = common.NodeTestDefaultTimeoutMS
+	}
 	timeout := time.Duration(timeoutMS) * time.Millisecond
 	if timeout <= 0 {
 		timeout = 8 * time.Second
@@ -291,10 +293,14 @@ func normalizeNodeTestTimeout(timeoutMS int) time.Duration {
 }
 
 func normalizeNodeTestURL(testURL string) string {
-	if strings.TrimSpace(testURL) == "" {
-		return defaultNodeTestURL
+	value := strings.TrimSpace(testURL)
+	if value == "" {
+		value = strings.TrimSpace(common.NodeTestDefaultURL)
 	}
-	return strings.TrimSpace(testURL)
+	if value == "" {
+		return common.DefaultNodeTestURL
+	}
+	return value
 }
 
 func persistNodeTestExecution(nodeID int, execution NodeTestExecution) error {

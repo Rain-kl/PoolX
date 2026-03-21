@@ -60,8 +60,6 @@ export function NodesPage() {
   );
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
-  const [testUrl, setTestUrl] = useState('https://cp.cloudflare.com/generate_204');
-  const [timeoutMs, setTimeoutMs] = useState('8000');
   const [tagsInput, setTagsInput] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
 
@@ -115,8 +113,6 @@ export function NodesPage() {
     mutationFn: async (nodeIds: number[]) =>
       testProxyNodes({
         nodeIds,
-        timeoutMs: Number.parseInt(timeoutMs, 10) || 8000,
-        testUrl: testUrl.trim(),
       }),
     onSuccess: async (result) => {
       setFeedback({
@@ -226,29 +222,6 @@ export function NodesPage() {
               重置
             </SecondaryButton>
           </div>
-        </div>
-      </AppCard>
-
-      <AppCard
-        title="测试参数"
-        description="服务端会临时拉起 Mihomo 进程，通过本地 mixed-port 代理请求测试 URL，返回真实链路结果；短时间内重复测试会优先返回缓存。"
-      >
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,180px)]">
-          <ResourceField label="测试 URL">
-            <ResourceInput
-              value={testUrl}
-              onChange={(event) => setTestUrl(event.target.value)}
-              placeholder="https://cp.cloudflare.com/generate_204"
-            />
-          </ResourceField>
-          <ResourceField label="超时（毫秒）">
-            <ResourceInput
-              value={timeoutMs}
-              onChange={(event) => setTimeoutMs(event.target.value)}
-              inputMode="numeric"
-              placeholder="8000"
-            />
-          </ResourceField>
         </div>
       </AppCard>
 
