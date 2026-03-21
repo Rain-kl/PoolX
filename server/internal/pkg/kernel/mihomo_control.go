@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os/exec"
+	"path/filepath"
 	"time"
 )
 
@@ -16,8 +17,16 @@ var MihomoHTTPClient = &http.Client{
 }
 
 func StartMihomoProcess(binaryPath string, workDir string, configPath string, stdout io.Writer, stderr io.Writer) (*exec.Cmd, error) {
-	cmd := exec.Command(binaryPath, "-d", workDir, "-f", configPath)
-	cmd.Dir = workDir
+	resolvedWorkDir, err := filepath.Abs(workDir)
+	if err != nil {
+		return nil, fmt.Errorf("resolve mihomo workdir: %w", err)
+	}
+	resolvedConfigPath, err := filepath.Abs(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("resolve mihomo config path: %w", err)
+	}
+	cmd := exec.Command(binaryPath, "-d", resolvedWorkDir, "-f", resolvedConfigPath)
+	cmd.Dir = resolvedWorkDir
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	if err := cmd.Start(); err != nil {
