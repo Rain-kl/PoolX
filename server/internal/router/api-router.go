@@ -65,6 +65,16 @@ func SetApiRouter(router *gin.Engine) {
 			updateRoute.POST("/manual-upgrade", controller.ConfirmManualServerUpgrade)
 			updateRoute.POST("/upgrade", controller.UpgradeServer)
 		}
+		kernelRoute := apiRouter.Group("/kernel")
+		kernelRoute.Use(middleware.RootAuth(), middleware.NoTokenAuth())
+		{
+			mihomoRoute := kernelRoute.Group("/mihomo")
+			{
+				mihomoRoute.POST("/inspect", controller.InspectMihomoBinary)
+				mihomoRoute.POST("/upload", controller.UploadMihomoBinary)
+				mihomoRoute.POST("/download", controller.DownloadMihomoBinary)
+			}
+		}
 		fileRoute := apiRouter.Group("/file")
 		fileRoute.Use(middleware.AdminAuth())
 		{

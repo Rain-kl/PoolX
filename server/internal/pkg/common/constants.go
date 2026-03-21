@@ -11,10 +11,16 @@ var StartTime = time.Now().Unix() // unit: second
 var Version = "dev"               // release builds inject the tag version via ldflags
 
 const DefaultServerUpdateRepo = "Rain-kl/PoolX"
+const DefaultKernelType = "mihomo"
+const DefaultMihomoReleaseRepo = "MetaCubeX/mihomo"
 
 var SystemName = "PoolX"
 var ServerAddress = "http://localhost:3000"
 var ServerUpdateRepo = DefaultServerUpdateRepo
+var KernelType = DefaultKernelType
+var MihomoBinaryPath = ""
+var MihomoBinaryVersion = ""
+var MihomoBinarySource = ""
 var Footer = ""
 var HomePageLink = ""
 

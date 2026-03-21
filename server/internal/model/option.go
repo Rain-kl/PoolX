@@ -43,6 +43,10 @@ func InitOptionMap() {
 	common.OptionMap["SystemName"] = common.SystemName
 	common.OptionMap["ServerAddress"] = ""
 	common.OptionMap["ServerUpdateRepo"] = common.ServerUpdateRepo
+	common.OptionMap["KernelType"] = common.KernelType
+	common.OptionMap["MihomoBinaryPath"] = common.MihomoBinaryPath
+	common.OptionMap["MihomoBinaryVersion"] = common.MihomoBinaryVersion
+	common.OptionMap["MihomoBinarySource"] = common.MihomoBinarySource
 	common.OptionMap["GeoIPProvider"] = common.GeoIPProvider
 	common.OptionMap["GitHubClientId"] = ""
 	common.OptionMap["GitHubClientSecret"] = ""
@@ -137,6 +141,14 @@ func updateOptionMap(key string, value string) {
 		common.ServerAddress = value
 	case "ServerUpdateRepo":
 		common.ServerUpdateRepo = value
+	case "KernelType":
+		common.KernelType = value
+	case "MihomoBinaryPath":
+		common.MihomoBinaryPath = value
+	case "MihomoBinaryVersion":
+		common.MihomoBinaryVersion = value
+	case "MihomoBinarySource":
+		common.MihomoBinarySource = value
 	case "GeoIPProvider":
 		common.GeoIPProvider = value
 	case "GitHubClientId":

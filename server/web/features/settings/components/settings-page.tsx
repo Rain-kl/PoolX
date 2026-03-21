@@ -1,7 +1,8 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import type { ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { EmptyState } from '@/components/feedback/empty-state';
 import { ErrorState } from '@/components/feedback/error-state';
@@ -17,15 +18,19 @@ import { getPublicStatus } from '@/features/auth/api/public';
 import {
   bindEmail,
   bindWeChat,
+  downloadMihomoBinary,
   generateAccessToken,
   getOptions,
   getSettingsProfile,
+  inspectMihomoBinary,
   previewGeoIP,
+  uploadMihomoBinary,
   updateOption,
   updateSelf,
 } from '@/features/settings/api/settings';
 import type {
   GeoIPPreviewResult,
+  KernelBinaryInstallResult,
   OptionItem,
   UpdateSelfPayload,
 } from '@/features/settings/types';
@@ -47,6 +52,10 @@ const defaultServerUpdateRepo = 'Rain-kl/PoolX';
 const defaultSystemFields = {
   ServerAddress: '',
   ServerUpdateRepo: defaultServerUpdateRepo,
+  KernelType: 'mihomo',
+  MihomoBinaryPath: '',
+  MihomoBinaryVersion: '',
+  MihomoBinarySource: '',
   GeoIPProvider: 'disabled',
   PasswordLoginEnabled: true,
   PasswordRegisterEnabled: true,
@@ -137,6 +146,13 @@ function getBrowserOrigin() {
   return normalizeServerUrl(window.location.origin);
 }
 
+function defaultMihomoInstallPath() {
+  if (typeof navigator !== 'undefined' && navigator.userAgent.includes('Windows')) {
+    return '.\\data\\mihomo.exe';
+  }
+  return './data/mihomo';
+}
+
 function formatSecondsLabel(value: string) {
   const seconds = Number.parseInt(value, 10);
   if (Number.isNaN(seconds)) {
@@ -170,6 +186,7 @@ export function SettingsPage() {
     defaultOperationFields,
   );
   const [otherFields, setOtherFields] = useState(defaultOtherFields);
+  const [mihomoUploadProgress, setMihomoUploadProgress] = useState(0);
   const [accessToken, setAccessToken] = useState('');
   const [wechatCode, setWeChatCode] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
@@ -178,6 +195,7 @@ export function SettingsPage() {
   const [geoIPTestIP, setGeoIPTestIP] = useState('8.8.8.8');
   const [geoIPPreviewResult, setGeoIPPreviewResult] =
     useState<GeoIPPreviewResult | null>(null);
+  const mihomoUploadInputRef = useRef<HTMLInputElement | null>(null);
   const isRoot = (user?.role ?? 0) >= 100;
 
   const publicStatusQuery = useQuery({
@@ -251,6 +269,10 @@ export function SettingsPage() {
     setSystemFields({
       ServerAddress: resolvedServerAddress,
       ServerUpdateRepo: optionMap.ServerUpdateRepo ?? defaultServerUpdateRepo,
+      KernelType: optionMap.KernelType ?? 'mihomo',
+      MihomoBinaryPath: optionMap.MihomoBinaryPath ?? '',
+      MihomoBinaryVersion: optionMap.MihomoBinaryVersion ?? '',
+      MihomoBinarySource: optionMap.MihomoBinarySource ?? '',
       GeoIPProvider: optionMap.GeoIPProvider ?? 'disabled',
       PasswordLoginEnabled: toBoolean(optionMap.PasswordLoginEnabled, true),
       PasswordRegisterEnabled: toBoolean(
@@ -327,6 +349,85 @@ export function SettingsPage() {
     },
     onError: (error) => {
       setGeoIPPreviewResult(null);
+      setFeedback({ tone: 'danger', message: getErrorMessage(error) });
+    },
+  });
+
+  const mihomoUploadMutation = useMutation({
+    mutationFn: ({
+      binary,
+      installPath,
+    }: {
+      binary: File;
+      installPath: string;
+    }) =>
+      uploadMihomoBinary(binary, installPath, (progress) => {
+        setMihomoUploadProgress(progress);
+      }),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: settingsQueryKey });
+      setSystemFields((previous) => ({
+        ...previous,
+        MihomoBinaryPath: result.install_path,
+        MihomoBinaryVersion: result.detected_version,
+        MihomoBinarySource: result.binary_source,
+        KernelType: result.kernel_type,
+      }));
+      setFeedback({
+        tone: 'success',
+        message: `Mihomo 二进制已安装，版本为 ${result.detected_version}。`,
+      });
+      setMihomoUploadProgress(100);
+    },
+    onError: (error) => {
+      setMihomoUploadProgress(0);
+      setFeedback({ tone: 'danger', message: getErrorMessage(error) });
+    },
+    onSettled: () => {
+      if (mihomoUploadInputRef.current) {
+        mihomoUploadInputRef.current.value = '';
+      }
+    },
+  });
+
+  const mihomoDownloadMutation = useMutation({
+    mutationFn: (installPath: string) => downloadMihomoBinary(installPath),
+    onSuccess: async (result: KernelBinaryInstallResult) => {
+      await queryClient.invalidateQueries({ queryKey: settingsQueryKey });
+      setSystemFields((previous) => ({
+        ...previous,
+        MihomoBinaryPath: result.install_path,
+        MihomoBinaryVersion: result.detected_version,
+        MihomoBinarySource: result.binary_source,
+        KernelType: result.kernel_type,
+      }));
+      setFeedback({
+        tone: 'success',
+        message: `已安装官方 Mihomo 版本 ${result.detected_version}。`,
+      });
+    },
+    onError: (error) => {
+      setFeedback({ tone: 'danger', message: getErrorMessage(error) });
+    },
+  });
+
+  const mihomoInspectMutation = useMutation({
+    mutationFn: (installPath: string) => inspectMihomoBinary(installPath),
+    onSuccess: async (result: KernelBinaryInstallResult) => {
+      await queryClient.invalidateQueries({ queryKey: settingsQueryKey });
+      setSystemFields((previous) => ({
+        ...previous,
+        MihomoBinaryPath: result.install_path,
+        MihomoBinaryVersion: result.detected_version,
+        MihomoBinarySource: result.binary_source,
+        KernelType: result.kernel_type,
+      }));
+      setFeedback({
+        tone: 'success',
+        message: `Mihomo 二进制检查通过，版本为 ${result.detected_version}。`,
+      });
+    },
+    onError: (error) => {
       setFeedback({ tone: 'danger', message: getErrorMessage(error) });
     },
   });
@@ -461,6 +562,62 @@ export function SettingsPage() {
     void runBusyAction(`toggle-${key}`, async () => {
       await saveOptionEntries([[key, String(nextValue)]], '系统开关已更新。');
     });
+  };
+
+  const requireMihomoInstallPath = (allowDefault = false) => {
+    const installPath = systemFields.MihomoBinaryPath.trim() || (allowDefault ? defaultMihomoInstallPath() : '');
+    if (!installPath) {
+      setFeedback({
+        tone: 'danger',
+        message: '请先填写 Mihomo 二进制文件路径。',
+      });
+      return '';
+    }
+    return installPath;
+  };
+
+  const handleKernelTypeSave = () => {
+    void runBusyAction('kernel-type', async () => {
+      await saveOptionEntries(
+        [['KernelType', systemFields.KernelType]],
+        '内核类型已保存。',
+      );
+    });
+  };
+
+  const handleMihomoUploadSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+    const binary = event.target.files?.[0];
+    if (!binary) {
+      return;
+    }
+    const installPath = requireMihomoInstallPath(true);
+    if (!installPath) {
+      event.target.value = '';
+      return;
+    }
+    setSystemFields((previous) => ({ ...previous, MihomoBinaryPath: installPath }));
+    setFeedback(null);
+    setMihomoUploadProgress(0);
+    await mihomoUploadMutation.mutateAsync({ binary, installPath });
+  };
+
+  const handleMihomoAutoDownload = () => {
+    const installPath = requireMihomoInstallPath(true);
+    if (!installPath) {
+      return;
+    }
+    setSystemFields((previous) => ({ ...previous, MihomoBinaryPath: installPath }));
+    setFeedback(null);
+    mihomoDownloadMutation.mutate(installPath);
+  };
+
+  const handleMihomoInspect = () => {
+    const installPath = requireMihomoInstallPath(false);
+    if (!installPath) {
+      return;
+    }
+    setFeedback(null);
+    mihomoInspectMutation.mutate(installPath);
   };
 
   const renderTabContent = () => {
@@ -794,6 +951,173 @@ export function SettingsPage() {
     if (activeTab === 'system') {
       return (
         <div className="space-y-6">
+          <AppCard
+            title="代理内核设置"
+            description="当前仅支持 Mihomo，Xray 与 sing-box 入口已预留。完成安装后会自动校验版本并写回配置。"
+            action={
+              <PrimaryButton
+                type="button"
+                onClick={handleKernelTypeSave}
+                disabled={busyKey === 'kernel-type'}
+              >
+                {busyKey === 'kernel-type' ? '保存中...' : '保存内核设置'}
+              </PrimaryButton>
+            }
+          >
+            <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+              <div className="space-y-5">
+                <ResourceField
+                  label="内核类型"
+                  hint="当前版本仅开放 Mihomo，其他内核先保留配置入口。"
+                >
+                  <ResourceSelect
+                    value={systemFields.KernelType}
+                    onChange={(event) =>
+                      setSystemFields((previous) => ({
+                        ...previous,
+                        KernelType: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="mihomo">Mihomo</option>
+                    <option value="xray" disabled>
+                      Xray（预留）
+                    </option>
+                    <option value="singbox" disabled>
+                      sing-box（预留）
+                    </option>
+                  </ResourceSelect>
+                </ResourceField>
+
+                <ResourceField
+                  label="Mihomo 二进制路径"
+                  hint="可填写已存在的二进制路径并点击检查；如果留空，上传或自动下载时会默认安装到 ./data。"
+                >
+                  <ResourceInput
+                    value={systemFields.MihomoBinaryPath}
+                    onChange={(event) =>
+                      setSystemFields((previous) => ({
+                        ...previous,
+                        MihomoBinaryPath: event.target.value,
+                      }))
+                    }
+                    placeholder={
+                      typeof window !== 'undefined' &&
+                      navigator.userAgent.includes('Windows')
+                        ? 'C:\\poolx\\bin\\mihomo.exe'
+                        : '/usr/local/bin/mihomo'
+                    }
+                  />
+                </ResourceField>
+
+                <input
+                  ref={mihomoUploadInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={(event) => {
+                    void handleMihomoUploadSelect(event);
+                  }}
+                />
+
+                <div className="flex flex-wrap gap-3">
+                  <SecondaryButton
+                    type="button"
+                    onClick={handleMihomoInspect}
+                    disabled={
+                      mihomoInspectMutation.isPending ||
+                      mihomoUploadMutation.isPending ||
+                      mihomoDownloadMutation.isPending
+                    }
+                  >
+                    {mihomoInspectMutation.isPending ? '检查中...' : '检查内核'}
+                  </SecondaryButton>
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => mihomoUploadInputRef.current?.click()}
+                    disabled={
+                      mihomoInspectMutation.isPending ||
+                      mihomoUploadMutation.isPending ||
+                      mihomoDownloadMutation.isPending
+                    }
+                  >
+                    {mihomoUploadMutation.isPending
+                      ? '上传校验中...'
+                      : '手动上传 Mihomo'}
+                  </SecondaryButton>
+                  <PrimaryButton
+                    type="button"
+                    onClick={handleMihomoAutoDownload}
+                    disabled={
+                      mihomoInspectMutation.isPending ||
+                      mihomoUploadMutation.isPending ||
+                      mihomoDownloadMutation.isPending
+                    }
+                  >
+                    {mihomoDownloadMutation.isPending
+                      ? '下载校验中...'
+                      : '自动下载官方发行版'}
+                  </PrimaryButton>
+                </div>
+
+                {mihomoUploadMutation.isPending ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-[var(--foreground-secondary)]">
+                      <span>上传进度</span>
+                      <span>{mihomoUploadProgress}%</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-muted)]">
+                      <div
+                        className="h-full bg-[var(--brand-primary)] transition-all"
+                        style={{ width: `${mihomoUploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)] px-4 py-4">
+                  <p className="text-xs tracking-[0.2em] text-[var(--foreground-muted)] uppercase">
+                    当前内核
+                  </p>
+                  <p className="mt-2 text-sm text-[var(--foreground-primary)]">
+                    {systemFields.KernelType || 'mihomo'}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)] px-4 py-4">
+                  <p className="text-xs tracking-[0.2em] text-[var(--foreground-muted)] uppercase">
+                    已校验版本
+                  </p>
+                  <p className="mt-2 text-sm text-[var(--foreground-primary)]">
+                    {systemFields.MihomoBinaryVersion || '尚未安装'}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)] px-4 py-4">
+                  <p className="text-xs tracking-[0.2em] text-[var(--foreground-muted)] uppercase">
+                    安装来源
+                  </p>
+                  <p className="mt-2 text-sm text-[var(--foreground-primary)]">
+                    {systemFields.MihomoBinarySource === 'upload'
+                      ? '手动上传'
+                      : systemFields.MihomoBinarySource === 'download'
+                        ? '官方自动下载'
+                        : systemFields.MihomoBinarySource === 'existing'
+                          ? '现有路径检查'
+                        : '未设置'}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)] px-4 py-4 md:col-span-2">
+                  <p className="text-xs tracking-[0.2em] text-[var(--foreground-muted)] uppercase">
+                    当前路径
+                  </p>
+                  <p className="mt-2 break-all text-sm text-[var(--foreground-primary)]">
+                    {systemFields.MihomoBinaryPath || '尚未配置'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </AppCard>
+
           <AppCard
             title="登录与注册开关"
             description="切换后立即生效，无需重启服务。"

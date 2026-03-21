@@ -102,6 +102,18 @@ func UpdateEditableOption(option model.Option) error {
 		if !isValidGitHubRepo(option.Value) {
 			return fmt.Errorf("ServerUpdateRepo must be in owner/repo format")
 		}
+	case "KernelType":
+		if err := validateKernelType(option.Value); err != nil {
+			return err
+		}
+	case "MihomoBinaryPath":
+		if strings.TrimSpace(option.Value) == "" {
+			return fmt.Errorf("MihomoBinaryPath cannot be empty")
+		}
+	case "MihomoBinarySource":
+		if err := validateMihomoBinarySource(option.Value); err != nil {
+			return err
+		}
 	case "GeoIPProvider":
 		if !geoip.IsValidProvider(option.Value) {
 			return fmt.Errorf("GeoIPProvider is invalid")
@@ -148,6 +160,26 @@ func validateRateLimitOption(key string, value string) error {
 
 func isValidGitHubRepo(value string) bool {
 	return githubRepoPattern.MatchString(strings.TrimSpace(value))
+}
+
+func validateKernelType(value string) error {
+	switch strings.TrimSpace(strings.ToLower(value)) {
+	case KernelTypeMihomo:
+		return nil
+	case KernelTypeXray, KernelTypeSingbox:
+		return fmt.Errorf("当前版本仅支持 mihomo，%s 暂未开放", strings.TrimSpace(value))
+	default:
+		return fmt.Errorf("KernelType is invalid")
+	}
+}
+
+func validateMihomoBinarySource(value string) error {
+	switch strings.TrimSpace(strings.ToLower(value)) {
+	case MihomoBinarySourceExisting, MihomoBinarySourceUpload, MihomoBinarySourceDownload:
+		return nil
+	default:
+		return fmt.Errorf("MihomoBinarySource is invalid")
+	}
 }
 
 func PreviewGeoIPLookup(provider string, ipValue string) (*GeoIPLookupPreview, error) {

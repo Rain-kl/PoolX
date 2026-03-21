@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"poolx/internal/pkg/common"
 	"runtime"
@@ -807,56 +806,19 @@ func isManualServerUpgradeSupported(currentVersion string) bool {
 }
 
 func persistUploadedServerBinary(tempDir string, fileName string, reader io.Reader) (string, error) {
-	suffix := filepath.Ext(strings.TrimSpace(fileName))
-	if runtime.GOOS == "windows" && suffix == "" {
-		suffix = ".exe"
-	}
-	tempDir = strings.TrimSpace(tempDir)
-	if tempDir == "" {
-		tempDir = os.TempDir()
-	}
-	tempFile, err := os.CreateTemp(tempDir, "poolx-server-manual-upgrade-*"+suffix)
+	tempPath, err := persistExecutableTempFile(tempDir, "poolx-server-manual-upgrade-", fileName, reader)
 	if err != nil {
 		return "", fmt.Errorf("创建临时升级文件失败: %v", err)
-	}
-	tempPath := tempFile.Name()
-	if _, err = io.Copy(tempFile, reader); err != nil {
-		_ = tempFile.Close()
-		_ = os.Remove(tempPath)
-		return "", fmt.Errorf("写入上传二进制失败: %v", err)
-	}
-	if err = tempFile.Close(); err != nil {
-		_ = os.Remove(tempPath)
-		return "", fmt.Errorf("关闭临时升级文件失败: %v", err)
-	}
-	if err = os.Chmod(tempPath, 0o755); err != nil && runtime.GOOS != "windows" {
-		_ = os.Remove(tempPath)
-		return "", fmt.Errorf("设置临时升级文件权限失败: %v", err)
 	}
 	return tempPath, nil
 }
 
 func detectUploadedServerBinaryVersion(ctx context.Context, filePath string) (string, error) {
-	commandCtx := ctx
-	if commandCtx == nil {
-		commandCtx = context.Background()
-	}
-	cmd := exec.CommandContext(commandCtx, filePath, "--version")
-	output, err := cmd.CombinedOutput()
+	version, err := detectCommandVersion(ctx, filePath, "--version")
 	if err != nil {
-		return "", fmt.Errorf("检查上传二进制版本失败: %w: %s", err, strings.TrimSpace(string(output)))
+		return "", fmt.Errorf("检查上传二进制版本失败: %v", err)
 	}
-	version := strings.TrimSpace(string(output))
-	if version == "" {
-		return "", fmt.Errorf("上传二进制未返回有效版本号")
-	}
-	for _, line := range strings.Split(version, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if trimmed != "" {
-			return trimmed, nil
-		}
-	}
-	return "", fmt.Errorf("上传二进制未返回有效版本号")
+	return version, nil
 }
 
 func persistDownloadedServerBinary(ctx context.Context, execPath string, releaseTag string, reader io.Reader) (*manualServerBinaryCandidate, error) {

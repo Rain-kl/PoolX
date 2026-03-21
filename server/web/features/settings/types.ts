@@ -14,6 +14,16 @@ export interface GeoIPPreviewResult {
   longitude?: number;
 }
 
+export interface KernelBinaryInstallResult {
+  kernel_type: string;
+  install_path: string;
+  binary_source: 'upload' | 'download' | string;
+  detected_version: string;
+  file_name: string;
+  release_tag?: string;
+  installed_at: string;
+}
+
 export interface UpdateSelfPayload {
   username: string;
   display_name: string;
