@@ -9,6 +9,9 @@
 A Proxy Pool Control Plane built with Gin and Next.js, designed to turn Clash/Mihomo nodes into reusable proxy pools for crawlers, scraping systems, and proxy-driven network workloads.
 </div>
 
+> [!NOTE]
+> The use of glider for converting nodes to proxy pools is no longer recommended. Old versions of archives can still be found in the glider branch. The current project provides a graphical interface system for building proxy pools. Currently, it only supports the mihomo kernel.
+
 ## What This Project Is For
 
 PoolX is built for teams that need to:
