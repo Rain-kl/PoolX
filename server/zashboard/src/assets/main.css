@@ -1,0 +1,392 @@
+@import 'tailwindcss';
+
+@config '../../tailwind.config.ts';
+@plugin 'daisyui' {
+  themes: all;
+  exclude: rootscrollgutter;
+}
+
+@theme {
+  --font-MiSans-NotoEmoji: 'MiSans-VF', 'NotoEmoji', system-ui;
+  --font-SarasaUI-NotoEmoji: 'SarasaUiSC-Regular', 'NotoEmoji', system-ui;
+  --font-PingFang-NotoEmoji: 'PingFangSC-Regular', 'NotoEmoji', system-ui;
+  --font-FiraSans-NotoEmoji: 'Fira Sans', 'NotoEmoji', system-ui;
+  --font-SystemUI-NotoEmoji: 'NotoEmoji', system-ui;
+
+  --font-MiSans-Twemoji: 'MiSans-VF', 'Twemoji', system-ui;
+  --font-SarasaUI-Twemoji: 'SarasaUiSC-Regular', 'Twemoji', system-ui;
+  --font-PingFang-Twemoji: 'PingFangSC-Regular', 'Twemoji', system-ui;
+  --font-FiraSans-Twemoji: 'Fira Sans', 'Twemoji', system-ui;
+  --font-SystemUI-Twemoji: 'Twemoji', system-ui;
+}
+
+@layer utilities {
+  @font-face {
+    font-family: 'NotoEmoji';
+    src: url('./NotoColorEmoji-flagsonly.ttf') format('truetype');
+  }
+}
+
+@layer utilities {
+  @font-face {
+    font-family: 'Twemoji';
+    src: url('./TwemojiMozilla-flags.woff2') format('woff2');
+  }
+}
+@utility card {
+  @apply bg-base-100 rounded-lg shadow-md;
+  .card-body {
+    @apply p-4;
+  }
+}
+
+@utility collapse {
+  @apply bg-base-100 rounded-lg shadow-md;
+}
+
+.collapse.transparent-collapse {
+  @apply bg-transparent! shadow-none! backdrop-blur-none!;
+}
+
+@utility badge {
+  @apply bg-base-200/80;
+}
+
+@utility select {
+  @apply w-auto;
+}
+
+@utility btn {
+  @apply border-none;
+}
+
+@utility tabs {
+  .tab {
+    @apply px-2;
+  }
+  .tab.tab-active {
+    @apply bg-primary text-primary-content;
+  }
+}
+
+@utility tab {
+  @apply max-md:min-w-24;
+}
+
+@utility table {
+  & tr,
+  & th,
+  & td {
+    @apply border-0;
+  }
+  @apply border-separate border-spacing-0;
+}
+
+@utility modal {
+  @apply max-md:bg-transparent! max-md:backdrop-blur-sm max-md:transition-[backdrop-filter];
+}
+
+.select.select-sm,
+.input.input-sm,
+.btn.btn-sm,
+.tabs.tabs-xs .tab {
+  @apply text-sm;
+}
+
+@for $i from 0 to 100 {
+  .custom-background.custom-background-$(i) {
+    .bg-base-100,
+    .bg-primary,
+    .card,
+    .collapse,
+    .input,
+    .select,
+    .toggle,
+    .settings-menu,
+    .ctrls-bar,
+    .tabs {
+      @apply bg-base-100/$(i);
+    }
+
+    .badge {
+      @apply bg-base-200/$(i) border-base-200/$(i);
+    }
+
+    option,
+    optgroup {
+      @apply backdrop-blur-sm;
+    }
+
+    .bg-base-200,
+    .dock,
+    .table tbody tr:nth-child(even) {
+      @apply bg-base-200/$(i);
+    }
+
+    .modal-box {
+      @if $i > 70 {
+        @apply bg-base-100/$(i);
+      } @else  {
+        @apply bg-base-100/70;
+      }
+    }
+
+    .bg-primary:not(.tab.tab-active) {
+      @if $i > 60 {
+        @apply bg-primary/$(i);
+      } @else  {
+        @apply bg-primary/60;
+      }
+    }
+
+    .bg-primary .latency-tag {
+      @if $i > 90 {
+        @apply bg-base-100/$(i);
+      } @else  {
+        @apply bg-base-100/90;
+      }
+    }
+
+    .home-page.bg-base-200\/50 {
+      background-color: transparent;
+    }
+  }
+}
+
+@for $i from 0 to 40 {
+  .blur-intensity-$(i) {
+    .card,
+    .collapse,
+    .sidebar,
+    .nav-bar,
+    .modal-box,
+    .need-blur,
+    .table thead {
+      /* prettier-ignore */
+      backdrop-filter: blur($(i)px);
+    }
+
+    .pinned-td {
+      @apply bg-transparent! backdrop-blur-xl;
+    }
+
+    .table tbody::before {
+      position: absolute;
+      content: '';
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /* prettier-ignore */
+      backdrop-filter: blur($(i)px);
+    }
+  }
+}
+
+.tippy-box {
+  @apply bg-neutral text-neutral-content z-[9999] whitespace-pre-line shadow-md;
+}
+.tippy-box[data-placement^='top'] > .tippy-arrow:before {
+  @apply border-t-neutral;
+}
+.tippy-box[data-placement^='right'] > .tippy-arrow:before {
+  @apply border-r-neutral;
+}
+.tippy-box[data-placement^='bottom'] > .tippy-arrow:before {
+  @apply border-b-neutral;
+}
+.tippy-box[data-placement^='left'] > .tippy-arrow:before {
+  @apply border-l-neutral;
+}
+
+.tippy-box[data-theme^='base'] {
+  @apply bg-base-100 border-base-200 text-base-content z-9999 border shadow-md;
+}
+.tippy-box[data-theme^='base'][data-placement^='top'] > .tippy-arrow:before {
+  @apply border-t-base-100;
+}
+.tippy-box[data-theme^='base'][data-placement^='right'] > .tippy-arrow:before {
+  @apply border-r-base-100;
+}
+.tippy-box[data-theme^='base'][data-placement^='bottom'] > .tippy-arrow:before {
+  @apply border-b-base-100;
+}
+.tippy-box[data-theme^='base'][data-placement^='left'] > .tippy-arrow:before {
+  @apply border-l-base-100;
+}
+
+.tippy-box[data-theme^='transparent'] {
+  @apply rounded-lg;
+  .tippy-content {
+    @apply p-0;
+  }
+}
+.tippy-box[data-theme^='transparent'][data-placement^='top'] {
+  @apply -mb-2;
+}
+.tippy-box[data-theme^='transparent'][data-placement^='right'] {
+  @apply -ml-2;
+}
+.tippy-box[data-theme^='transparent'][data-placement^='bottom'] {
+  @apply -mt-2;
+}
+.tippy-box[data-theme^='transparent'][data-placement^='left'] {
+  @apply -mr-2;
+}
+
+.slide-right-enter-active,
+.slide-right-leave-active,
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: all 0.2s ease-in-out;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.slide-left-enter-from {
+  transform: translateX(100%);
+}
+.slide-right-enter-from {
+  transform: translateX(-100%);
+}
+
+.slide-left-leave-from,
+.slide-right-leave-from,
+.slide-left-leave-to,
+.slide-right-leave-to {
+  display: none;
+}
+
+.slide-left-enter-to,
+.slide-right-enter-to {
+  transform: translateX(0);
+}
+
+div {
+  @apply scrollbar-thin;
+}
+
+.text-main {
+  @apply text-primary;
+}
+
+[data-theme='dark'] .text-main {
+  color: oklch(72% 0.233 277.117);
+}
+
+[data-theme='lofi'] .text-main,
+[data-theme='pastel'] .text-main,
+[data-theme='wireframe'] .text-main,
+[data-theme='business'] .text-main,
+[data-theme='black'] .text-main {
+  @apply text-info;
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounceInForPC {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.bounce-in {
+  animation: bounceIn 0.4s ease-out;
+}
+
+@media screen and (min-width: 1024px) {
+  .bounce-in {
+    animation: bounceInForPC 0.4s ease-out;
+  }
+}
+
+@keyframes highlightFlash {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 100%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 30%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 0%, transparent);
+  }
+}
+
+.highlight-flash {
+  animation: highlightFlash 0.6s ease-out 2;
+}
+
+@keyframes progressBar {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.dock-shadow {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.3),
+    rgba(0, 0, 0, 0.16),
+    rgba(0, 0, 0, 0.08),
+    rgba(0, 0, 0, 0.02),
+    rgba(0, 0, 0, 0)
+  );
+  width: 100%;
+  height: env(safe-area-inset-bottom);
+  position: fixed;
+  bottom: 0;
+  z-index: 10;
+}
+.ctrls-bar {
+  @media screen and (max-width: 768px) {
+    background: linear-gradient(
+      to bottom,
+      var(--color-base-100),
+      color-mix(in srgb, var(--color-base-100) 10%, transparent)
+    );
+  }
+  @apply md:bg-base-100/20 fixed top-0 right-0 left-0 z-30 shadow-sm backdrop-blur-lg md:sticky;
+}
+
+.dock {
+  @apply absolute right-2 left-2 z-30 rounded-3xl;
+}
+
+.settings-title {
+  @apply flex items-center gap-2 py-2 text-lg font-bold;
+}
+.settings-grid {
+  @apply grid max-w-7xl grid-cols-1 gap-x-4 gap-y-1 lg:grid-cols-2 lg:gap-x-8 xl:gap-x-12 2xl:gap-x-16;
+}
+.sidebar-collapsed .settings-grid {
+  @apply md:grid-cols-2;
+}
+.setting-item {
+  @apply border-base-300/40 flex h-10 items-center gap-2 border-b;
+  .setting-item-label {
+    @apply flex-1 text-sm font-medium;
+    svg {
+      @apply inline-block;
+    }
+  }
+}
