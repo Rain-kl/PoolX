@@ -45,6 +45,13 @@ pnpm install
 pnpm build
 ```
 
+```bash
+cd server/zashboard
+corepack enable
+pnpm install
+pnpm build
+```
+
 ### 2. 启动服务端
 
 ```bash
@@ -56,6 +63,8 @@ go run ./cmd/server
 ```
 
 访问地址：`http://localhost:3000`
+
+Clash 控制台地址：`http://localhost:3000/zashboard/`
 
 默认账号：
 

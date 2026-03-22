@@ -11,6 +11,15 @@ RUN corepack enable && pnpm install --frozen-lockfile
 COPY ./web ./
 RUN NEXT_PUBLIC_APP_VERSION="$VERSION" pnpm build
 
+FROM node:20 AS zashboard-builder
+
+WORKDIR /build
+COPY ./zashboard/package.json ./
+COPY ./zashboard/pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile
+COPY ./zashboard ./
+RUN pnpm build
+
 FROM golang:1.24 AS builder2
 
 ARG VERSION
@@ -22,6 +31,7 @@ ENV GO111MODULE=on \
 WORKDIR /build
 COPY . .
 COPY --from=builder /build/build ./web/build
+COPY --from=zashboard-builder /build/dist ./zashboard/dist
 RUN go mod download
 RUN go build -trimpath -ldflags "-s -w -X 'poolx/internal/pkg/common.Version=$VERSION'" -o poolx-server .
 

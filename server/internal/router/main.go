@@ -9,7 +9,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func SetRouter(router *gin.Engine, assetFS fs.FS, buildDir string, indexPage []byte) {
+func SetRouter(router *gin.Engine, assetFS fs.FS, buildDir string, indexPage []byte, zashboardDir string) {
 	SetApiRouter(router)
 	swaggerRoute := router.Group("/swagger")
 	swaggerRoute.Use(middleware.AdminAuth())
@@ -20,5 +20,5 @@ func SetRouter(router *gin.Engine, assetFS fs.FS, buildDir string, indexPage []b
 		ginSwagger.PersistAuthorization(true),
 		ginSwagger.DefaultModelsExpandDepth(1),
 	))
-	setWebRouter(router, assetFS, buildDir, indexPage)
+	setWebRouter(router, assetFS, buildDir, indexPage, zashboardDir)
 }

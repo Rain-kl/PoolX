@@ -3,17 +3,17 @@ import type {NavigationItem} from '@/types/navigation';
 export const dashboardNavigation: NavigationItem[] = [
     {
         href: '/',
-        label: '运行状态',
+        label: '内核',
         icon: 'runtime',
     },
     {
         href: '/workspace',
-        label: '工作台',
+        label: '编排',
         icon: 'workspace',
     },
     {
         href: '/nodes',
-        label: '节点池',
+        label: '节点',
         icon: 'node',
     },
     {

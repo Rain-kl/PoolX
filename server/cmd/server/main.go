@@ -11,5 +11,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	app.RunServer(os.DirFS("."), "web/build", indexPage)
+	app.RunServer(os.DirFS("."), "web/build", indexPage, "zashboard/dist")
 }

@@ -27,7 +27,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(version),
     __COMMIT_ID__: JSON.stringify(getGitCommitId()),
   },
-  base: './',
+  base: '/zashboard/',
   plugins: [
     vue(),
     vueJsx(),

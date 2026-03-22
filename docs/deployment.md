@@ -24,7 +24,21 @@ pnpm install
 pnpm build
 ```
 
-`pnpm build` 会生成供 Go Server 托管的静态产物。
+`pnpm build` 会生成供 Go Server 托管的管理端静态产物。
+
+如需内置 Clash 控制台 `zashboard`，还需要构建一次它的静态资源：
+
+```bash
+cd server/zashboard
+corepack enable
+pnpm install
+pnpm build
+```
+
+构建完成后，Go Server 会托管：
+
+* 管理端：`/`
+* Clash 控制台：`/zashboard/`
 
 ### 2.2 源码启动
 
@@ -48,6 +62,8 @@ go run .
 ```
 
 默认监听 `3000` 端口。
+
+如果使用 `go run .` 的嵌入式静态资源入口，启动前需要先完成 `server/web` 和 `server/zashboard` 的构建。
 
 ### 2.3 Docker Compose 启动
 
@@ -110,6 +126,12 @@ docker compose up -d
 * 密码：`123456`
 
 首次部署后应尽快修改默认密码，并配置正式的 `SESSION_SECRET`。
+
+如需打开内置 Clash 控制台，可在运行状态页点击“打开 Clash 控制台”，或直接访问：
+
+`http://localhost:3000/zashboard/`
+
+该界面会通过 PoolX 服务端同源反代连接 Mihomo external-controller，继续复用管理端登录态，不需要在浏览器中填写 `secret` 或直连本机 Clash API。
 
 ## 4. Swagger
 

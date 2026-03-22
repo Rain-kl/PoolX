@@ -152,7 +152,7 @@ export function RuntimePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="运行状态"
+        title="内核"
         description="聚合工作台端口配置后生成最终 Mihomo 配置，并在这里执行启动、停止、热重载和日志查看。"
         action={
           <div className="flex flex-wrap gap-2">
@@ -188,6 +188,13 @@ export function RuntimePage() {
             </DangerButton>
             <SecondaryButton type="button" onClick={() => setAutoRefresh((value) => !value)}>
               {autoRefresh ? '暂停自动刷新' : '开启自动刷新'}
+            </SecondaryButton>
+            <SecondaryButton
+              type="button"
+              onClick={() => window.open('/zashboard/', '_blank', 'noopener,noreferrer')}
+              disabled={!status.running}
+            >
+              打开 Clash 控制台
             </SecondaryButton>
           </div>
         }

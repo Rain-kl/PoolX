@@ -4,6 +4,7 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"io/fs"
+	"mime"
 	"net/http"
 	pathpkg "path"
 	"poolx/internal/handler"
@@ -12,8 +13,12 @@ import (
 	"strings"
 )
 
-func setWebRouter(router *gin.Engine, assetFS fs.FS, buildDir string, indexPage []byte) {
+func setWebRouter(router *gin.Engine, assetFS fs.FS, buildDir string, indexPage []byte, zashboardDir string) {
 	exportedBuildFS, err := fs.Sub(assetFS, buildDir)
+	if err != nil {
+		panic(err)
+	}
+	zashboardBuildFS, err := fs.Sub(assetFS, zashboardDir)
 	if err != nil {
 		panic(err)
 	}
@@ -23,6 +28,19 @@ func setWebRouter(router *gin.Engine, assetFS fs.FS, buildDir string, indexPage 
 	fileDownloadRoute.GET("/upload/:file", middleware.DownloadRateLimit(), controller.DownloadFile)
 	router.Use(normalizeStaticExportDataNavigation())
 	router.Use(middleware.Cache())
+	zashboardRoute := router.Group("/zashboard")
+	zashboardRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
+	{
+		zashboardRoute.GET("", func(c *gin.Context) {
+			c.Redirect(http.StatusTemporaryRedirect, "/zashboard/")
+		})
+		zashboardRoute.GET("/*any", func(c *gin.Context) {
+			if servePrefixedSPA(c, zashboardBuildFS, "/zashboard") {
+				return
+			}
+			c.Status(http.StatusNotFound)
+		})
+	}
 	router.Use(static.Serve("/", embedfs.EmbedFolder(assetFS, buildDir)))
 	router.NoRoute(func(c *gin.Context) {
 		if serveExportedPage(c, exportedBuildFS) {
@@ -53,6 +71,33 @@ func serveExportedPage(c *gin.Context, buildFS fs.FS) bool {
 		content, err := fs.ReadFile(buildFS, candidate)
 		if err == nil {
 			c.Data(http.StatusOK, "text/html; charset=utf-8", content)
+			return true
+		}
+	}
+
+	return false
+}
+
+func servePrefixedSPA(c *gin.Context, buildFS fs.FS, prefix string) bool {
+	requestPath := strings.TrimPrefix(c.Request.URL.Path, prefix)
+	requestPath = strings.TrimPrefix(requestPath, "/")
+
+	candidates := []string{"index.html"}
+	if requestPath != "" {
+		candidates = append([]string{requestPath}, candidates...)
+	}
+
+	for _, candidate := range candidates {
+		content, err := fs.ReadFile(buildFS, candidate)
+		if err == nil {
+			contentType := "text/html; charset=utf-8"
+			if ext := pathpkg.Ext(candidate); ext != "" && candidate != "index.html" {
+				contentType = mime.TypeByExtension(ext)
+				if contentType == "" {
+					contentType = "application/octet-stream"
+				}
+			}
+			c.Data(http.StatusOK, contentType, content)
 			return true
 		}
 	}

@@ -19,7 +19,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RunServer(assetFS fs.FS, buildDir string, indexPage []byte) {
+func RunServer(assetFS fs.FS, buildDir string, indexPage []byte, zashboardDir string) {
 	common.SetupGinLog()
 	slog.Info("PoolX started", "version", common.Version)
 	if os.Getenv("GIN_MODE") != "debug" {
@@ -63,7 +63,7 @@ func RunServer(assetFS fs.FS, buildDir string, indexPage []byte) {
 		server.Use(sessions.Sessions("session", store))
 	}
 
-	router.SetRouter(server, assetFS, buildDir, indexPage)
+	router.SetRouter(server, assetFS, buildDir, indexPage, zashboardDir)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = strconv.Itoa(*common.Port)

@@ -1,6 +1,8 @@
 web/node_modules
+zashboard/node_modules
 web/.next
 web/build
+zashboard/build
 web/out
 
 upload

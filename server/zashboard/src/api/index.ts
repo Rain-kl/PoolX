@@ -1,6 +1,5 @@
 import { MIHOMO, MIHOMO_CHANNEL, ROUTE_NAME } from '@/constant'
 import { showNotification } from '@/helper/notification'
-import { getUrlFromBackend } from '@/helper/utils'
 import router from '@/router'
 import { autoUpgradeCore, checkUpgradeCore } from '@/store/settings'
 import { activeBackend, activeUuid } from '@/store/setup'
@@ -17,11 +16,12 @@ import type {
 import axios, { AxiosError } from 'axios'
 import { debounce } from 'lodash'
 import ReconnectingWebSocket from 'reconnectingwebsocket'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+
+const CLASH_PROXY_BASE = '/api/zashboard/clash'
 
 axios.interceptors.request.use((config) => {
-  config.baseURL = getUrlFromBackend(activeBackend.value!)
-  config.headers['Authorization'] = 'Bearer ' + activeBackend.value?.password
+  config.baseURL = CLASH_PROXY_BASE
   return config
 })
 
@@ -35,15 +35,7 @@ axios.interceptors.response.use(
     }>,
   ) => {
     if (error.status === 401 && activeUuid.value) {
-      const currentBackendUuid = activeUuid.value
-      activeUuid.value = null
-      router.push({
-        name: ROUTE_NAME.setup,
-        query: { editBackend: currentBackendUuid },
-      })
-      nextTick(() => {
-        showNotification({ content: 'unauthorizedTip' })
-      })
+      window.location.href = '/login'
     } else if (!ignoreNotificationUrls.some((url) => error.config?.url?.endsWith(url))) {
       const errorMessage = error.response?.data?.message || error.message
 
@@ -255,10 +247,8 @@ export const queryDNSAPI = (params: { name: string; type: string }) => {
 }
 
 const createWebSocket = <T>(url: string, searchParams?: Record<string, string>) => {
-  const backend = activeBackend.value!
-  const resurl = new URL(`${getUrlFromBackend(backend).replace('http', 'ws')}/${url}`)
-
-  resurl.searchParams.append('token', backend?.password || '')
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const resurl = new URL(`${wsProtocol}//${window.location.host}${CLASH_PROXY_BASE}/${url}`)
 
   if (searchParams) {
     Object.entries(searchParams).forEach(([key, value]) => {
@@ -302,15 +292,13 @@ export const fetchTrafficAPI = <T>() => {
 }
 
 export const isBackendAvailable = async (backend: Backend, timeout: number = 10000) => {
+  void backend
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeout)
 
   try {
-    const res = await fetch(`${getUrlFromBackend(backend)}/version`, {
+    const res = await fetch(`${CLASH_PROXY_BASE}/version`, {
       method: 'GET',
-      headers: {
-        Authorization: `Bearer ${backend.password}`,
-      },
       signal: controller.signal,
     })
 

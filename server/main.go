@@ -6,7 +6,7 @@ import (
 	"poolx/internal/app"
 )
 
-//go:embed all:web/build
+//go:embed all:web/build all:zashboard/dist
 var buildFS embed.FS
 
 //go:embed web/build/index.html
@@ -22,5 +22,5 @@ var indexPage []byte
 // @name Authorization
 // @description Admin API can use Bearer Token.
 func main() {
-	app.RunServer(buildFS, "web/build", indexPage)
+	app.RunServer(buildFS, "web/build", indexPage, "zashboard/dist")
 }

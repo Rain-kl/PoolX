@@ -10,7 +10,6 @@ import OverviewPage from '@/views/OverviewPage.vue'
 import ProxiesPage from '@/views/ProxiesPage.vue'
 import RulesPage from '@/views/RulesPage.vue'
 import SettingsPage from '@/views/SettingsPage.vue'
-import SetupPage from '@/views/SetupPage.vue'
 import { useTitle } from '@vueuse/core'
 import { watch } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
@@ -60,7 +59,7 @@ const router = createRouter({
     {
       path: '/setup',
       name: ROUTE_NAME.setup,
-      component: SetupPage,
+      redirect: ROUTE_NAME.proxies,
     },
     {
       path: '/:catchAll(.*)',
@@ -90,8 +89,8 @@ router.beforeEach((to, from) => {
     to.meta.transition = toIndex < fromIndex ? 'slide-right' : 'slide-left'
   }
 
-  if (!activeBackend.value && to.name !== ROUTE_NAME.setup) {
-    router.push({ name: ROUTE_NAME.setup })
+  if (!activeBackend.value) {
+    return { name: ROUTE_NAME.proxies }
   }
 })
 

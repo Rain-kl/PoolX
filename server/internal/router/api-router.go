@@ -130,6 +130,11 @@ func SetApiRouter(router *gin.Engine) {
 			runtimeRoute.POST("/stop", controller.StopRuntime)
 			runtimeRoute.POST("/reload", controller.ReloadRuntime)
 		}
+		zashboardRoute := apiRouter.Group("/zashboard")
+		zashboardRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
+		{
+			zashboardRoute.Any("/clash/*path", controller.ProxyZashboardClash)
+		}
 		logRoute := apiRouter.Group("/log")
 		logRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
 		{

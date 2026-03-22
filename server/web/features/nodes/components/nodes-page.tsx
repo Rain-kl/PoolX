@@ -174,7 +174,7 @@ export function NodesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="节点池"
+        title="节点"
         description="查看已导入节点、按条件筛选、删除节点，并通过内核发起真实代理请求测试。"
         action={
           <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--foreground-secondary)]">
