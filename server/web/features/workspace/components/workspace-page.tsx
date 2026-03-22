@@ -581,14 +581,11 @@ export function WorkspacePage() {
                   placeholder="127.0.0.1"
                 />
               </ResourceField>
-              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-4 xl:col-span-2">
+              <div className="rounded-2xl border border-[var(--border-defau lt)] bg-[var(--surface-muted)] p-4 xl:col-span-2">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-[var(--foreground-primary)]">
                       端口模式
-                    </p>
-                    <p className="text-xs text-[var(--foreground-secondary)]">
-                      Mixed 与 SOCKS/HTTP 为二选一。开启 Mixed 时，将只保留一个统一入口。
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

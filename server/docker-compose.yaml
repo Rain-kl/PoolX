@@ -24,7 +24,6 @@ services:
     ports:
       - "3000:3000"
 #     开放代理监听端口
-
     environment:
       SESSION_SECRET: replace-with-random-string
       SQLITE_PATH: /data/poolx.db
@@ -34,4 +33,3 @@ services:
 
     volumes:
       - ./data/poolx:/data
-

@@ -87,7 +87,7 @@ services:
       retries: 5
 
   poolx:
-    image: your-registry/poolx:latest
+    image: ghcr.io/rain-kl/poolx:latest
     container_name: poolx
     restart: unless-stopped
     depends_on:
