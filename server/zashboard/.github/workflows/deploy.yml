@@ -1,0 +1,243 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+
+    steps:
+      - name: release-please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.PAT }}
+          release-type: node
+          target-branch: main
+
+  build-and-deploy:
+    needs: release-please
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+
+      - name: Install and Build 🔧
+        run: |
+          pnpm i
+          pnpm run build
+          echo 'board.zash.run.place' > ./dist/CNAME
+
+      - name: Deploy 🚀
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.PAT }}
+          publish_dir: ./dist
+
+  build-and-deploy-cdn-fonts:
+    needs: release-please
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+
+      - name: Install and Build cdn-fonts 🔧
+        run: |
+          pnpm i
+          pnpm run build:cdn-fonts
+          echo 'board.zash.run.place' > ./dist/CNAME
+
+      - name: Deploy to gh-pages-cdn-fonts 🚀
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.PAT }}
+          publish_dir: ./dist
+          publish_branch: gh-pages-cdn-fonts
+
+  build-and-deploy-firasans-only:
+    needs: release-please
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+
+      - name: Install and Build firasans-only 🔧
+        run: |
+          pnpm i
+          pnpm run build:firasans-only
+          echo 'board.zash.run.place' > ./dist/CNAME
+
+      - name: Deploy to gh-pages-firasans-only 🚀
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.PAT }}
+          publish_dir: ./dist
+          publish_branch: gh-pages-firasans-only
+
+  build-and-deploy-misans-only:
+    needs: release-please
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+
+      - name: Install and Build misans-only 🔧
+        run: |
+          pnpm i
+          pnpm run build:misans-only
+          echo 'board.zash.run.place' > ./dist/CNAME
+
+      - name: Deploy to gh-pages-misans-only 🚀
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.PAT }}
+          publish_dir: ./dist
+          publish_branch: gh-pages-misans-only
+
+  build-and-deploy-pingfang-only:
+    needs: release-please
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+
+      - name: Install and Build pingfang-only 🔧
+        run: |
+          pnpm i
+          pnpm run build:pingfang-only
+          echo 'board.zash.run.place' > ./dist/CNAME
+
+      - name: Deploy to gh-pages-pingfang-only 🚀
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.PAT }}
+          publish_dir: ./dist
+          publish_branch: gh-pages-pingfang-only
+
+  build-and-deploy-sarasa-only:
+    needs: release-please
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+
+      - name: Install and Build sarasa-only 🔧
+        run: |
+          pnpm i
+          pnpm run build:sarasa-only
+          echo 'board.zash.run.place' > ./dist/CNAME
+
+      - name: Deploy to gh-pages-sarasa-only 🚀
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.PAT }}
+          publish_dir: ./dist
+          publish_branch: gh-pages-sarasa-only
+
+  build-and-deploy-no-fonts:
+    needs: release-please
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+
+      - name: Install and Build no-fonts 🔧
+        run: |
+          pnpm i
+          pnpm run build:no-fonts
+          echo 'board.zash.run.place' > ./dist/CNAME
+
+      - name: Deploy to gh-pages-no-fonts 🚀
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.PAT }}
+          publish_dir: ./dist
+          publish_branch: gh-pages-no-fonts
+
+  release-dist:
+    needs: release-please
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.release_created }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+
+      - name: Install Dependencies
+        run: |
+          pnpm i
+
+      - name: Build and Zip the dist folder
+        run: |
+          pnpm run build
+          zip -r dist.zip dist
+          pnpm run build:cdn-fonts
+          zip -r dist-cdn-fonts.zip dist
+          pnpm run build:firasans-only
+          zip -r dist-firasans-only.zip dist
+          pnpm run build:misans-only
+          zip -r dist-misans-only.zip dist
+          pnpm run build:pingfang-only
+          zip -r dist-pingfang-only.zip dist
+          pnpm run build:sarasa-only
+          zip -r dist-sarasa-only.zip dist
+          pnpm run build:no-fonts
+          zip -r dist-no-fonts.zip dist
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist*.zip
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+
+  release-image:
+    needs: release-please
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.release_created }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: set up docker buildx
+        uses: docker/setup-buildx-action@v3
+        id: buildx
+
+      - name: login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT }}
+
+      - name: build and publish ghcr.io docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: |
+            ghcr.io/zephyruso/zashboard:latest
+            ghcr.io/zephyruso/zashboard:${{ needs.release-please.outputs.tag_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: poolx
+      POSTGRES_USER: poolx
+      POSTGRES_PASSWORD: replace-with-strong-password
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U poolx -d poolx"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  poolx:
+    build:
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+#     开放代理监听端口
+    environment:
+      SESSION_SECRET: replace-with-random-string
+      SQLITE_PATH: /data/poolx.db
+      DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
+      GIN_MODE: release
+      LOG_LEVEL: info
+
+    volumes:
+      - ./data/poolx:/data

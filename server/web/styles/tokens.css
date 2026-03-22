@@ -1,0 +1,80 @@
+:root {
+  --surface-canvas: #eff6ff;
+  --surface-panel: #ffffff;
+  --surface-card: rgba(255, 255, 255, 0.92);
+  --surface-muted: rgba(226, 232, 240, 0.65);
+  --surface-elevated: rgba(255, 255, 255, 0.78);
+  --control-background: rgba(15, 23, 42, 0.04);
+  --control-background-hover: rgba(15, 23, 42, 0.08);
+  --accent-soft: rgba(14, 165, 233, 0.12);
+  --border-default: rgba(148, 163, 184, 0.22);
+  --border-strong: rgba(14, 165, 233, 0.26);
+  --foreground-primary: #0f172a;
+  --foreground-secondary: #475569;
+  --foreground-muted: #64748b;
+  --foreground-inverse: #f8fafc;
+  --brand-primary: #0284c7;
+  --brand-secondary: #6366f1;
+  --brand-primary-soft: rgba(14, 165, 233, 0.12);
+  --status-success: #22c55e;
+  --status-warning: #f59e0b;
+  --status-danger: #ef4444;
+  --status-info: #38bdf8;
+  --status-success-soft: rgba(34, 197, 94, 0.12);
+  --status-success-border: rgba(34, 197, 94, 0.2);
+  --status-success-foreground: #166534;
+  --status-warning-soft: rgba(245, 158, 11, 0.14);
+  --status-warning-border: rgba(245, 158, 11, 0.22);
+  --status-warning-foreground: #92400e;
+  --status-danger-soft: rgba(239, 68, 68, 0.12);
+  --status-danger-border: rgba(239, 68, 68, 0.2);
+  --status-danger-foreground: #b91c1c;
+  --status-info-soft: rgba(56, 189, 248, 0.12);
+  --status-info-border: rgba(56, 189, 248, 0.22);
+  --status-info-foreground: #0369a1;
+  --body-background:
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.14), transparent 30%),
+    linear-gradient(180deg, #f8fbff, #eff6ff);
+  --selection-background: rgba(14, 165, 233, 0.24);
+  --selection-foreground: #082f49;
+  --shadow-soft: 0 16px 40px rgba(15, 23, 42, 0.08);
+  --radius-xl: 1.25rem;
+}
+
+:root[data-theme='dark'] {
+  --surface-canvas: #08111f;
+  --surface-panel: #0f172a;
+  --surface-card: rgba(17, 28, 51, 0.9);
+  --surface-muted: rgba(255, 255, 255, 0.05);
+  --surface-elevated: rgba(15, 23, 42, 0.95);
+  --control-background: rgba(255, 255, 255, 0.05);
+  --control-background-hover: rgba(255, 255, 255, 0.1);
+  --accent-soft: rgba(56, 189, 248, 0.12);
+  --border-default: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(125, 211, 252, 0.28);
+  --foreground-primary: #e2e8f0;
+  --foreground-secondary: #94a3b8;
+  --foreground-muted: #64748b;
+  --foreground-inverse: #082f49;
+  --brand-primary: #38bdf8;
+  --brand-secondary: #818cf8;
+  --brand-primary-soft: rgba(56, 189, 248, 0.15);
+  --status-success-soft: rgba(34, 197, 94, 0.15);
+  --status-success-border: rgba(52, 211, 153, 0.26);
+  --status-success-foreground: #d1fae5;
+  --status-warning-soft: rgba(245, 158, 11, 0.15);
+  --status-warning-border: rgba(251, 191, 36, 0.28);
+  --status-warning-foreground: #fde68a;
+  --status-danger-soft: rgba(239, 68, 68, 0.14);
+  --status-danger-border: rgba(251, 113, 133, 0.24);
+  --status-danger-foreground: #ffe4e6;
+  --status-info-soft: rgba(14, 165, 233, 0.14);
+  --status-info-border: rgba(56, 189, 248, 0.24);
+  --status-info-foreground: #bae6fd;
+  --body-background:
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(8, 17, 31, 0.98), rgba(8, 17, 31, 1));
+  --selection-background: rgba(56, 189, 248, 0.32);
+  --selection-foreground: #f8fafc;
+  --shadow-soft: 0 16px 40px rgba(8, 15, 31, 0.35);
+}

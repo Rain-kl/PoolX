@@ -1,0 +1,12 @@
+{
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "ignorePatterns": [
+    ".next",
+    "build",
+    "out",
+    "coverage",
+    "playwright-report",
+    "test-results",
+    "src"
+  ]
+}

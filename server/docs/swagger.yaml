@@ -1,0 +1,556 @@
+basePath: /
+definitions:
+  model.Option:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: PoolX Server API documentation.
+  title: PoolX Server API
+  version: "3.0"
+paths:
+  /api/capabilities:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get current kernel capability negotiation result
+      tags:
+      - Capability
+  /api/kernel/mihomo/download:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Download latest official Mihomo binary for current platform and verify
+        version
+      tags:
+      - Kernel
+  /api/kernel/mihomo/inspect:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Inspect existing Mihomo binary path and verify version
+      tags:
+      - Kernel
+  /api/kernel/mihomo/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Upload Mihomo binary, install it to target path and verify version
+      tags:
+      - Kernel
+  /api/option/:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List editable options
+      tags:
+      - Options
+  /api/option/update:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Option payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/model.Option'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update option
+      tags:
+      - Options
+  /api/port-profile-templates:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List saved workspace templates
+      tags:
+      - Workspace
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Save current workspace payload as template
+      tags:
+      - Workspace
+  /api/port-profile-templates/{id}/delete:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a workspace template
+      tags:
+      - Workspace
+  /api/port-profiles:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List workspace port profiles
+      tags:
+      - Workspace
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create workspace port profile
+      tags:
+      - Workspace
+  /api/port-profiles/{id}:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get one workspace port profile
+      tags:
+      - Workspace
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update workspace port profile
+      tags:
+      - Workspace
+  /api/port-profiles/{id}/delete:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete workspace port profile
+      tags:
+      - Workspace
+  /api/port-profiles/{id}/preview:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Generate mergeable fragment preview for saved workspace port profile
+      tags:
+      - Workspace
+  /api/port-profiles/{id}/runtime/save:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Persist latest workspace fragment preview as snapshot
+      tags:
+      - Workspace
+  /api/port-profiles/preview:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Generate mergeable workspace config fragment preview from payload
+      tags:
+      - Workspace
+  /api/proxy-nodes:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List proxy nodes with paging and filters
+      tags:
+      - ProxyNode
+  /api/proxy-nodes/{id}/delete:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a proxy node
+      tags:
+      - ProxyNode
+  /api/proxy-nodes/{id}/status:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Enable or disable a proxy node
+      tags:
+      - ProxyNode
+  /api/proxy-nodes/delete:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete selected proxy nodes
+      tags:
+      - ProxyNode
+  /api/proxy-nodes/options:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List proxy node options for selector
+      tags:
+      - Workspace
+  /api/proxy-nodes/tags:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Batch update selected proxy node tags
+      tags:
+      - ProxyNode
+  /api/proxy-nodes/test:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Test selected proxy nodes and persist the result
+      tags:
+      - ProxyNode
+  /api/runtime/logs:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get runtime log stream
+      tags:
+      - Runtime
+  /api/runtime/reload:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Reload Mihomo runtime
+      tags:
+      - Runtime
+  /api/runtime/start:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Start Mihomo runtime
+      tags:
+      - Runtime
+  /api/runtime/status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get Mihomo runtime status
+      tags:
+      - Runtime
+  /api/runtime/stop:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Stop Mihomo runtime
+      tags:
+      - Runtime
+  /api/source-configs/import:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Import parsed nodes into proxy node pool
+      tags:
+      - SourceImport
+  /api/source-configs/parse:
+    post:
+      consumes:
+      - multipart/form-data
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Upload YAML source and return parsed node preview
+      tags:
+      - SourceImport
+  /api/source-configs/test:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Test selected parsed nodes before importing into node pool
+      tags:
+      - SourceImport
+  /api/status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get server status
+      tags:
+      - Public
+  /api/update/latest-release:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get latest GitHub release
+      tags:
+      - Update
+  /api/update/logs/ws:
+    get:
+      responses: {}
+      summary: Stream server upgrade logs over websocket
+      tags:
+      - Update
+  /api/update/manual-upgrade:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Confirm upgrade with previously uploaded server binary
+      tags:
+      - Update
+  /api/update/manual-upload:
+    post:
+      consumes:
+      - multipart/form-data
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Upload server binary and inspect version before upgrade
+      tags:
+      - Update
+  /api/update/upgrade:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Upgrade server binary from latest GitHub release
+      tags:
+      - Update
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Admin API can use Bearer Token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -1,0 +1,133 @@
+package router
+
+import (
+	"github.com/gin-contrib/static"
+	"github.com/gin-gonic/gin"
+	"io/fs"
+	"mime"
+	"net/http"
+	pathpkg "path"
+	"poolx/internal/handler"
+	"poolx/internal/middleware"
+	"poolx/internal/pkg/utils/embedfs"
+	"strings"
+)
+
+func setWebRouter(router *gin.Engine, assetFS fs.FS, buildDir string, indexPage []byte, zashboardDir string) {
+	exportedBuildFS, err := fs.Sub(assetFS, buildDir)
+	if err != nil {
+		panic(err)
+	}
+	zashboardBuildFS, err := fs.Sub(assetFS, zashboardDir)
+	if err != nil {
+		panic(err)
+	}
+
+	router.Use(middleware.GlobalWebRateLimit())
+	fileDownloadRoute := router.Group("/")
+	fileDownloadRoute.GET("/upload/:file", middleware.DownloadRateLimit(), controller.DownloadFile)
+	router.Use(normalizeStaticExportDataNavigation())
+	router.Use(middleware.Cache())
+	zashboardRoute := router.Group("/zashboard")
+	zashboardRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
+	{
+		zashboardRoute.GET("", func(c *gin.Context) {
+			c.Redirect(http.StatusTemporaryRedirect, "/zashboard/")
+		})
+		zashboardRoute.GET("/*any", func(c *gin.Context) {
+			if servePrefixedSPA(c, zashboardBuildFS, "/zashboard") {
+				return
+			}
+			c.Status(http.StatusNotFound)
+		})
+	}
+	router.Use(static.Serve("/", embedfs.EmbedFolder(assetFS, buildDir)))
+	router.NoRoute(func(c *gin.Context) {
+		if serveExportedPage(c, exportedBuildFS) {
+			return
+		}
+
+		if isStaticAssetRequest(c.Request.URL.Path) {
+			c.Status(http.StatusNotFound)
+			return
+		}
+
+		c.Data(http.StatusOK, "text/html; charset=utf-8", indexPage)
+	})
+}
+
+func serveExportedPage(c *gin.Context, buildFS fs.FS) bool {
+	requestPath := strings.Trim(c.Request.URL.Path, "/")
+
+	candidates := []string{"index.html"}
+	if requestPath != "" {
+		candidates = []string{
+			requestPath + ".html",
+			pathpkg.Join(requestPath, "index.html"),
+		}
+	}
+
+	for _, candidate := range candidates {
+		content, err := fs.ReadFile(buildFS, candidate)
+		if err == nil {
+			c.Data(http.StatusOK, "text/html; charset=utf-8", content)
+			return true
+		}
+	}
+
+	return false
+}
+
+func servePrefixedSPA(c *gin.Context, buildFS fs.FS, prefix string) bool {
+	requestPath := strings.TrimPrefix(c.Request.URL.Path, prefix)
+	requestPath = strings.TrimPrefix(requestPath, "/")
+
+	candidates := []string{"index.html"}
+	if requestPath != "" {
+		candidates = append([]string{requestPath}, candidates...)
+	}
+
+	for _, candidate := range candidates {
+		content, err := fs.ReadFile(buildFS, candidate)
+		if err == nil {
+			contentType := "text/html; charset=utf-8"
+			if ext := pathpkg.Ext(candidate); ext != "" && candidate != "index.html" {
+				contentType = mime.TypeByExtension(ext)
+				if contentType == "" {
+					contentType = "application/octet-stream"
+				}
+			}
+			c.Data(http.StatusOK, contentType, content)
+			return true
+		}
+	}
+
+	return false
+}
+
+func normalizeStaticExportDataNavigation() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		requestPath := c.Request.URL.Path
+		if strings.HasSuffix(requestPath, ".txt") && isDocumentNavigationRequest(c.Request) {
+			normalizedPath := strings.TrimSuffix(requestPath, ".txt")
+			if normalizedPath == "" {
+				normalizedPath = "/"
+			}
+			c.Request.URL.Path = normalizedPath
+		}
+
+		c.Next()
+	}
+}
+
+func isDocumentNavigationRequest(request *http.Request) bool {
+	if request.Header.Get("Sec-Fetch-Mode") == "navigate" || request.Header.Get("Sec-Fetch-Dest") == "document" {
+		return true
+	}
+
+	return strings.Contains(request.Header.Get("Accept"), "text/html")
+}
+
+func isStaticAssetRequest(requestPath string) bool {
+	return strings.HasPrefix(requestPath, "/_next/") || pathpkg.Ext(requestPath) != ""
+}
