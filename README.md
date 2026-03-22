@@ -44,6 +44,10 @@ In short, PoolX helps convert raw proxy subscriptions and node lists into operat
 
 ## Quick Start
 
+Login URL: `http://localhost:3000/`
+Username: `root`
+Password: `123456`
+
 ### Docker Deployment
 
 ```yaml

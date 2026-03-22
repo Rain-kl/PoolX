@@ -45,6 +45,10 @@ PoolX 面向这类需求而设计：
 
 ## 快速开始
 
+Login URL: `http://IP:3000/`
+Username: `root`
+Password: `123456`
+
 ### Docker 部署
 
 ```yaml
