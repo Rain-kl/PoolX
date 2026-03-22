@@ -23,8 +23,8 @@ services:
         condition: service_healthy
     ports:
       - "3000:3000"
-      - "17890:17890"
-      - "19092:19090"
+#     开放代理监听端口
+
     environment:
       SESSION_SECRET: replace-with-random-string
       SQLITE_PATH: /data/poolx.db
