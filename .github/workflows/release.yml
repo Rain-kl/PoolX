@@ -84,11 +84,22 @@ jobs:
           pnpm install --frozen-lockfile
           NEXT_PUBLIC_APP_VERSION="$VERSION" pnpm build
 
-      - name: Upload Frontend Artifact
+      - name: Build Zashboard
+        env:
+          CI: ""
+        run: |
+          cd server/zashboard
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Upload Frontend Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-build
-          path: server/web/build
+          name: frontend-assets
+          path: |
+            server/web/build
+            server/zashboard/dist
           retention-days: 1
 
   build-binaries:
@@ -103,19 +114,19 @@ jobs:
         include:
           - goos: linux
             goarch: amd64
-            asset_name: ginnexttemplate-server-linux-amd64
+            asset_name: poolx-server-linux-amd64
           - goos: linux
             goarch: arm64
-            asset_name: ginnexttemplate-server-linux-arm64
+            asset_name: poolx-server-linux-arm64
           - goos: darwin
             goarch: amd64
-            asset_name: ginnexttemplate-server-darwin-amd64
+            asset_name: poolx-server-darwin-amd64
           - goos: darwin
             goarch: arm64
-            asset_name: ginnexttemplate-server-darwin-arm64
+            asset_name: poolx-server-darwin-arm64
           - goos: windows
             goarch: amd64
-            asset_name: ginnexttemplate-server-windows-amd64.exe
+            asset_name: poolx-server-windows-amd64.exe
 
     steps:
       - name: Checkout
@@ -126,8 +137,8 @@ jobs:
       - name: Download Frontend Artifact
         uses: actions/download-artifact@v4
         with:
-          name: frontend-build
-          path: server/web/build
+          name: frontend-assets
+          path: .
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -145,7 +156,7 @@ jobs:
         run: |
           go mod download
           mkdir -p ../dist
-          go build -trimpath -ldflags "-s -w -X 'ginnexttemplate/internal/pkg/common.Version=$VERSION'" -o "../dist/$ASSET_NAME" .
+          go build -trimpath -ldflags "-s -w -X 'poolx/internal/pkg/common.Version=$VERSION'" -o "../dist/$ASSET_NAME" .
 
       - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
