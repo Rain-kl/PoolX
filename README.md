@@ -142,7 +142,7 @@ Its core workflow is:
 For runtime parameters, deployment methods, and system configuration, refer to:
 * [docs/app-config.md](./docs/app-config.md)
 * [docs/deployment.md](./docs/deployment.md)
-*
+
 
 ## License
 
