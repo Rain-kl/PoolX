@@ -45,20 +45,15 @@ func SavePortProfileTemplate(name string, payload PortProfilePayload) (*PortProf
 		return nil, fmt.Errorf("序列化模板节点失败: %v", err)
 	}
 	template := &model.PortProfileTemplate{
-		Name:                  templateName,
-		ListenHost:            normalized.ListenHost,
-		MixedPort:             normalized.MixedPort,
-		SocksPort:             normalized.SocksPort,
-		HTTPPort:              normalized.HTTPPort,
-		StrategyType:          normalized.StrategyType,
-		StrategyGroupName:     normalized.StrategyGroupName,
-		TestURL:               normalized.TestURL,
-		TestIntervalSeconds:   normalized.TestIntervalSeconds,
-		LoadBalanceStrategy:   normalized.LoadBalanceStrategy,
-		LoadBalanceLazy:       normalized.LoadBalanceLazy,
-		LoadBalanceDisableUDP: normalized.LoadBalanceDisableUDP,
-		IncludeInRuntime:      normalized.IncludeInRuntime,
-		NodeIDsJSON:           string(nodeIDsJSON),
+		Name:              templateName,
+		ListenHost:        normalized.ListenHost,
+		MixedPort:         normalized.MixedPort,
+		SocksPort:         normalized.SocksPort,
+		HTTPPort:          normalized.HTTPPort,
+		ProxySettingsJSON: mustEncodePortProfileProxySettings(normalized.ProxySettings),
+		ProxySettings:     normalized.ProxySettings,
+		IncludeInRuntime:  normalized.IncludeInRuntime,
+		NodeIDsJSON:       string(nodeIDsJSON),
 	}
 	if err := model.DB.Create(template).Error; err != nil {
 		return nil, err
@@ -74,6 +69,9 @@ func DeletePortProfileTemplate(id int) error {
 }
 
 func buildPortProfileTemplateView(template *model.PortProfileTemplate) (*PortProfileTemplateView, error) {
+	if err := template.HydrateProxySettings(); err != nil {
+		return nil, fmt.Errorf("解析模板代理设置失败: %v", err)
+	}
 	var nodeIDs []int
 	if err := json.Unmarshal([]byte(template.NodeIDsJSON), &nodeIDs); err != nil {
 		return nil, fmt.Errorf("解析模板节点失败: %v", err)

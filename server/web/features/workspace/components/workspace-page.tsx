@@ -28,6 +28,7 @@ import {
 import type {
   LoadBalanceStrategy,
   PortProfilePayload,
+  PortProfileProxySettings,
   PortProfileWithNodes,
   PortProfilePreview,
   PortProfileStrategy,
@@ -45,6 +46,22 @@ import {
 import { formatDateTime } from '@/lib/utils/date';
 
 const workspaceListQueryKey = ['workspace', 'profiles'] as const;
+const defaultMixedPort = 7890;
+const defaultSocksPort = 7891;
+const defaultHTTPPort = 7892;
+
+const defaultProxySettings: PortProfileProxySettings = {
+  strategy_type: 'select',
+  test_url: 'https://cp.cloudflare.com/generate_204',
+  test_interval_seconds: 300,
+  load_balance_strategy: 'consistent-hashing',
+  load_balance_lazy: false,
+  load_balance_disable_udp: false,
+  udp_enabled: true,
+  auth_enabled: false,
+  auth_username: '',
+  auth_password: '',
+};
 
 type FeedbackState = {
   tone: 'success' | 'danger' | 'info';
@@ -54,16 +71,10 @@ type FeedbackState = {
 const defaultPayload: PortProfilePayload = {
   name: '',
   listen_host: '127.0.0.1',
-  mixed_port: 7890,
+  mixed_port: defaultMixedPort,
   socks_port: 0,
   http_port: 0,
-  strategy_type: 'select',
-  strategy_group_name: 'POOLX',
-  test_url: 'https://cp.cloudflare.com/generate_204',
-  test_interval_seconds: 300,
-  load_balance_strategy: 'consistent-hashing',
-  load_balance_lazy: false,
-  load_balance_disable_udp: false,
+  proxy_settings: defaultProxySettings,
   include_in_runtime: true,
   node_ids: [],
 };
@@ -75,10 +86,31 @@ function getErrorMessage(error: unknown) {
 function toPayload(state: PortProfilePayload) {
   return {
     ...state,
-    name: state.strategy_group_name.trim(),
+    name: state.name.trim(),
     listen_host: state.listen_host.trim(),
-    strategy_group_name: state.strategy_group_name.trim(),
-    test_url: state.test_url.trim(),
+    proxy_settings: {
+      ...state.proxy_settings,
+      test_url: state.proxy_settings.test_url.trim(),
+      auth_username: state.proxy_settings.auth_username.trim(),
+      auth_password: state.proxy_settings.auth_password.trim(),
+    },
+  };
+}
+
+function normalizeProxySettings(
+  value?: Partial<PortProfileProxySettings> | null,
+): PortProfileProxySettings {
+  return {
+    strategy_type: value?.strategy_type ?? 'select',
+    test_url: value?.test_url ?? 'https://cp.cloudflare.com/generate_204',
+    test_interval_seconds: value?.test_interval_seconds ?? 300,
+    load_balance_strategy: value?.load_balance_strategy ?? 'consistent-hashing',
+    load_balance_lazy: value?.load_balance_lazy ?? false,
+    load_balance_disable_udp: value?.load_balance_disable_udp ?? false,
+    udp_enabled: value?.udp_enabled ?? true,
+    auth_enabled: value?.auth_enabled ?? false,
+    auth_username: value?.auth_username ?? '',
+    auth_password: value?.auth_password ?? '',
   };
 }
 
@@ -89,13 +121,7 @@ function toProfilePayload(item: PortProfileWithNodes): PortProfilePayload {
     mixed_port: item.profile.mixed_port,
     socks_port: item.profile.socks_port,
     http_port: item.profile.http_port,
-    strategy_type: item.profile.strategy_type,
-    strategy_group_name: item.profile.strategy_group_name,
-    test_url: item.profile.test_url,
-    test_interval_seconds: item.profile.test_interval_seconds,
-    load_balance_strategy: item.profile.load_balance_strategy,
-    load_balance_lazy: item.profile.load_balance_lazy,
-    load_balance_disable_udp: item.profile.load_balance_disable_udp,
+    proxy_settings: normalizeProxySettings(item.profile.proxy_settings),
     include_in_runtime: item.profile.include_in_runtime,
     node_ids: item.node_ids,
   };
@@ -110,6 +136,7 @@ export function WorkspacePage() {
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [preview, setPreview] = useState<PortProfilePreview | null>(null);
   const [templateName, setTemplateName] = useState('');
+  const usesMixedPort = payload.mixed_port > 0;
 
   const capabilityQuery = useQuery({
     queryKey: ['capability'],
@@ -158,13 +185,7 @@ export function WorkspacePage() {
       mixed_port: profile.mixed_port,
       socks_port: profile.socks_port,
       http_port: profile.http_port,
-      strategy_type: profile.strategy_type,
-      strategy_group_name: profile.strategy_group_name,
-      test_url: profile.test_url,
-      test_interval_seconds: profile.test_interval_seconds,
-      load_balance_strategy: profile.load_balance_strategy,
-      load_balance_lazy: profile.load_balance_lazy,
-      load_balance_disable_udp: profile.load_balance_disable_udp,
+      proxy_settings: normalizeProxySettings(profile.proxy_settings),
       include_in_runtime: profile.include_in_runtime,
       node_ids,
     })
@@ -334,13 +355,7 @@ export function WorkspacePage() {
       mixed_port: item.template.mixed_port,
       socks_port: item.template.socks_port,
       http_port: item.template.http_port,
-      strategy_type: item.template.strategy_type,
-      strategy_group_name: item.template.strategy_group_name,
-      test_url: item.template.test_url,
-      test_interval_seconds: item.template.test_interval_seconds,
-      load_balance_strategy: item.template.load_balance_strategy,
-      load_balance_lazy: item.template.load_balance_lazy,
-      load_balance_disable_udp: item.template.load_balance_disable_udp,
+      proxy_settings: normalizeProxySettings(item.template.proxy_settings),
       include_in_runtime: item.template.include_in_runtime,
       node_ids: item.node_ids,
     })
@@ -395,7 +410,7 @@ export function WorkspacePage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-sm font-semibold text-[var(--foreground-primary)]">
-                      {item.profile.strategy_group_name || item.profile.name}
+                      {item.profile.name}
                     </p>
                     <div
                       className="flex items-center gap-2"
@@ -417,7 +432,7 @@ export function WorkspacePage() {
                   </div>
                   <div className="mt-2 text-xs leading-6 text-[var(--foreground-secondary)]">
                     <p>Mixed：{item.profile.mixed_port}</p>
-                    <p>策略：{item.profile.strategy_type}</p>
+                    <p>策略：{item.profile.proxy_settings.strategy_type}</p>
                     <p>节点数：{item.node_ids.length}</p>
                     <p>更新：{formatDateTime(item.profile.updated_at)}</p>
                   </div>
@@ -463,7 +478,7 @@ export function WorkspacePage() {
                             {item.template.name}
                           </p>
                           <p className="text-xs text-[var(--foreground-secondary)]">
-                            {item.template.strategy_type} · 节点 {item.node_ids.length} 个
+                            {item.template.proxy_settings.strategy_type} · 节点 {item.node_ids.length} 个
                           </p>
                         </div>
                         <div className="flex gap-2">
@@ -545,14 +560,13 @@ export function WorkspacePage() {
             }
           >
             <div className="grid gap-4 xl:grid-cols-2">
-              <ResourceField label="策略组名称" hint={`${strategyDescription[payload.strategy_type]}；该名称会作为端口配置名称，且必须唯一。`}>
+              <ResourceField label="策略组名称" hint={`${strategyDescription[payload.proxy_settings.strategy_type]}；该名称会作为端口配置名称，且必须唯一。`}>
                 <ResourceInput
-                  value={payload.strategy_group_name}
+                  value={payload.name}
                   onChange={(event) =>
                     setPayload((current) => ({
                       ...current,
                       name: event.target.value,
-                      strategy_group_name: event.target.value,
                     }))
                   }
                   placeholder="例如：POOLX"
@@ -567,49 +581,86 @@ export function WorkspacePage() {
                   placeholder="127.0.0.1"
                 />
               </ResourceField>
-              <ResourceField label="Mixed 端口" hint="该端口在工作台配置中必须唯一。">
-                <ResourceInput
-                  value={String(payload.mixed_port)}
-                  onChange={(event) =>
-                    setPayload((current) => ({
-                      ...current,
-                      mixed_port: Number.parseInt(event.target.value, 10) || 0,
-                    }))
-                  }
-                  inputMode="numeric"
-                />
-              </ResourceField>
-              <ResourceField label="SOCKS 端口">
-                <ResourceInput
-                  value={String(payload.socks_port)}
-                  onChange={(event) =>
-                    setPayload((current) => ({
-                      ...current,
-                      socks_port: Number.parseInt(event.target.value, 10) || 0,
-                    }))
-                  }
-                  inputMode="numeric"
-                />
-              </ResourceField>
-              <ResourceField label="HTTP 端口">
-                <ResourceInput
-                  value={String(payload.http_port)}
-                  onChange={(event) =>
-                    setPayload((current) => ({
-                      ...current,
-                      http_port: Number.parseInt(event.target.value, 10) || 0,
-                    }))
-                  }
-                  inputMode="numeric"
-                />
-              </ResourceField>
+              <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-4 xl:col-span-2">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-[var(--foreground-primary)]">
+                      端口模式
+                    </p>
+                    <p className="text-xs text-[var(--foreground-secondary)]">
+                      Mixed 与 SOCKS/HTTP 为二选一。开启 Mixed 时，将只保留一个统一入口。
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="use-mixed-port"
+                      checked={usesMixedPort}
+                      onCheckedChange={(checked) =>
+                        setPayload((current) => ({
+                          ...current,
+                          mixed_port: checked ? current.mixed_port || defaultMixedPort : 0,
+                          socks_port: checked ? 0 : current.socks_port || defaultSocksPort,
+                          http_port: checked ? 0 : current.http_port || defaultHTTPPort,
+                        }))
+                      }
+                    />
+                    <Label htmlFor="use-mixed-port">启用 Mixed 端口</Label>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  {usesMixedPort ? (
+                    <ResourceField label="Mixed 端口" hint="该端口在工作台配置中必须唯一。">
+                      <ResourceInput
+                        value={String(payload.mixed_port)}
+                        onChange={(event) =>
+                          setPayload((current) => ({
+                            ...current,
+                            mixed_port: Number.parseInt(event.target.value, 10) || 0,
+                          }))
+                        }
+                        inputMode="numeric"
+                      />
+                    </ResourceField>
+                  ) : (
+                    <>
+                      <ResourceField label="SOCKS 端口">
+                        <ResourceInput
+                          value={String(payload.socks_port)}
+                          onChange={(event) =>
+                            setPayload((current) => ({
+                              ...current,
+                              socks_port: Number.parseInt(event.target.value, 10) || 0,
+                            }))
+                          }
+                          inputMode="numeric"
+                        />
+                      </ResourceField>
+                      <ResourceField label="HTTP 端口">
+                        <ResourceInput
+                          value={String(payload.http_port)}
+                          onChange={(event) =>
+                            setPayload((current) => ({
+                              ...current,
+                              http_port: Number.parseInt(event.target.value, 10) || 0,
+                            }))
+                          }
+                          inputMode="numeric"
+                        />
+                      </ResourceField>
+                    </>
+                  )}
+                </div>
+              </div>
               <ResourceField label="策略类型">
                 <ResourceSelect
-                  value={payload.strategy_type}
+                  value={payload.proxy_settings.strategy_type}
                   onChange={(event) =>
                     setPayload((current) => ({
                       ...current,
-                      strategy_type: event.target.value as PortProfileStrategy,
+                      proxy_settings: {
+                        ...current.proxy_settings,
+                        strategy_type: event.target.value as PortProfileStrategy,
+                      },
                     }))
                   }
                 >
@@ -620,33 +671,45 @@ export function WorkspacePage() {
               </ResourceField>
               <ResourceField label="测试 URL">
                 <ResourceInput
-                  value={payload.test_url}
+                  value={payload.proxy_settings.test_url}
                   onChange={(event) =>
-                    setPayload((current) => ({ ...current, test_url: event.target.value }))
+                    setPayload((current) => ({
+                      ...current,
+                      proxy_settings: {
+                        ...current.proxy_settings,
+                        test_url: event.target.value,
+                      },
+                    }))
                   }
                 />
               </ResourceField>
               <ResourceField label="测试间隔（秒）">
                 <ResourceInput
-                  value={String(payload.test_interval_seconds)}
+                  value={String(payload.proxy_settings.test_interval_seconds)}
                   onChange={(event) =>
                     setPayload((current) => ({
                       ...current,
-                      test_interval_seconds: Number.parseInt(event.target.value, 10) || 0,
+                      proxy_settings: {
+                        ...current.proxy_settings,
+                        test_interval_seconds: Number.parseInt(event.target.value, 10) || 0,
+                      },
                     }))
                   }
                   inputMode="numeric"
                 />
               </ResourceField>
-              {payload.strategy_type === 'load-balance' ? (
+              {payload.proxy_settings.strategy_type === 'load-balance' ? (
                 <>
                   <ResourceField label="负载均衡策略" hint="一致性哈希会尽量让相同顶级域名走同一节点，轮询会平均分配请求。">
                     <ResourceSelect
-                      value={payload.load_balance_strategy}
+                      value={payload.proxy_settings.load_balance_strategy}
                       onChange={(event) =>
                         setPayload((current) => ({
                           ...current,
-                          load_balance_strategy: event.target.value as LoadBalanceStrategy,
+                          proxy_settings: {
+                            ...current.proxy_settings,
+                            load_balance_strategy: event.target.value as LoadBalanceStrategy,
+                          },
                         }))
                       }
                     >
@@ -665,11 +728,14 @@ export function WorkspacePage() {
                         </div>
                         <Switch
                           id="load-balance-lazy"
-                          checked={payload.load_balance_lazy}
+                          checked={payload.proxy_settings.load_balance_lazy}
                           onCheckedChange={(checked) =>
                             setPayload((current) => ({
                               ...current,
-                              load_balance_lazy: checked,
+                              proxy_settings: {
+                                ...current.proxy_settings,
+                                load_balance_lazy: checked,
+                              },
                             }))
                           }
                         />
@@ -685,11 +751,14 @@ export function WorkspacePage() {
                         </div>
                         <Switch
                           id="load-balance-disable-udp"
-                          checked={payload.load_balance_disable_udp}
+                          checked={payload.proxy_settings.load_balance_disable_udp}
                           onCheckedChange={(checked) =>
                             setPayload((current) => ({
                               ...current,
-                              load_balance_disable_udp: checked,
+                              proxy_settings: {
+                                ...current.proxy_settings,
+                                load_balance_disable_udp: checked,
+                              },
                             }))
                           }
                         />
@@ -698,6 +767,98 @@ export function WorkspacePage() {
                   </div>
                 </>
               ) : null}
+              <details className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-muted)] p-4 xl:col-span-2">
+                <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--foreground-primary)]">
+                  高级设置
+                </summary>
+                <p className="mt-2 text-xs text-[var(--foreground-secondary)]">
+                  UDP 默认开启，监听鉴权默认关闭；仅在需要时展开配置。
+                </p>
+                <div className="mt-4 grid gap-3">
+                  <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="advanced-udp-enabled">UDP</Label>
+                        <p className="text-xs text-[var(--foreground-secondary)]">
+                          控制当前监听入口是否允许 UDP 转发。
+                        </p>
+                      </div>
+                      <Switch
+                        id="advanced-udp-enabled"
+                        checked={payload.proxy_settings.udp_enabled}
+                        onCheckedChange={(checked) =>
+                          setPayload((current) => ({
+                            ...current,
+                            proxy_settings: {
+                              ...current.proxy_settings,
+                              udp_enabled: checked,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="advanced-auth-enabled">开启鉴权</Label>
+                        <p className="text-xs text-[var(--foreground-secondary)]">
+                          开启后会为当前监听入口生成 `users` 凭据列表。
+                        </p>
+                      </div>
+                      <Switch
+                        id="advanced-auth-enabled"
+                        checked={payload.proxy_settings.auth_enabled}
+                        onCheckedChange={(checked) =>
+                          setPayload((current) => ({
+                            ...current,
+                            proxy_settings: {
+                              ...current.proxy_settings,
+                              auth_enabled: checked,
+                              auth_username: checked ? current.proxy_settings.auth_username : '',
+                              auth_password: checked ? current.proxy_settings.auth_password : '',
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                    {payload.proxy_settings.auth_enabled ? (
+                      <div className="mt-4 grid gap-4 md:grid-cols-2">
+                        <ResourceField label="鉴权用户名">
+                          <ResourceInput
+                            value={payload.proxy_settings.auth_username}
+                            onChange={(event) =>
+                              setPayload((current) => ({
+                                ...current,
+                                proxy_settings: {
+                                  ...current.proxy_settings,
+                                  auth_username: event.target.value,
+                                },
+                              }))
+                            }
+                            placeholder="username1"
+                          />
+                        </ResourceField>
+                        <ResourceField label="鉴权密码">
+                          <ResourceInput
+                            value={payload.proxy_settings.auth_password}
+                            onChange={(event) =>
+                              setPayload((current) => ({
+                                ...current,
+                                proxy_settings: {
+                                  ...current.proxy_settings,
+                                  auth_password: event.target.value,
+                                },
+                              }))
+                            }
+                            placeholder="password1"
+                          />
+                        </ResourceField>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </details>
             </div>
           </AppCard>
 

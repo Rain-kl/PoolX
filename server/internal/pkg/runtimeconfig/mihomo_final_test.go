@@ -16,15 +16,15 @@ func TestRenderFinalMihomoConfigAggregatesProfiles(t *testing.T) {
 		Profiles: []*model.PortProfileWithNodes{
 			{
 				Profile: model.PortProfile{
-					ID:                  1,
-					Name:                "p1",
-					ListenHost:          "127.0.0.1",
-					MixedPort:           7890,
-					StrategyType:        model.PortProfileStrategySelect,
-					StrategyGroupName:   "GROUP-A",
-					TestURL:             "https://cp.cloudflare.com/generate_204",
-					TestIntervalSeconds: 300,
-					IncludeInRuntime:    true,
+					ID:         1,
+					Name:       "GROUP-A",
+					ListenHost: "127.0.0.1",
+					MixedPort:  7890,
+					ProxySettings: model.PortProfileProxySettings{
+						StrategyType: model.PortProfileStrategySelect,
+						UDPEnabled:   true,
+					},
+					IncludeInRuntime: true,
 				},
 				Nodes: []*model.ProxyNode{
 					{
@@ -36,15 +36,17 @@ func TestRenderFinalMihomoConfigAggregatesProfiles(t *testing.T) {
 			},
 			{
 				Profile: model.PortProfile{
-					ID:                  2,
-					Name:                "p2",
-					ListenHost:          "127.0.0.1",
-					SocksPort:           7891,
-					StrategyType:        model.PortProfileStrategyFallback,
-					StrategyGroupName:   "GROUP-A",
-					TestURL:             "https://cp.cloudflare.com/generate_204",
-					TestIntervalSeconds: 300,
-					IncludeInRuntime:    true,
+					ID:         2,
+					Name:       "GROUP-A",
+					ListenHost: "127.0.0.1",
+					SocksPort:  7891,
+					ProxySettings: model.PortProfileProxySettings{
+						StrategyType:        model.PortProfileStrategyFallback,
+						TestURL:             "https://cp.cloudflare.com/generate_204",
+						TestIntervalSeconds: 300,
+						UDPEnabled:          true,
+					},
+					IncludeInRuntime: true,
 				},
 				Nodes: []*model.ProxyNode{
 					{

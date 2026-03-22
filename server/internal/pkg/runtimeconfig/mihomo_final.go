@@ -66,9 +66,13 @@ func RenderFinalMihomoConfig(input AggregatedMihomoInput) (*FinalRenderResult, e
 		}
 
 		groupName := reserveUniqueName(
-			fallbackString(strings.TrimSpace(profile.Profile.StrategyGroupName), fallbackString(strings.TrimSpace(profile.Profile.Name), "POOLX")),
+			fallbackString(strings.TrimSpace(profile.Profile.Name), "POOLX"),
 			usedGroupNames,
 		)
+		proxySettings, err := resolveProxySettings(profile.Profile)
+		if err != nil {
+			return nil, err
+		}
 
 		proxyNames := make([]string, 0, len(profile.Nodes))
 		for _, node := range profile.Nodes {
@@ -90,8 +94,8 @@ func RenderFinalMihomoConfig(input AggregatedMihomoInput) (*FinalRenderResult, e
 			proxyNames = append(proxyNames, binding.Name)
 		}
 
-		groups = append(groups, buildStrategyGroup(profile.Profile, groupName, proxyNames))
-		for _, listener := range buildListeners(profile.Profile) {
+		groups = append(groups, buildStrategyGroup(profile.Profile, proxySettings, groupName, proxyNames))
+		for _, listener := range buildListeners(profile.Profile, proxySettings) {
 			key := fmt.Sprintf("%s:%d", listener["listen"], listener["port"])
 			if _, exists := usedListenerKeys[key]; exists {
 				return nil, fmt.Errorf("监听地址冲突: %s", key)

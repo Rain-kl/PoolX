@@ -12,26 +12,17 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	defaultPortProfileTestURL   = "https://cp.cloudflare.com/generate_204"
-	defaultPortProfileGroupName = "POOLX"
-)
+const defaultPortProfileGroupName = "POOLX"
 
 type PortProfilePayload struct {
-	Name                  string `json:"name"`
-	ListenHost            string `json:"listen_host"`
-	MixedPort             int    `json:"mixed_port"`
-	SocksPort             int    `json:"socks_port"`
-	HTTPPort              int    `json:"http_port"`
-	StrategyType          string `json:"strategy_type"`
-	StrategyGroupName     string `json:"strategy_group_name"`
-	TestURL               string `json:"test_url"`
-	TestIntervalSeconds   int    `json:"test_interval_seconds"`
-	LoadBalanceStrategy   string `json:"load_balance_strategy"`
-	LoadBalanceLazy       bool   `json:"load_balance_lazy"`
-	LoadBalanceDisableUDP bool   `json:"load_balance_disable_udp"`
-	IncludeInRuntime      bool   `json:"include_in_runtime"`
-	NodeIDs               []int  `json:"node_ids"`
+	Name             string                         `json:"name"`
+	ListenHost       string                         `json:"listen_host"`
+	MixedPort        int                            `json:"mixed_port"`
+	SocksPort        int                            `json:"socks_port"`
+	HTTPPort         int                            `json:"http_port"`
+	ProxySettings    model.PortProfileProxySettings `json:"proxy_settings"`
+	IncludeInRuntime bool                           `json:"include_in_runtime"`
+	NodeIDs          []int                          `json:"node_ids"`
 }
 
 type PortProfilePreview struct {
@@ -78,20 +69,15 @@ func CreatePortProfile(payload PortProfilePayload) (*model.PortProfileWithNodes,
 	}
 
 	profile := &model.PortProfile{
-		Name:                  normalized.Name,
-		ListenHost:            normalized.ListenHost,
-		MixedPort:             normalized.MixedPort,
-		SocksPort:             normalized.SocksPort,
-		HTTPPort:              normalized.HTTPPort,
-		StrategyType:          normalized.StrategyType,
-		StrategyGroupName:     normalized.StrategyGroupName,
-		TestURL:               normalized.TestURL,
-		TestIntervalSeconds:   normalized.TestIntervalSeconds,
-		LoadBalanceStrategy:   normalized.LoadBalanceStrategy,
-		LoadBalanceLazy:       normalized.LoadBalanceLazy,
-		LoadBalanceDisableUDP: normalized.LoadBalanceDisableUDP,
-		IncludeInRuntime:      normalized.IncludeInRuntime,
-		KernelType:            common.KernelType,
+		Name:              normalized.Name,
+		ListenHost:        normalized.ListenHost,
+		MixedPort:         normalized.MixedPort,
+		SocksPort:         normalized.SocksPort,
+		HTTPPort:          normalized.HTTPPort,
+		ProxySettingsJSON: mustEncodePortProfileProxySettings(normalized.ProxySettings),
+		ProxySettings:     normalized.ProxySettings,
+		IncludeInRuntime:  normalized.IncludeInRuntime,
+		KernelType:        common.KernelType,
 	}
 
 	if err := model.DB.Transaction(func(tx *gorm.DB) error {
@@ -124,13 +110,8 @@ func UpdatePortProfile(id int, payload PortProfilePayload) (*model.PortProfileWi
 	profile.MixedPort = normalized.MixedPort
 	profile.SocksPort = normalized.SocksPort
 	profile.HTTPPort = normalized.HTTPPort
-	profile.StrategyType = normalized.StrategyType
-	profile.StrategyGroupName = normalized.StrategyGroupName
-	profile.TestURL = normalized.TestURL
-	profile.TestIntervalSeconds = normalized.TestIntervalSeconds
-	profile.LoadBalanceStrategy = normalized.LoadBalanceStrategy
-	profile.LoadBalanceLazy = normalized.LoadBalanceLazy
-	profile.LoadBalanceDisableUDP = normalized.LoadBalanceDisableUDP
+	profile.ProxySettingsJSON = mustEncodePortProfileProxySettings(normalized.ProxySettings)
+	profile.ProxySettings = normalized.ProxySettings
 	profile.IncludeInRuntime = normalized.IncludeInRuntime
 	profile.KernelType = common.KernelType
 
@@ -173,21 +154,17 @@ func PreviewPortProfile(payload PortProfilePayload) (*PortProfilePreview, error)
 	if err != nil {
 		return nil, err
 	}
+
 	profile := model.PortProfile{
-		Name:                  normalized.Name,
-		ListenHost:            normalized.ListenHost,
-		MixedPort:             normalized.MixedPort,
-		SocksPort:             normalized.SocksPort,
-		HTTPPort:              normalized.HTTPPort,
-		StrategyType:          normalized.StrategyType,
-		StrategyGroupName:     normalized.StrategyGroupName,
-		TestURL:               normalized.TestURL,
-		TestIntervalSeconds:   normalized.TestIntervalSeconds,
-		LoadBalanceStrategy:   normalized.LoadBalanceStrategy,
-		LoadBalanceLazy:       normalized.LoadBalanceLazy,
-		LoadBalanceDisableUDP: normalized.LoadBalanceDisableUDP,
-		IncludeInRuntime:      normalized.IncludeInRuntime,
-		KernelType:            common.KernelType,
+		Name:              normalized.Name,
+		ListenHost:        normalized.ListenHost,
+		MixedPort:         normalized.MixedPort,
+		SocksPort:         normalized.SocksPort,
+		HTTPPort:          normalized.HTTPPort,
+		ProxySettingsJSON: mustEncodePortProfileProxySettings(normalized.ProxySettings),
+		ProxySettings:     normalized.ProxySettings,
+		IncludeInRuntime:  normalized.IncludeInRuntime,
+		KernelType:        common.KernelType,
 	}
 
 	rendered, err := runtimeconfig.RenderMihomoConfig(runtimeconfig.MihomoRenderInput{
@@ -214,20 +191,14 @@ func PreviewSavedPortProfile(id int) (*PortProfilePreview, error) {
 		return nil, err
 	}
 	return PreviewPortProfile(PortProfilePayload{
-		Name:                  view.Profile.Name,
-		ListenHost:            view.Profile.ListenHost,
-		MixedPort:             view.Profile.MixedPort,
-		SocksPort:             view.Profile.SocksPort,
-		HTTPPort:              view.Profile.HTTPPort,
-		StrategyType:          view.Profile.StrategyType,
-		StrategyGroupName:     view.Profile.StrategyGroupName,
-		TestURL:               view.Profile.TestURL,
-		TestIntervalSeconds:   view.Profile.TestIntervalSeconds,
-		LoadBalanceStrategy:   view.Profile.LoadBalanceStrategy,
-		LoadBalanceLazy:       view.Profile.LoadBalanceLazy,
-		LoadBalanceDisableUDP: view.Profile.LoadBalanceDisableUDP,
-		IncludeInRuntime:      view.Profile.IncludeInRuntime,
-		NodeIDs:               view.NodeIDs,
+		Name:             view.Profile.Name,
+		ListenHost:       view.Profile.ListenHost,
+		MixedPort:        view.Profile.MixedPort,
+		SocksPort:        view.Profile.SocksPort,
+		HTTPPort:         view.Profile.HTTPPort,
+		ProxySettings:    view.Profile.ProxySettings,
+		IncludeInRuntime: view.Profile.IncludeInRuntime,
+		NodeIDs:          view.NodeIDs,
 	})
 }
 
@@ -266,6 +237,9 @@ func ListProxyNodeOptions(keyword string) ([]*model.ProxyNode, error) {
 }
 
 func buildPortProfileView(profile *model.PortProfile) (*model.PortProfileWithNodes, error) {
+	if err := profile.HydrateProxySettings(); err != nil {
+		return nil, fmt.Errorf("解析端口配置代理设置失败: %v", err)
+	}
 	relations, err := model.ListPortProfileNodes(profile.ID)
 	if err != nil {
 		return nil, err
@@ -296,42 +270,41 @@ func buildPortProfileView(profile *model.PortProfile) (*model.PortProfileWithNod
 }
 
 func normalizePortProfilePayload(payload PortProfilePayload) (*PortProfilePayload, error) {
-	groupName := fallbackPortProfileString(strings.TrimSpace(payload.StrategyGroupName), defaultPortProfileGroupName)
+	groupName := fallbackPortProfileString(strings.TrimSpace(payload.Name), defaultPortProfileGroupName)
 	if groupName == "" {
 		return nil, fmt.Errorf("策略组名称不能为空")
 	}
-	if payload.MixedPort <= 0 {
-		return nil, fmt.Errorf("Mixed 端口必须大于 0")
-	}
-	if payload.SocksPort < 0 || payload.HTTPPort < 0 {
+	if payload.MixedPort < 0 || payload.SocksPort < 0 || payload.HTTPPort < 0 {
 		return nil, fmt.Errorf("端口不能为负数")
 	}
 	if len(payload.NodeIDs) == 0 {
 		return nil, fmt.Errorf("请先选择至少一个节点")
 	}
 
-	strategy := strings.TrimSpace(payload.StrategyType)
-	switch strategy {
-	case model.PortProfileStrategySelect, model.PortProfileStrategyURLTest, model.PortProfileStrategyFallback, model.PortProfileStrategyLoadBalance:
-	default:
-		strategy = model.PortProfileStrategySelect
+	proxySettings := normalizePortProfileProxySettings(payload.ProxySettings)
+	if proxySettings.AuthEnabled && (proxySettings.AuthUsername == "" || proxySettings.AuthPassword == "") {
+		return nil, fmt.Errorf("开启鉴权后，用户名和密码不能为空")
+	}
+
+	mixedPort := payload.MixedPort
+	socksPort := payload.SocksPort
+	httpPort := payload.HTTPPort
+	if mixedPort > 0 {
+		socksPort = 0
+		httpPort = 0
+	} else if socksPort <= 0 && httpPort <= 0 {
+		return nil, fmt.Errorf("关闭 Mixed 后，至少需要填写一个 SOCKS 或 HTTP 端口")
 	}
 
 	normalized := &PortProfilePayload{
-		Name:                  groupName,
-		ListenHost:            fallbackPortProfileString(strings.TrimSpace(payload.ListenHost), "127.0.0.1"),
-		MixedPort:             payload.MixedPort,
-		SocksPort:             payload.SocksPort,
-		HTTPPort:              payload.HTTPPort,
-		StrategyType:          strategy,
-		StrategyGroupName:     groupName,
-		TestURL:               fallbackPortProfileString(strings.TrimSpace(payload.TestURL), defaultPortProfileTestURL),
-		TestIntervalSeconds:   normalizePortProfilePositive(payload.TestIntervalSeconds, 300),
-		LoadBalanceStrategy:   normalizeLoadBalanceStrategy(payload.LoadBalanceStrategy),
-		LoadBalanceLazy:       payload.LoadBalanceLazy,
-		LoadBalanceDisableUDP: payload.LoadBalanceDisableUDP,
-		IncludeInRuntime:      payload.IncludeInRuntime,
-		NodeIDs:               deduplicateNodeIDs(payload.NodeIDs),
+		Name:             groupName,
+		ListenHost:       fallbackPortProfileString(strings.TrimSpace(payload.ListenHost), "127.0.0.1"),
+		MixedPort:        mixedPort,
+		SocksPort:        socksPort,
+		HTTPPort:         httpPort,
+		ProxySettings:    proxySettings,
+		IncludeInRuntime: payload.IncludeInRuntime,
+		NodeIDs:          deduplicateNodeIDs(payload.NodeIDs),
 	}
 	if len(normalized.NodeIDs) == 0 {
 		return nil, fmt.Errorf("请先选择至少一个节点")
@@ -345,7 +318,7 @@ func normalizePortProfilePayload(payload PortProfilePayload) (*PortProfilePayloa
 func validatePortProfileUniqueness(payload *PortProfilePayload, currentID int) error {
 	var groupNameCount int64
 	groupNameQuery := model.DB.Model(&model.PortProfile{}).
-		Where("lower(strategy_group_name) = ?", strings.ToLower(payload.StrategyGroupName))
+		Where("lower(name) = ?", strings.ToLower(payload.Name))
 	if currentID > 0 {
 		groupNameQuery = groupNameQuery.Where("id <> ?", currentID)
 	}
@@ -356,16 +329,18 @@ func validatePortProfileUniqueness(payload *PortProfilePayload, currentID int) e
 		return fmt.Errorf("策略组名称已存在，请使用其他名称")
 	}
 
-	var mixedPortCount int64
-	mixedPortQuery := model.DB.Model(&model.PortProfile{}).Where("mixed_port = ?", payload.MixedPort)
-	if currentID > 0 {
-		mixedPortQuery = mixedPortQuery.Where("id <> ?", currentID)
-	}
-	if err := mixedPortQuery.Count(&mixedPortCount).Error; err != nil {
-		return err
-	}
-	if mixedPortCount > 0 {
-		return fmt.Errorf("Mixed 端口已被其他端口配置占用")
+	if payload.MixedPort > 0 {
+		var mixedPortCount int64
+		mixedPortQuery := model.DB.Model(&model.PortProfile{}).Where("mixed_port = ?", payload.MixedPort)
+		if currentID > 0 {
+			mixedPortQuery = mixedPortQuery.Where("id <> ?", currentID)
+		}
+		if err := mixedPortQuery.Count(&mixedPortCount).Error; err != nil {
+			return err
+		}
+		if mixedPortCount > 0 {
+			return fmt.Errorf("Mixed 端口已被其他端口配置占用")
+		}
 	}
 
 	return nil
@@ -458,6 +433,45 @@ func deduplicateNodeIDs(nodeIDs []int) []int {
 		result = append(result, id)
 	}
 	return result
+}
+
+func normalizePortProfileProxySettings(settings model.PortProfileProxySettings) model.PortProfileProxySettings {
+	result := model.DefaultPortProfileProxySettings()
+	if settings != (model.PortProfileProxySettings{}) {
+		result.StrategyType = settings.StrategyType
+		result.TestURL = settings.TestURL
+		result.TestIntervalSeconds = settings.TestIntervalSeconds
+		result.LoadBalanceStrategy = settings.LoadBalanceStrategy
+		result.LoadBalanceLazy = settings.LoadBalanceLazy
+		result.LoadBalanceDisableUDP = settings.LoadBalanceDisableUDP
+		result.UDPEnabled = settings.UDPEnabled
+	}
+	switch strings.TrimSpace(result.StrategyType) {
+	case model.PortProfileStrategyURLTest, model.PortProfileStrategyFallback, model.PortProfileStrategyLoadBalance:
+		result.StrategyType = strings.TrimSpace(result.StrategyType)
+	default:
+		result.StrategyType = model.PortProfileStrategySelect
+	}
+	defaults := model.DefaultPortProfileProxySettings()
+	result.TestURL = fallbackPortProfileString(strings.TrimSpace(settings.TestURL), defaults.TestURL)
+	result.TestIntervalSeconds = normalizePortProfilePositive(settings.TestIntervalSeconds, defaults.TestIntervalSeconds)
+	result.LoadBalanceStrategy = normalizeLoadBalanceStrategy(settings.LoadBalanceStrategy)
+	result.AuthEnabled = settings.AuthEnabled
+	result.AuthUsername = strings.TrimSpace(settings.AuthUsername)
+	result.AuthPassword = strings.TrimSpace(settings.AuthPassword)
+	if !result.AuthEnabled {
+		result.AuthUsername = ""
+		result.AuthPassword = ""
+	}
+	return result
+}
+
+func mustEncodePortProfileProxySettings(settings model.PortProfileProxySettings) string {
+	encoded, err := model.EncodePortProfileProxySettings(settings)
+	if err != nil {
+		return "{}"
+	}
+	return encoded
 }
 
 func fallbackPortProfileString(value string, fallback string) string {

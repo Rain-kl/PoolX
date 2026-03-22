@@ -40,7 +40,12 @@ func RenderMihomoConfig(input MihomoRenderInput) (*RenderResult, error) {
 		proxyNames = append(proxyNames, node.Name)
 	}
 
-	groupName := strings.TrimSpace(input.Profile.StrategyGroupName)
+	proxySettings, err := resolveProxySettings(input.Profile)
+	if err != nil {
+		return nil, err
+	}
+
+	groupName := strings.TrimSpace(input.Profile.Name)
 	if groupName == "" {
 		groupName = "POOLX"
 	}
@@ -54,19 +59,19 @@ func RenderMihomoConfig(input MihomoRenderInput) (*RenderResult, error) {
 			"kernel":             fallbackString(strings.TrimSpace(input.Profile.KernelType), "mihomo"),
 			"listen_host":        fallbackString(strings.TrimSpace(input.Profile.ListenHost), "127.0.0.1"),
 		},
-		"listeners": buildListeners(input.Profile),
+		"listeners": buildListeners(input.Profile, proxySettings),
 		"strategy": map[string]any{
 			"group_name":               groupName,
-			"type":                     normalizeStrategyType(input.Profile.StrategyType),
-			"test_url":                 fallbackString(strings.TrimSpace(input.Profile.TestURL), "https://cp.cloudflare.com/generate_204"),
-			"test_interval":            normalizePositive(input.Profile.TestIntervalSeconds, 300),
-			"load_balance_mode":        normalizeLoadBalanceStrategy(input.Profile.LoadBalanceStrategy),
-			"load_balance_lazy":        input.Profile.LoadBalanceLazy,
-			"load_balance_disable_udp": input.Profile.LoadBalanceDisableUDP,
+			"type":                     normalizeStrategyType(proxySettings.StrategyType),
+			"test_url":                 fallbackString(strings.TrimSpace(proxySettings.TestURL), "https://cp.cloudflare.com/generate_204"),
+			"test_interval":            normalizePositive(proxySettings.TestIntervalSeconds, 300),
+			"load_balance_mode":        normalizeLoadBalanceStrategy(proxySettings.LoadBalanceStrategy),
+			"load_balance_lazy":        proxySettings.LoadBalanceLazy,
+			"load_balance_disable_udp": proxySettings.LoadBalanceDisableUDP,
 		},
 		"proxies": proxies,
 		"proxy-groups": []map[string]any{
-			buildStrategyGroup(input.Profile, groupName, proxyNames),
+			buildStrategyGroup(input.Profile, proxySettings, groupName, proxyNames),
 		},
 		"rules": []string{
 			fmt.Sprintf("MATCH,%s", groupName),
@@ -86,19 +91,40 @@ func RenderMihomoConfig(input MihomoRenderInput) (*RenderResult, error) {
 	}, nil
 }
 
-func buildListeners(profile model.PortProfile) []map[string]any {
+func resolveProxySettings(profile model.PortProfile) (model.PortProfileProxySettings, error) {
+	if profile.ProxySettings != (model.PortProfileProxySettings{}) {
+		return profile.ProxySettings, nil
+	}
+	settings, err := model.ParsePortProfileProxySettings(profile.ProxySettingsJSON)
+	if err != nil {
+		return model.PortProfileProxySettings{}, fmt.Errorf("解析代理设置失败: %v", err)
+	}
+	return settings, nil
+}
+
+func buildListeners(profile model.PortProfile, proxySettings model.PortProfileProxySettings) []map[string]any {
 	host := fallbackString(strings.TrimSpace(profile.ListenHost), "127.0.0.1")
 	listeners := make([]map[string]any, 0, 3)
 	appendListener := func(kind string, port int) {
 		if port <= 0 {
 			return
 		}
-		listeners = append(listeners, map[string]any{
+		listener := map[string]any{
 			"name":   buildListenerName(profile.Name, kind, port),
 			"type":   kind,
 			"listen": host,
 			"port":   port,
-		})
+			"udp":    proxySettings.UDPEnabled,
+		}
+		if proxySettings.AuthEnabled {
+			listener["users"] = []map[string]any{
+				{
+					"username": proxySettings.AuthUsername,
+					"password": proxySettings.AuthPassword,
+				},
+			}
+		}
+		listeners = append(listeners, listener)
 	}
 	appendListener("mixed", profile.MixedPort)
 	appendListener("socks", profile.SocksPort)
@@ -114,27 +140,27 @@ func buildListenerName(profileName string, kind string, port int) string {
 	return fmt.Sprintf("%s-%s-%d", base, kind, port)
 }
 
-func buildStrategyGroup(profile model.PortProfile, groupName string, proxyNames []string) map[string]any {
+func buildStrategyGroup(profile model.PortProfile, proxySettings model.PortProfileProxySettings, groupName string, proxyNames []string) map[string]any {
 	result := map[string]any{
 		"name":    groupName,
-		"type":    normalizeStrategyType(profile.StrategyType),
+		"type":    normalizeStrategyType(proxySettings.StrategyType),
 		"proxies": proxyNames,
 	}
 
-	switch normalizeStrategyType(profile.StrategyType) {
+	switch normalizeStrategyType(proxySettings.StrategyType) {
 	case model.PortProfileStrategyURLTest, model.PortProfileStrategyFallback, model.PortProfileStrategyLoadBalance:
-		result["url"] = fallbackString(strings.TrimSpace(profile.TestURL), "https://cp.cloudflare.com/generate_204")
-		result["interval"] = normalizePositive(profile.TestIntervalSeconds, 300)
+		result["url"] = fallbackString(strings.TrimSpace(proxySettings.TestURL), "https://cp.cloudflare.com/generate_204")
+		result["interval"] = normalizePositive(proxySettings.TestIntervalSeconds, 300)
 	default:
 		result["type"] = model.PortProfileStrategySelect
 	}
 
-	if profile.StrategyType == model.PortProfileStrategyLoadBalance {
-		result["strategy"] = normalizeLoadBalanceStrategy(profile.LoadBalanceStrategy)
-		if profile.LoadBalanceLazy {
+	if proxySettings.StrategyType == model.PortProfileStrategyLoadBalance {
+		result["strategy"] = normalizeLoadBalanceStrategy(proxySettings.LoadBalanceStrategy)
+		if proxySettings.LoadBalanceLazy {
 			result["lazy"] = true
 		}
-		if profile.LoadBalanceDisableUDP {
+		if proxySettings.LoadBalanceDisableUDP {
 			result["disable-udp"] = true
 		}
 	}

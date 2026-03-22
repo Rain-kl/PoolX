@@ -10,17 +10,19 @@ import (
 func TestRenderMihomoConfigBuildsMergeableFragment(t *testing.T) {
 	result, err := RenderMihomoConfig(MihomoRenderInput{
 		Profile: model.PortProfile{
-			ID:                  12,
-			Name:                "default-workspace",
-			ListenHost:          "127.0.0.1",
-			MixedPort:           7890,
-			SocksPort:           7891,
-			StrategyType:        model.PortProfileStrategyFallback,
-			StrategyGroupName:   "POOLX-FALLBACK",
-			TestURL:             "https://cp.cloudflare.com/generate_204",
-			TestIntervalSeconds: 180,
-			IncludeInRuntime:    true,
-			KernelType:          "mihomo",
+			ID:         12,
+			Name:       "POOLX-FALLBACK",
+			ListenHost: "127.0.0.1",
+			MixedPort:  7890,
+			SocksPort:  7891,
+			ProxySettings: model.PortProfileProxySettings{
+				StrategyType:        model.PortProfileStrategyFallback,
+				TestURL:             "https://cp.cloudflare.com/generate_204",
+				TestIntervalSeconds: 180,
+				UDPEnabled:          true,
+			},
+			IncludeInRuntime: true,
+			KernelType:       "mihomo",
 		},
 		Nodes: []*model.ProxyNode{
 			{
@@ -49,18 +51,20 @@ func TestRenderMihomoConfigBuildsMergeableFragment(t *testing.T) {
 func TestRenderMihomoConfigIncludesLoadBalanceOptions(t *testing.T) {
 	result, err := RenderMihomoConfig(MihomoRenderInput{
 		Profile: model.PortProfile{
-			Name:                  "lb-workspace",
-			ListenHost:            "127.0.0.1",
-			MixedPort:             7890,
-			StrategyType:          model.PortProfileStrategyLoadBalance,
-			StrategyGroupName:     "POOLX-LB",
-			TestURL:               "https://www.gstatic.com/generate_204",
-			TestIntervalSeconds:   300,
-			LoadBalanceStrategy:   "round-robin",
-			LoadBalanceLazy:       true,
-			LoadBalanceDisableUDP: true,
-			IncludeInRuntime:      true,
-			KernelType:            "mihomo",
+			Name:       "POOLX-LB",
+			ListenHost: "127.0.0.1",
+			MixedPort:  7890,
+			ProxySettings: model.PortProfileProxySettings{
+				StrategyType:          model.PortProfileStrategyLoadBalance,
+				TestURL:               "https://www.gstatic.com/generate_204",
+				TestIntervalSeconds:   300,
+				LoadBalanceStrategy:   "round-robin",
+				LoadBalanceLazy:       true,
+				LoadBalanceDisableUDP: true,
+				UDPEnabled:            true,
+			},
+			IncludeInRuntime: true,
+			KernelType:       "mihomo",
 		},
 		Nodes: []*model.ProxyNode{
 			{
@@ -84,5 +88,38 @@ func TestRenderMihomoConfigIncludesLoadBalanceOptions(t *testing.T) {
 	}
 	if !strings.Contains(result.Content, "disable-udp: true") {
 		t.Fatalf("expected disable-udp flag, got: %s", result.Content)
+	}
+}
+
+func TestRenderMihomoConfigIncludesListenerAuthAndUDP(t *testing.T) {
+	result, err := RenderMihomoConfig(MihomoRenderInput{
+		Profile: model.PortProfile{
+			Name:       "auth-workspace",
+			ListenHost: "127.0.0.1",
+			MixedPort:  7890,
+			ProxySettings: model.PortProfileProxySettings{
+				StrategyType: model.PortProfileStrategyFallback,
+				UDPEnabled:   true,
+				AuthEnabled:  true,
+				AuthUsername: "username1",
+				AuthPassword: "password1",
+			},
+			IncludeInRuntime: true,
+		},
+		Nodes: []*model.ProxyNode{
+			{
+				Name:         "auth-node",
+				MetadataJSON: `{"type":"ss","server":"4.4.4.4","port":443,"cipher":"aes-128-gcm","password":"secret"}`,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("RenderMihomoConfig returned error: %v", err)
+	}
+	if !strings.Contains(result.Content, "udp: true") {
+		t.Fatalf("expected udp flag, got: %s", result.Content)
+	}
+	if !strings.Contains(result.Content, "users:") || !strings.Contains(result.Content, "username: username1") {
+		t.Fatalf("expected listener auth users, got: %s", result.Content)
 	}
 }

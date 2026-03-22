@@ -6,6 +6,19 @@ export type PortProfileStrategy =
 
 export type LoadBalanceStrategy = 'consistent-hashing' | 'round-robin';
 
+export interface PortProfileProxySettings {
+  strategy_type: PortProfileStrategy;
+  test_url: string;
+  test_interval_seconds: number;
+  load_balance_strategy: LoadBalanceStrategy;
+  load_balance_lazy: boolean;
+  load_balance_disable_udp: boolean;
+  udp_enabled: boolean;
+  auth_enabled: boolean;
+  auth_username: string;
+  auth_password: string;
+}
+
 export interface RuntimeConfigItem {
   id: number;
   port_profile_id: number;
@@ -35,13 +48,7 @@ export interface PortProfileRecord {
   mixed_port: number;
   socks_port: number;
   http_port: number;
-  strategy_type: PortProfileStrategy;
-  strategy_group_name: string;
-  test_url: string;
-  test_interval_seconds: number;
-  load_balance_strategy: LoadBalanceStrategy;
-  load_balance_lazy: boolean;
-  load_balance_disable_udp: boolean;
+  proxy_settings: PortProfileProxySettings;
   include_in_runtime: boolean;
   kernel_type: string;
   created_at: string;
@@ -61,13 +68,7 @@ export interface PortProfilePayload {
   mixed_port: number;
   socks_port: number;
   http_port: number;
-  strategy_type: PortProfileStrategy;
-  strategy_group_name: string;
-  test_url: string;
-  test_interval_seconds: number;
-  load_balance_strategy: LoadBalanceStrategy;
-  load_balance_lazy: boolean;
-  load_balance_disable_udp: boolean;
+  proxy_settings: PortProfileProxySettings;
   include_in_runtime: boolean;
   node_ids: number[];
 }
@@ -88,13 +89,7 @@ export interface PortProfileTemplateRecord {
   mixed_port: number;
   socks_port: number;
   http_port: number;
-  strategy_type: PortProfileStrategy;
-  strategy_group_name: string;
-  test_url: string;
-  test_interval_seconds: number;
-  load_balance_strategy: LoadBalanceStrategy;
-  load_balance_lazy: boolean;
-  load_balance_disable_udp: boolean;
+  proxy_settings: PortProfileProxySettings;
   include_in_runtime: boolean;
   created_at: string;
   updated_at: string;

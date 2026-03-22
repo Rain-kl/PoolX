@@ -47,15 +47,17 @@ func TestStartRuntimeRejectsOccupiedListenerPort(t *testing.T) {
 
 	port := occupied.Addr().(*net.TCPAddr).Port
 	if _, err := CreatePortProfile(PortProfilePayload{
-		Name:                "occupied-port-profile",
-		ListenHost:          "127.0.0.1",
-		MixedPort:           port,
-		StrategyType:        model.PortProfileStrategyFallback,
-		StrategyGroupName:   "POOLX",
-		TestURL:             "https://cp.cloudflare.com/generate_204",
-		TestIntervalSeconds: 300,
-		IncludeInRuntime:    true,
-		NodeIDs:             []int{node.ID},
+		Name:       "occupied-port-profile",
+		ListenHost: "127.0.0.1",
+		MixedPort:  port,
+		ProxySettings: model.PortProfileProxySettings{
+			StrategyType:        model.PortProfileStrategyFallback,
+			TestURL:             "https://cp.cloudflare.com/generate_204",
+			TestIntervalSeconds: 300,
+			UDPEnabled:          true,
+		},
+		IncludeInRuntime: true,
+		NodeIDs:          []int{node.ID},
 	}); err != nil {
 		t.Fatalf("create port profile: %v", err)
 	}
@@ -114,17 +116,19 @@ func TestStartRuntimeIncludesRecentLogsWhenControllerWaitFails(t *testing.T) {
 	freePort := freeListener.Addr().(*net.TCPAddr).Port
 	_ = freeListener.Close()
 	if _, err := CreatePortProfile(PortProfilePayload{
-		Name:                "controller-wait-profile",
-		ListenHost:          "127.0.0.1",
-		MixedPort:           freePort,
-		SocksPort:           0,
-		HTTPPort:            0,
-		StrategyType:        model.PortProfileStrategyFallback,
-		StrategyGroupName:   "POOLX",
-		TestURL:             "https://cp.cloudflare.com/generate_204",
-		TestIntervalSeconds: 300,
-		IncludeInRuntime:    true,
-		NodeIDs:             []int{node.ID},
+		Name:       "controller-wait-profile",
+		ListenHost: "127.0.0.1",
+		MixedPort:  freePort,
+		SocksPort:  0,
+		HTTPPort:   0,
+		ProxySettings: model.PortProfileProxySettings{
+			StrategyType:        model.PortProfileStrategyFallback,
+			TestURL:             "https://cp.cloudflare.com/generate_204",
+			TestIntervalSeconds: 300,
+			UDPEnabled:          true,
+		},
+		IncludeInRuntime: true,
+		NodeIDs:          []int{node.ID},
 	}); err != nil {
 		t.Fatalf("create port profile: %v", err)
 	}
