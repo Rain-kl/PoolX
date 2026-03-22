@@ -42,21 +42,47 @@ PoolX 面向这类需求而设计：
 * 面向不同目标站点的工作台式代理编排
 * 团队内部使用的 Mihomo 代理基础设施控制台
 
-## PoolX 背后的 Mihomo / Clash 能力
-
-PoolX 以 Mihomo 作为代理内核，控制面主要编排这些能力：
-
-* 本地 HTTP/HTTPS/SOCKS/Mixed 监听
-* 可选的监听鉴权
-* VMess、VLESS、Shadowsocks、Trojan、Snell、TUIC、Hysteria 等协议节点
-* 基于规则的转发与 Mihomo 原生策略组
-* 远程节点源与动态节点列表
-* 自动回退、负载均衡、基于延迟的节点选择
-* REST API 控制接口与 Dashboard 集成
-
-PoolX 不是 Mihomo 内核分叉，而是构建在 Mihomo 之上的管理与编排层。
 
 ## 快速开始
+
+### Docker 部署
+
+```yaml
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: poolx
+      POSTGRES_USER: poolx
+      POSTGRES_PASSWORD: replace-with-strong-password
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U poolx -d poolx"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  poolx:
+    image: ghcr.io/rain-kl/poolx:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+#     开放代理监听端口
+    environment:
+      SESSION_SECRET: replace-with-random-string
+      SQLITE_PATH: /data/poolx.db
+      DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
+      GIN_MODE: release
+      LOG_LEVEL: info
+
+    volumes:
+      - ./data/poolx:/data
+```
 
 ### 环境要求
 
@@ -153,32 +179,6 @@ PoolX 不要求你手工维护一个固定的 Mihomo 主配置文件。
 
 * [docs/app-config.md](./docs/app-config.md)
 * [docs/deployment.md](./docs/deployment.md)
-
-## 文档
-
-推荐阅读顺序：
-
-1. [docs/design.md](./docs/design.md)
-2. [docs/development-guidelines.md](./docs/development-guidelines.md)
-3. [docs/development-plan.md](./docs/development-plan.md)
-4. [docs/frontend-development-guidelines.md](./docs/frontend-development-guidelines.md)
-5. [docs/deployment.md](./docs/deployment.md)
-6. [docs/app-config.md](./docs/app-config.md)
-
-Mihomo 相关参考：
-
-* [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo)
-* [Mihomo Wiki](https://wiki.metacubex.one/)
-
-## 致谢
-
-* [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo)
-* [Zephyruso/zashboard](https://github.com/Zephyruso/zashboard)
-* [Dreamacro/clash](https://github.com/Dreamacro/clash)
-* [SagerNet/sing-box](https://github.com/SagerNet/sing-box)
-* [riobard/go-shadowsocks2](https://github.com/riobard/go-shadowsocks2)
-* [v2ray/v2ray-core](https://github.com/v2ray/v2ray-core)
-* [WireGuard/wireguard-go](https://github.com/WireGuard/wireguard-go)
 
 ## License
 

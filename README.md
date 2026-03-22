@@ -42,20 +42,6 @@ In short, PoolX helps convert raw proxy subscriptions and node lists into operat
 * Workspace-based proxy orchestration for multi-target scraping strategies
 * Internal control panels for teams operating Mihomo-backed proxy infrastructure
 
-## Mihomo / Clash Capabilities Behind PoolX
-
-PoolX uses Mihomo as the proxy kernel and orchestrates capabilities such as:
-
-* local HTTP/HTTPS/SOCKS/Mixed listeners
-* optional listener authentication
-* VMess, VLESS, Shadowsocks, Trojan, Snell, TUIC, and Hysteria nodes
-* rule-based forwarding and Mihomo-native strategy groups
-* remote node providers and dynamic node sources
-* fallback, load balancing, and latency-based node selection
-* REST API control and dashboard integration
-
-PoolX is not a Mihomo fork. It is the management and orchestration layer on top of Mihomo.
-
 ## Quick Start
 
 ### Docker Deployment
@@ -97,13 +83,15 @@ services:
       - ./data/poolx:/data
 ```
 
-### Requirements
+### Local Deployment
+
+#### Requirements
 
 * Go 1.24+
 * Node.js 20+
 * pnpm
 
-### Build Frontend Assets
+#### Build Frontend Assets
 
 ```bash
 cd server/web
@@ -119,7 +107,7 @@ pnpm install
 pnpm build
 ```
 
-### Run the Server
+#### Run the Server
 
 ```bash
 cd server
