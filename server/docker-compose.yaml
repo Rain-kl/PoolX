@@ -27,7 +27,7 @@ services:
     environment:
       SESSION_SECRET: replace-with-random-string
       SQLITE_PATH: /data/poolx.db
-      DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
+      SQL_DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
       GIN_MODE: release
       LOG_LEVEL: info
 

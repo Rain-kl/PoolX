@@ -12,30 +12,38 @@
 > [!NOTE]
 > 使用 glider 进行的节点转代理池已过时, 旧版存档在 glider 分支. 当前项目提供一整个图形界面系统用于构建代理池,暂仅支持 mihomo 内核
 
-## 项目用途
+> [!WARNING]
+> 本项目仅为代理池控制面, 不提供节点以及其获取方式。本项目仅供学习、研究与技术交流使用，禁止用于任何非法用途。
 
-PoolX 面向这类需求而设计：
+> [!WARNING]
+> 使用 root 用户初次登录系统后，务必修改默认密码 `123456`！
 
-* 导入和管理大量 Clash 兼容节点
-* 将节点组织成可复用的代理池
-* 为爬虫、自动化任务和代理请求系统暴露稳定的本地代理入口
-* 对节点应用负载均衡、自动回退和基于延迟的选择策略
-* 通过可视化控制面管理 Mihomo 运行内核
+## 项目介绍
 
-可以把它理解为：将原始订阅和零散节点配置，转成可运营、可复用、可编排的代理池基础设施。
+在使用爬虫对目标网站进行多次请求时，往往会触发反爬机制，导致访问被封禁。此类封禁通常基于 IP 地址，因此通过切换 IP 可以有效规避限制，从而实现持续稳定的爬取。
+
+常见的解决方案是使用代理池。但现有方案中：
+* 免费代理池质量普遍较低，稳定性和可用性难以保障
+* 付费代理服务成本较高，往往超出实际需求
+
+一种更具性价比的方案，是利用“机场”提供的节点资源，结合开源代理内核，将其构建为可复用的代理池。
+
+本项目提供了一个简洁易用的 UI 界面，用于高效管理和组织代理节点，无需手动编写或维护复杂的配置文件。同时，项目还提供统一的内核控制能力，便于对代理核心进行集中管理。
+
+核心功能
+* 支持通过配置文件导入和管理大量节点
+* 将节点组织为可复用的代理池
+* 为爬虫、自动化任务及代理请求系统提供稳定的本地代理入口
+* 支持负载均衡、自动回退以及基于延迟的节点选择策略
+* 提供可视化控制面板，用于管理内核运行状态
 
 ## 功能特性
 
-* Web 管理端，内置登录鉴权、系统设置、日志与文件上传能力
-* Clash 兼容配置导入链路
+* Web 管理端，内置登录鉴权、系统设置能力
 * 节点池管理，支持节点测试、筛选和跨工作台复用
 * 基于工作台的端口配置管理，用于构建代理池入口
-* 支持 `Mixed` 和 `SOCKS/HTTP` 两种监听模式
-* 运行阶段自动聚合多个工作台配置，生成最终 Mihomo 配置
-* 内置 `select`、`url-test`、`fallback`、`load-balance` 等策略能力
-* 基于 JSON 的代理设置扩展，可承载监听鉴权、UDP、测速参数和负载均衡调优
-* 设置页支持 Mihomo 二进制安装与管理
-* 内置 zashboard，并通过 PoolX 鉴权同源反代到 `/zashboard/`，不向浏览器暴露 Clash secret
+* 监听多个端口, 每一个端口对应不同的代理池配置
+* 内置 zashboard，进一步拓展内核监控和管理能力
 
 ## 典型使用场景
 
@@ -43,8 +51,7 @@ PoolX 面向这类需求而设计：
 * 自动化平台的统一出网代理网关
 * 数据采集任务的轮换代理或回退代理入口
 * 面向不同目标站点的工作台式代理编排
-* 团队内部使用的 Mihomo 代理基础设施控制台
-
+* 代理访问AI, 降低网站风险, 提升访问稳定性
 
 ## 快速开始
 
@@ -82,105 +89,45 @@ services:
 #     开放代理监听端口
     environment:
       SESSION_SECRET: replace-with-random-string
+#     在指定 SQL_DSN 的情况下, 以下内容不会生效
       SQLITE_PATH: /data/poolx.db
-      DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
+#     如果使用 Sqlite, 注释掉 SQL_DSN, 并且移除 postgres service
+      SQL_DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
       GIN_MODE: release
       LOG_LEVEL: info
 
     volumes:
       - ./data/poolx:/data
 ```
+### 本地部署
 
-### 环境要求
-
-* Go 1.24+
-* Node.js 20+
-* pnpm
-
-### 构建前端静态资源
+从 Release 页面下载预编译的二进制文件：
 
 ```bash
-cd server/web
-corepack enable
-pnpm install
-pnpm build
-```
-
-```bash
-cd server/zashboard
-corepack enable
-pnpm install
-pnpm build
-```
-
-### 启动服务端
-
-```bash
-cd server
-export SESSION_SECRET='replace-with-random-string'
-export SQLITE_PATH='./poolx.db'
-export LOG_LEVEL='info'
-go run ./cmd/server
+# 使用 SQLite 启动
+SESSION_SECRET=replace-with-random-string \
+SQLITE_PATH=/path/to/poolx.db \
+./poolx
 ```
 
 访问地址：`http://localhost:3000`
-
-内置 Clash 控制台：`http://localhost:3000/zashboard/`
 
 默认账号：
 
 * 用户名：`root`
 * 密码：`123456`
 
-## 本地开发
-
-Server：
-
-```bash
-cd server
-go run ./cmd/server
-```
-
-Frontend：
-
-```bash
-cd server/web
-pnpm install
-pnpm dev
-```
-
-Zashboard：
-
-```bash
-cd server/zashboard
-pnpm install
-pnpm build
-```
-
-服务端测试：
-
-```bash
-cd server
-go test ./...
-```
-
-前端构建：
-
-```bash
-cd server/web
-pnpm build
-```
 
 ## 配置说明
 
-PoolX 不要求你手工维护一个固定的 Mihomo 主配置文件。
+PoolX 不要求你手工维护一个固定的配置文件。
 
 它的核心流程是：
 
 * 导入节点
 * 组织节点池
 * 定义工作台监听配置
-* 自动渲染最终 Mihomo 运行配置
+* 自动渲染最终内核运行配置
 
 运行参数、部署方式和系统配置请参考：
 

@@ -50,7 +50,7 @@ export SESSION_SECRET='replace-with-random-string'
 export SQLITE_PATH='./poolx.db'
 export LOG_LEVEL='info'
 # 可选：使用 PostgreSQL
-# export DSN='postgres://template:secret@127.0.0.1:5432/poolx?sslmode=disable'
+# export SQL_DSN='postgres://template:secret@127.0.0.1:5432/poolx?sslmode=disable'
 go run ./cmd/server
 ```
 
@@ -98,7 +98,7 @@ services:
     environment:
       SESSION_SECRET: replace-with-random-string
       SQLITE_PATH: /data/poolx.db
-      DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
+      SQL_DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
       GIN_MODE: release
       LOG_LEVEL: info
     volumes:

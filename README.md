@@ -1,54 +1,73 @@
 <p align="right">
-  <a href="./README_CN.md">中文</a>
+  <a href="./README.md">中文</a>
 </p>
 
 <div align="center">
 
 # PoolX
 
-A Proxy Pool Control Plane built with Gin and Next.js, designed to turn Clash/Mihomo nodes into reusable proxy pools for crawlers, scraping systems, and proxy-driven network workloads.
+A proxy pool control panel built with Gin and Next.js. Its core goal is to organize Clash/Mihomo nodes into reusable proxy pools for web scraping, data collection, proxy requests, and automated outbound network scenarios.
+
 </div>
 
 > [!NOTE]
-> The use of glider for converting nodes to proxy pools is no longer recommended. Old versions of archives can still be found in the glider branch. The current project provides a graphical interface system for building proxy pools. Currently, it only supports the mihomo kernel.
+> The node-to-proxy-pool approach based on glider is deprecated. The legacy version is archived in the `glider` branch. This project now provides a full graphical interface system for building proxy pools, currently supporting only the Mihomo core.
 
-## What This Project Is For
+> [!WARNING]
+> This project is only a proxy pool control panel and does NOT provide nodes or methods to obtain them. It is intended for learning, research, and technical exchange only. Any illegal use is strictly prohibited.
 
-PoolX is built for teams that need to:
+> [!WARNING]
+> After logging in with the root account for the first time, be sure to change the default password `123456` immediately!
 
-* import and manage large sets of Clash-compatible proxy nodes
-* organize those nodes into reusable proxy pools
-* expose stable local proxy entrypoints for crawlers and automation services
-* apply load balancing, fallback, and latency-based selection strategies
-* control Mihomo as the execution kernel through a web-based control plane
+---
 
-In short, PoolX helps convert raw proxy subscriptions and node lists into operational proxy pools that can be consumed by scraping projects, bots, data collection services, and other outbound request systems.
+## Introduction
+
+When making multiple requests to target websites using crawlers, anti-scraping mechanisms are often triggered, leading to access bans. These bans are typically based on IP addresses, so switching IPs is an effective way to bypass restrictions and maintain stable scraping.
+
+A common solution is to use a proxy pool. However, existing solutions have drawbacks:
+
+- Free proxy pools often have poor quality, with low stability and availability
+- Paid proxy services can be expensive and exceed practical needs
+
+A more cost-effective approach is to utilize nodes provided by proxy service providers (“airports”), combined with open-source proxy cores, to build reusable proxy pools.
+
+This project provides a clean and user-friendly UI for efficiently managing and organizing proxy nodes, eliminating the need to manually write or maintain complex configuration files. It also offers unified core control for centralized management of the proxy engine.
+
+### Core Features
+
+- Import and manage a large number of nodes via configuration files
+- Organize nodes into reusable proxy pools
+- Provide stable local proxy endpoints for crawlers, automation tasks, and proxy systems
+- Support load balancing, automatic fallback, and latency-based node selection
+- Visual dashboard for managing core runtime status
+
+---
 
 ## Features
 
-* Web-based admin console with authentication, settings, logs, and file upload support
-* Node import pipeline for Clash-compatible configurations
-* Node pool management with testing and reuse across multiple workspaces
-* Workspace-based port profile management for building proxy pool entrypoints
-* Support for `Mixed` or `SOCKS/HTTP` listener modes
-* Runtime aggregation that combines multiple workspace profiles into a final Mihomo configuration
-* Built-in strategy support: `select`, `url-test`, `fallback`, and `load-balance`
-* JSON-based proxy settings extension for listener auth, UDP, latency test options, and load-balance tuning
-* Mihomo binary management from the settings page
-* Built-in zashboard served at `/zashboard/`, proxied through PoolX auth instead of exposing the Clash secret to the browser
+- Web-based management panel with authentication and system settings
+- Node pool management with testing, filtering, and cross-workspace reuse
+- Workspace-based port configuration for building proxy pool entry points
+- Multiple port listeners, each mapped to a different proxy pool configuration
+- Built-in zashboard for extended monitoring and management of the core
+
+---
 
 ## Typical Use Cases
 
-* Proxy pools for crawlers and scraping services
-* Outbound proxy gateways for automation platforms
-* Rotating or fallback proxy entrypoints for data collection jobs
-* Workspace-based proxy orchestration for multi-target scraping strategies
-* Internal control panels for teams operating Mihomo-backed proxy infrastructure
+- Proxy pools for web scraping and crawling services
+- Unified outbound proxy gateway for automation platforms
+- Rotating or fallback proxy entry points for data collection tasks
+- Workspace-based proxy orchestration for different target sites
+- Proxy access for AI services to reduce risk and improve stability
+
+---
 
 ## Quick Start
 
-Login URL: `http://localhost:3000/`
-Username: `root`
+Login URL: `http://IP:3000/`  
+Username: `root`  
 Password: `123456`
 
 ### Docker Deployment
@@ -78,11 +97,13 @@ services:
         condition: service_healthy
     ports:
       - "3000:3000"
-#     开放代理监听端口
+#     Expose proxy listening ports as needed
     environment:
       SESSION_SECRET: replace-with-random-string
+#     If SQL_DSN is specified, the following will be ignored
       SQLITE_PATH: /data/poolx.db
-      DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
+#     To use SQLite, comment out SQL_DSN and remove postgres service
+      SQL_DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
       GIN_MODE: release
       LOG_LEVEL: info
 
@@ -92,103 +113,37 @@ services:
 
 ### Local Deployment
 
-#### Requirements
-
-* Go 1.24+
-* Node.js 20+
-* pnpm
-
-#### Build Frontend Assets
+Download the precompiled binary from the Release page:
 
 ```bash
-cd server/web
-corepack enable
-pnpm install
-pnpm build
+# Start with SQLite
+SESSION_SECRET=replace-with-random-string \
+SQLITE_PATH=/path/to/poolx.db \
+./poolx
 ```
 
-```bash
-cd server/zashboard
-corepack enable
-pnpm install
-pnpm build
-```
+Access URL: http://localhost:3000
 
-#### Run the Server
+Default credentials:
+* Username: root
+* Password: 123456
 
-```bash
-cd server
-export SESSION_SECRET='replace-with-random-string'
-export SQLITE_PATH='./poolx.db'
-export LOG_LEVEL='info'
-go run ./cmd/server
-```
-
-App URL: `http://localhost:3000`
-
-Built-in Clash dashboard: `http://localhost:3000/zashboard/`
-
-Default account:
-
-* Username: `root`
-* Password: `123456`
-
-## Development
-
-Server:
-
-```bash
-cd server
-go run ./cmd/server
-```
-
-Frontend:
-
-```bash
-cd server/web
-pnpm install
-pnpm dev
-```
-
-Zashboard:
-
-```bash
-cd server/zashboard
-pnpm install
-pnpm build
-```
-
-Server tests:
-
-```bash
-cd server
-go test ./...
-```
-
-Frontend build:
-
-```bash
-cd server/web
-pnpm build
-```
 
 ## Configuration
 
-PoolX does not expect you to hand-maintain a single static Mihomo config file.
+PoolX does not require maintaining a fixed configuration file manually.
 
-Instead, it:
+Its core workflow is:
+* Import nodes
+* Organize proxy pools
+* Define workspace listening configurations
+* Automatically render the final runtime configuration for the core
 
-* imports nodes
-* organizes them into pools
-* lets you define workspace listener profiles
-* renders the final Mihomo runtime config automatically
-
-For runtime options, deployment, and application config, see:
-
+For runtime parameters, deployment methods, and system configuration, refer to:
 * [docs/app-config.md](./docs/app-config.md)
 * [docs/deployment.md](./docs/deployment.md)
-
+*
 
 ## License
 
-This project is released under the [Apache License 2.0](./LICENSE).
+This project is licensed under the [Apache License 2.0](./LICENSE) ￼.
