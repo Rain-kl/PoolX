@@ -63,7 +63,7 @@ go run . --port 3000 --log-dir ./logs
 | `PasswordLoginEnabled` | 是否启用密码登录 | `true` |
 | `PasswordRegisterEnabled` | 是否启用密码注册 | `true` |
 | `EmailVerificationEnabled` | 是否启用邮箱验证码流程 | `false` |
-| `RegisterEnabled` | 是否允许用户注册 | `true` |
+| `RegisterEnabled` | 是否允许用户注册 | `false` |
 | `ServerUpdateRepo` | 服务端版本检查与升级使用的 GitHub 仓库，格式为 `owner/repo` | `Rain-kl/PoolX` |
 | `KernelType` | 当前启用的代理内核类型 | `mihomo` |
 | `MihomoBinaryPath` | Mihomo 二进制安装路径 | 空 |
