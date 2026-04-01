@@ -1356,7 +1356,7 @@ export function SettingsPage() {
 
           <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
             <AppCard
-              title="更新与归属设置"
+              title="系统更新"
               description="配置服务端版本检查使用的上游仓库。"
               action={
                 <PrimaryButton
