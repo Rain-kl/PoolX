@@ -186,9 +186,6 @@ export function RuntimePage() {
             >
               {stopMutation.isPending ? '停止中...' : '停止'}
             </DangerButton>
-            <SecondaryButton type="button" onClick={() => setAutoRefresh((value) => !value)}>
-              {autoRefresh ? '暂停自动刷新' : '开启自动刷新'}
-            </SecondaryButton>
             <SecondaryButton
               type="button"
               onClick={() => window.open('/zashboard/', '_blank', 'noopener,noreferrer')}
