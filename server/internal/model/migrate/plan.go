@@ -23,5 +23,6 @@ func BuildTemplateScheduler(
 		ensureSchemaMeta,
 	).
 		RegisterInitializer(V0(hooks)).
-		RegisterMigration(V1(hooks))
+		RegisterMigration(V1(hooks)).
+		RegisterMigration(V2(hooks))
 }

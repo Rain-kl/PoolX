@@ -323,7 +323,7 @@ export function NodesPage() {
           {!nodesQuery.isLoading && !nodesQuery.isError && nodes.length === 0 ? (
             <EmptyState
               title="暂无节点"
-              description="点击右上角“导入节点”上传 YAML 并完成导入。"
+              description="点击右上角“导入节点”上传 YAML 或填写订阅地址并完成导入。"
             />
           ) : null}
 
@@ -429,7 +429,7 @@ export function NodesPage() {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         title="导入节点"
-        description="上传 Clash/Mihomo YAML，完成解析、去重预检与导入确认后，会直接写入当前节点池。"
+        description="上传 Clash/Mihomo YAML，或填写返回 YAML 的订阅地址；完成解析、去重预检与导入确认后，会直接写入当前节点池。"
         size="xl"
       >
         <SourceImportPanel

@@ -36,7 +36,7 @@ This project provides a clean and user-friendly UI for efficiently managing and 
 
 ### Core Features
 
-- Import and manage a large number of nodes via configuration files
+- Import and manage a large number of nodes via configuration files or subscription URLs
 - Organize nodes into reusable proxy pools
 - Provide stable local proxy endpoints for crawlers, automation tasks, and proxy systems
 - Support load balancing, automatic fallback, and latency-based node selection

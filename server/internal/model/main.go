@@ -119,6 +119,10 @@ func migrationHooks() migratepkg.Hooks {
 			requiredModels,
 			[]migratepkg.RequiredColumn{
 				{Model: &AppLog{}, Table: "app_logs", Column: "Level"},
+				{Model: &SourceConfig{}, Table: "source_configs", Column: "source_type"},
+				{Model: &SourceConfig{}, Table: "source_configs", Column: "source_url"},
+				{Model: &SourceConfig{}, Table: "source_configs", Column: "content_type"},
+				{Model: &SourceConfig{}, Table: "source_configs", Column: "fetched_at"},
 			},
 		),
 		AfterInitialize: migrateSQLiteDataIfNeeded,

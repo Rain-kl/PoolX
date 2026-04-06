@@ -87,6 +87,7 @@ func SetApiRouter(router *gin.Engine) {
 		sourceConfigRoute.Use(middleware.AdminAuth(), middleware.NoTokenAuth())
 		{
 			sourceConfigRoute.POST("/parse", middleware.UploadRateLimit(), controller.ParseSourceConfig)
+			sourceConfigRoute.POST("/parse-url", middleware.UploadRateLimit(), controller.ParseSourceConfigURL)
 			sourceConfigRoute.POST("/test", controller.TestSourceConfigNodes)
 			sourceConfigRoute.POST("/import", controller.ImportSourceConfig)
 		}

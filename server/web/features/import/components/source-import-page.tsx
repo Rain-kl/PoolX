@@ -10,17 +10,19 @@ import { AppCard } from '@/components/ui/app-card';
 import {
   importSourceConfig,
   parseSourceConfig,
+  parseSourceConfigByURL,
   testParsedNodes,
 } from '@/features/import/api/source-import';
 import type {
   ParsedNodePreview,
-  SourceImportResult,
   ParsedNodeTestResult,
+  SourceImportResult,
   SourceParseResult,
 } from '@/features/import/types';
 import {
   PrimaryButton,
   ResourceField,
+  ResourceInput,
   SecondaryButton,
 } from '@/features/shared/components/resource-primitives';
 
@@ -29,6 +31,8 @@ type FeedbackState = {
   message: string;
 };
 
+type SourceInputMode = 'upload' | 'subscription_url';
+
 interface SourceImportPanelProps {
   embedded?: boolean;
   onImportSuccess?: (result: SourceImportResult) => void;
@@ -36,6 +40,42 @@ interface SourceImportPanelProps {
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '请求失败，请稍后重试。';
+}
+
+function isValidSubscriptionURL(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function maskSubscriptionURL(value?: string) {
+  if (!value) {
+    return '订阅地址已隐藏';
+  }
+
+  try {
+    const url = new URL(value);
+    const hasSearch = url.search.length > 0;
+    const hasHash = url.hash.length > 0;
+    url.username = '';
+    url.password = '';
+    url.search = hasSearch ? '?***' : '';
+    url.hash = hasHash ? '#***' : '';
+    return url.toString();
+  } catch {
+    return '订阅地址已隐藏';
+  }
+}
+
+function sourceConfigOriginLabel(sourceConfig: SourceParseResult['source_config']) {
+  if (sourceConfig.source_type === 'subscription_url') {
+    return `来源订阅 ${maskSubscriptionURL(sourceConfig.source_url)}`;
+  }
+
+  return `文件 ${sourceConfig.filename}`;
 }
 
 function duplicateScopeLabel(scope: string) {
@@ -53,7 +93,9 @@ export function SourceImportPanel({
   embedded = false,
   onImportSuccess,
 }: SourceImportPanelProps) {
+  const [sourceMode, setSourceMode] = useState<SourceInputMode>('upload');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [subscriptionURL, setSubscriptionURL] = useState('');
   const [parseResult, setParseResult] = useState<SourceParseResult | null>(null);
   const [previewNodes, setPreviewNodes] = useState<ParsedNodePreview[]>([]);
   const [selectedFingerprints, setSelectedFingerprints] = useState<string[]>([]);
@@ -71,10 +113,19 @@ export function SourceImportPanel({
 
   const parseMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedFile) {
-        throw new Error('请先选择 YAML 文件。');
+      if (sourceMode === 'upload') {
+        if (!selectedFile) {
+          throw new Error('请先选择 YAML 文件。');
+        }
+        return parseSourceConfig(selectedFile);
       }
-      return parseSourceConfig(selectedFile);
+
+      const normalizedURL = subscriptionURL.trim();
+      if (!isValidSubscriptionURL(normalizedURL)) {
+        throw new Error('请输入有效的 http/https 订阅地址。');
+      }
+
+      return parseSourceConfigByURL(normalizedURL);
     },
     onSuccess: (result) => {
       setParseResult(result);
@@ -170,6 +221,14 @@ export function SourceImportPanel({
     };
   }, [importableNodes.length, parseResult, previewNodes]);
 
+  const importSourceDescription = useMemo(() => {
+    if (!parseResult) {
+      return '';
+    }
+
+    return `当前导入记录 #${parseResult.source_config.id}，${sourceConfigOriginLabel(parseResult.source_config)}。当前已选择 ${selectedFingerprints.length} 个节点。`;
+  }, [parseResult, selectedFingerprints.length]);
+
   const handleToggleNode = (fingerprint: string, checked: boolean) => {
     setSelectedFingerprints((previous) =>
       checked
@@ -183,7 +242,7 @@ export function SourceImportPanel({
       {!embedded ? (
         <PageHeader
           title="配置导入"
-          description="上传 Clash/Mihomo YAML，服务端会完成解析、标准化和去重预检，再将确认后的节点导入节点池。"
+          description="上传 Clash/Mihomo YAML，或填写返回 YAML 的订阅地址；服务端会完成解析、标准化和去重预检，再将确认后的节点导入节点池。"
         />
       ) : null}
 
@@ -196,16 +255,58 @@ export function SourceImportPanel({
         description="当前最小版本支持从 `proxies` 列表读取节点，并按节点指纹做批内去重与库内去重预检。"
       >
         <div className="space-y-4">
-          <ResourceField label="YAML 文件">
-            <input
-              type="file"
-              accept=".yaml,.yml,text/yaml,text/x-yaml,application/x-yaml"
-              onChange={(event) =>
-                setSelectedFile(event.target.files?.[0] ?? null)
+          <div className="flex flex-wrap gap-3">
+            <PrimaryButton
+              type="button"
+              aria-pressed={sourceMode === 'upload'}
+              onClick={() => setSourceMode('upload')}
+              className={
+                sourceMode === 'upload'
+                  ? undefined
+                  : 'border border-[var(--border-default)] bg-[var(--control-background)] text-[var(--foreground-primary)] hover:bg-[var(--control-background-hover)]'
               }
-              className="block w-full rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] px-3 py-2 text-sm text-[var(--foreground-primary)]"
-            />
-          </ResourceField>
+            >
+              上传 YAML
+            </PrimaryButton>
+            <PrimaryButton
+              type="button"
+              aria-pressed={sourceMode === 'subscription_url'}
+              onClick={() => setSourceMode('subscription_url')}
+              className={
+                sourceMode === 'subscription_url'
+                  ? undefined
+                  : 'border border-[var(--border-default)] bg-[var(--control-background)] text-[var(--foreground-primary)] hover:bg-[var(--control-background-hover)]'
+              }
+            >
+              订阅地址
+            </PrimaryButton>
+          </div>
+
+          {sourceMode === 'upload' ? (
+            <ResourceField label="YAML 文件">
+              <input
+                type="file"
+                accept=".yaml,.yml,text/yaml,text/x-yaml,application/x-yaml"
+                onChange={(event) =>
+                  setSelectedFile(event.target.files?.[0] ?? null)
+                }
+                className="block w-full rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] px-3 py-2 text-sm text-[var(--foreground-primary)]"
+              />
+            </ResourceField>
+          ) : (
+            <ResourceField
+              label="订阅地址"
+              hint="仅支持返回 Clash/Mihomo YAML 的 http/https 地址。"
+            >
+              <ResourceInput
+                type="url"
+                aria-label="订阅地址"
+                value={subscriptionURL}
+                onChange={(event) => setSubscriptionURL(event.target.value)}
+                placeholder="https://example.com/subscription.yaml"
+              />
+            </ResourceField>
+          )}
 
           <div className="flex flex-wrap gap-3">
             <PrimaryButton
@@ -221,7 +322,9 @@ export function SourceImportPanel({
             <SecondaryButton
               type="button"
               onClick={() => {
+                setSourceMode('upload');
                 setSelectedFile(null);
+                setSubscriptionURL('');
                 setParseResult(null);
                 setPreviewNodes([]);
                 setSelectedFingerprints([]);
@@ -274,7 +377,7 @@ export function SourceImportPanel({
 
           <AppCard
             title="导入确认"
-            description={`当前导入记录 #${parseResult.source_config.id}，文件 ${parseResult.source_config.filename}。当前已选择 ${selectedFingerprints.length} 个节点。`}
+            description={importSourceDescription}
           >
             <div className="flex flex-wrap gap-3">
               <PrimaryButton

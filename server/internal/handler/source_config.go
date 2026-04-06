@@ -2,9 +2,11 @@ package controller
 
 import (
 	"io"
+	"net/url"
 	"poolx/internal/model"
 	"poolx/internal/service"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,6 +21,21 @@ type sourceNodeTestRequest struct {
 	Fingerprints   []string `json:"fingerprints"`
 	TimeoutMS      int      `json:"timeout_ms"`
 	TestURL        string   `json:"test_url"`
+}
+
+type sourceParseURLRequest struct {
+	URL string `json:"url" binding:"required"`
+}
+
+func isValidSourceSubscriptionURL(raw string) bool {
+	parsed, err := url.ParseRequestURI(raw)
+	if err != nil {
+		return false
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return false
+	}
+	return strings.TrimSpace(parsed.Hostname()) != ""
 }
 
 // ParseSourceConfig godoc
@@ -63,6 +80,42 @@ func ParseSourceConfig(c *gin.Context) {
 	}
 
 	_ = service.AppLog.Push(model.AppLogClassificationBusiness, model.AppLogLevelInfo, "source config parsed | username="+c.GetString("username")+" | source_config_id="+strconv.Itoa(result.SourceConfig.ID))
+	respondSuccess(c, result)
+}
+
+// ParseSourceConfigURL godoc
+// @Summary Fetch YAML source by URL and return parsed node preview
+// @Tags SourceImport
+// @Accept json
+// @Produce json
+// @Param payload body sourceParseURLRequest true "Subscription URL payload"
+// @Failure 400 {object} map[string]interface{}
+// @Success 200 {object} map[string]interface{}
+// @Router /api/source-configs/parse-url [post]
+func ParseSourceConfigURL(c *gin.Context) {
+	var request sourceParseURLRequest
+	if err := decodeJSONBody(c.Request.Body, &request); err != nil {
+		respondBadRequest(c, "请输入有效的 http/https 订阅地址")
+		return
+	}
+	request.URL = strings.TrimSpace(request.URL)
+	if request.URL == "" || !isValidSourceSubscriptionURL(request.URL) {
+		respondBadRequest(c, "请输入有效的 http/https 订阅地址")
+		return
+	}
+
+	result, err := service.ParseAndStoreSourceConfigFromURL(c.Request.Context(), service.SourceSubscriptionInput{
+		URL:          request.URL,
+		UploadedBy:   c.GetString("username"),
+		UploadedByID: c.GetInt("id"),
+	})
+	if err != nil {
+		_ = service.AppLog.Push(model.AppLogClassificationBusiness, model.AppLogLevelWarn, "source config parse url failed | username="+c.GetString("username")+" | reason="+err.Error())
+		respondFailure(c, err.Error())
+		return
+	}
+
+	_ = service.AppLog.Push(model.AppLogClassificationBusiness, model.AppLogLevelInfo, "source config parsed from url | username="+c.GetString("username")+" | source_config_id="+strconv.Itoa(result.SourceConfig.ID))
 	respondSuccess(c, result)
 }
 
