@@ -689,6 +689,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/source-configs/parse-url": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SourceImport"
+                ],
+                "summary": "Fetch YAML source by URL and return parsed node preview",
+                "parameters": [
+                    {
+                        "description": "Subscription URL payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.sourceParseURLRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/source-configs/test": {
             "post": {
                 "consumes": [
@@ -829,6 +870,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "controller.sourceParseURLRequest": {
+            "type": "object",
+            "required": [
+                "url"
+            ],
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Option": {
             "type": "object",
             "properties": {

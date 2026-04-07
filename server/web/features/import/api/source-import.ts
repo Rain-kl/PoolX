@@ -16,6 +16,13 @@ export function parseSourceConfig(file: File) {
   });
 }
 
+export function parseSourceConfigByURL(url: string) {
+  return apiRequest<SourceParseResult>('/source-configs/parse-url', {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
+}
+
 export function importSourceConfig(
   sourceConfigId: number,
   fingerprints: string[],

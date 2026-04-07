@@ -1,6 +1,10 @@
 export interface SourceConfigRecord {
   id: number;
   filename: string;
+  source_type: 'upload' | 'subscription_url';
+  source_url?: string;
+  content_type?: string;
+  fetched_at?: string;
   content_hash: string;
   status: string;
   total_nodes: number;

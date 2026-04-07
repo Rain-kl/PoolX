@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"poolx/internal/model"
 	proxypkg "poolx/internal/pkg/proxy"
+	"poolx/internal/pkg/sourcefetch"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -20,6 +22,25 @@ type SourceUploadInput struct {
 	UploadedByID int
 	Content      []byte
 }
+
+type SourceSubscriptionInput struct {
+	URL          string
+	UploadedBy   string
+	UploadedByID int
+}
+
+type sourceParseInput struct {
+	SourceType   string
+	Filename     string
+	SourceURL    string
+	ContentType  string
+	FetchedAt    *time.Time
+	UploadedBy   string
+	UploadedByID int
+	Content      []byte
+}
+
+var sourceConfigURLFetcher = sourcefetch.NewFetcher().FetchYAML
 
 type ParsedNodePreview struct {
 	Name           string `json:"name"`
@@ -52,6 +73,49 @@ type SourceImportResult struct {
 }
 
 func ParseAndStoreSourceConfig(input SourceUploadInput) (*SourceParseResponse, error) {
+	return parseAndStoreSourceConfig(sourceParseInput{
+		SourceType:   model.SourceConfigSourceTypeUpload,
+		Filename:     input.Filename,
+		UploadedBy:   input.UploadedBy,
+		UploadedByID: input.UploadedByID,
+		Content:      input.Content,
+	})
+}
+
+func ParseAndStoreSourceConfigFromURL(ctx context.Context, input SourceSubscriptionInput) (*SourceParseResponse, error) {
+	fetched, err := sourceConfigURLFetcher(ctx, input.URL)
+	if err != nil {
+		return nil, err
+	}
+	if fetched == nil {
+		return nil, fmt.Errorf("拉取订阅内容失败")
+	}
+
+	return parseAndStoreSourceConfig(sourceParseInput{
+		SourceType:   model.SourceConfigSourceTypeSubscriptionURL,
+		Filename:     fetched.DisplayName,
+		SourceURL:    strings.TrimSpace(input.URL),
+		ContentType:  fetched.ContentType,
+		FetchedAt:    &fetched.FetchedAt,
+		UploadedBy:   input.UploadedBy,
+		UploadedByID: input.UploadedByID,
+		Content:      fetched.Content,
+	})
+}
+
+func SourceConfigURLFetcherForTest() func(context.Context, string) (*sourcefetch.FetchResult, error) {
+	return sourceConfigURLFetcher
+}
+
+func SetSourceConfigURLFetcherForTest(fetcher func(context.Context, string) (*sourcefetch.FetchResult, error)) {
+	if fetcher == nil {
+		sourceConfigURLFetcher = sourcefetch.NewFetcher().FetchYAML
+		return
+	}
+	sourceConfigURLFetcher = fetcher
+}
+
+func parseAndStoreSourceConfig(input sourceParseInput) (*SourceParseResponse, error) {
 	filename := strings.TrimSpace(input.Filename)
 	if filename == "" {
 		return nil, fmt.Errorf("请先选择 YAML 文件")
@@ -74,7 +138,11 @@ func ParseAndStoreSourceConfig(input SourceUploadInput) (*SourceParseResponse, e
 	contentHash := checksum(input.Content)
 
 	sourceConfig := &model.SourceConfig{
+		SourceType:     input.SourceType,
+		SourceURL:      strings.TrimSpace(input.SourceURL),
 		Filename:       filename,
+		ContentType:    strings.TrimSpace(input.ContentType),
+		FetchedAt:      input.FetchedAt,
 		ContentHash:    contentHash,
 		RawContent:     string(input.Content),
 		Status:         model.SourceConfigStatusParsed,

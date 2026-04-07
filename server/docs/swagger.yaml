@@ -1,5 +1,12 @@
 basePath: /
 definitions:
+  controller.sourceParseURLRequest:
+    properties:
+      url:
+        type: string
+    required:
+    - url
+    type: object
   model.Option:
     properties:
       key:
@@ -452,6 +459,33 @@ paths:
             additionalProperties: true
             type: object
       summary: Upload YAML source and return parsed node preview
+      tags:
+      - SourceImport
+  /api/source-configs/parse-url:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Subscription URL payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/controller.sourceParseURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Fetch YAML source by URL and return parsed node preview
       tags:
       - SourceImport
   /api/source-configs/test:
