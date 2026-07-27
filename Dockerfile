@@ -2,7 +2,7 @@ ARG NODE_VERSION=22
 ARG GO_VERSION=1.26
 ARG ALPINE_VERSION=3.23
 
-FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS frontend-builder
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-aldocpine AS frontend-builder
 
 WORKDIR /src/frontend
 RUN corepack enable
@@ -76,4 +76,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD wget -qO- http://127.0.0.1:8000/healthz >/dev/null || exit 1
 
 ENTRYPOINT ["/usr/local/bin/foam-entrypoint"]
-CMD ["/app/poolx", "--config", "/app/config.yaml", "--listen", "0.0.0.0:8000"]
+# config.yaml is optional; when absent, all settings come from FOAM_* env vars.
+CMD ["/app/poolx", "--listen", "0.0.0.0:8000"]

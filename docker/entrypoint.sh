@@ -3,15 +3,11 @@ set -eu
 
 umask 077
 
-if [ ! -f "${FOAM_CONFIG_SOURCE}" ]; then
-  echo "missing config: ${FOAM_CONFIG_SOURCE}" >&2
-  echo "mount config.yaml to /run/foam/config.yaml" >&2
-  exit 1
+# Copy config file if it exists; otherwise rely on FOAM_* environment variables.
+if [ -f "${FOAM_CONFIG_SOURCE:-}" ]; then
+  cp "${FOAM_CONFIG_SOURCE}" /app/config.yaml
+  chown foam:foam /app/config.yaml
+  chmod 0600 /app/config.yaml
 fi
 
-cp "${FOAM_CONFIG_SOURCE}" /app/config.yaml
-chown foam:foam /app/config.yaml
-chmod 0600 /app/config.yaml
-
 exec su-exec foam:foam "$@"
-
