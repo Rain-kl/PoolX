@@ -329,7 +329,8 @@ type kernelInstanceModel struct {
 	ID                   int        `gorm:"primaryKey;autoIncrement"`
 	KernelType           string     `gorm:"size:32;not null;default:'mihomo'"`
 	Status               string     `gorm:"size:32;not null;default:'stopped'"`
-	PID                  *int       `gorm:""`
+	// column:pid — GORM's default naming turns "PID" into "p_id", which does not match the schema.
+	PID                  *int       `gorm:"column:pid"`
 	WorkDir              string     `gorm:"size:255;not null;default:''"`
 	ConfigPath           string     `gorm:"size:255;not null;default:''"`
 	ControllerAddress    string     `gorm:"size:255;not null;default:''"`

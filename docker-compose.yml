@@ -1,5 +1,3 @@
-name: foam
-
 services:
   poolx:
     image: "${FOAM_IMAGE:-ghcr.io/rain-kl/poolx:latest}"

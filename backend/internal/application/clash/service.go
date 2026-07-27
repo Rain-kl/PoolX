@@ -887,10 +887,24 @@ func (s *Service) StartKernel(ctx context.Context, input StartKernelInput) (*cla
 		ActiveProfileCount:   aggregated.ProfileCount,
 		ActiveListenerCount:  aggregated.ListenerCount,
 		LastAction:           "start",
+		LastError:            "",
 		LastStartedAt:        &now,
 	}
+	// Preserve identity on re-start so Upsert updates the same row cleanly.
+	if existing, getErr := s.kernelInstanceRepo.GetByType(ctx, input.KernelType); getErr == nil && existing != nil {
+		inst.ID = existing.ID
+		inst.CreatedAt = existing.CreatedAt
+	}
 
-	_ = s.kernelInstanceRepo.Upsert(ctx, inst)
+	if err := s.kernelInstanceRepo.Upsert(ctx, inst); err != nil {
+		_ = cmd.Process.Kill()
+		s.mu.Lock()
+		if s.activeCmd == cmd {
+			s.activeCmd = nil
+		}
+		s.mu.Unlock()
+		return nil, fmt.Errorf("保存内核实例状态失败: %w", err)
+	}
 
 	// done is buffered so the goroutine never blocks even if nobody reads it
 	done := make(chan error, 1)
@@ -925,7 +939,9 @@ func (s *Service) StartKernel(ctx context.Context, input StartKernelInput) (*cla
 		inst.PID = nil
 		inst.LastError = errMsg
 		inst.LastStoppedAt = &stopTime
-		_ = s.kernelInstanceRepo.Upsert(ctx, inst)
+		if upsertErr := s.kernelInstanceRepo.Upsert(ctx, inst); upsertErr != nil {
+			return nil, fmt.Errorf("内核启动后异常退出: %s (且状态写回失败: %v)", errMsg, upsertErr)
+		}
 
 		if errMsg != "" {
 			return nil, fmt.Errorf("内核启动后异常退出: %s", errMsg)

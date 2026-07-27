@@ -16,10 +16,23 @@ var MihomoHTTPClient = &http.Client{
 	Timeout: 5 * time.Second,
 }
 
+// StartMihomoProcess launches a long-running mihomo kernel.
+//
+// IMPORTANT: the process must NOT be bound to the caller's context via
+// exec.CommandContext. HTTP handlers pass a request-scoped context that is
+// cancelled when the Timeout middleware returns; binding the kernel to that
+// context would kill mihomo immediately after "start" succeeds.
+//
+// ctx is only checked before Start (cancel-before-launch). After Start returns,
+// process lifetime is owned by the caller (StopKernel / restart / OS).
+//
 //nolint:contextcheck
 func StartMihomoProcess(ctx context.Context, binaryPath string, workDir string, configPath string, stdout io.Writer, stderr io.Writer) (*exec.Cmd, error) {
 	if ctx == nil {
 		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	resolvedWorkDir, err := filepath.Abs(workDir)
 	if err != nil {
@@ -29,7 +42,8 @@ func StartMihomoProcess(ctx context.Context, binaryPath string, workDir string, 
 	if err != nil {
 		return nil, fmt.Errorf("resolve mihomo config path: %w", err)
 	}
-	cmd := exec.CommandContext(ctx, binaryPath, "-d", resolvedWorkDir, "-f", resolvedConfigPath) //nolint:gosec
+	// Use exec.Command (not CommandContext) so the kernel outlives the request.
+	cmd := exec.Command(binaryPath, "-d", resolvedWorkDir, "-f", resolvedConfigPath) //nolint:gosec
 	cmd.Dir = resolvedWorkDir
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr

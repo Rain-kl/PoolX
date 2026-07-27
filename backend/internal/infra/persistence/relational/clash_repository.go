@@ -733,7 +733,19 @@ func (r *KernelInstanceRepositoryImpl) Upsert(ctx context.Context, item *clash.K
 	if err != nil {
 		return fmt.Errorf("upsert kernel instance: %w", err)
 	}
+	// OnConflict DO UPDATE may not populate LastInsertId; reload identity if needed.
+	if m.ID == 0 {
+		var existing kernelInstanceModel
+		if err := r.db.WithContext(ctx).Select("id", "created_at", "updated_at").
+			First(&existing, "kernel_type = ?", m.KernelType).Error; err != nil {
+			return fmt.Errorf("upsert kernel instance: reload after upsert: %w", err)
+		}
+		m.ID = existing.ID
+		m.CreatedAt = existing.CreatedAt
+		m.UpdatedAt = existing.UpdatedAt
+	}
 	item.ID = m.ID
+	item.CreatedAt = m.CreatedAt
 	item.UpdatedAt = m.UpdatedAt
 	return nil
 }
