@@ -22,7 +22,7 @@ import (
 	"github.com/Rain-kl/Foam/backend/internal/repository"
 )
 
-const defaultBinaryPath = "./data/core/mihomo"
+
 
 var (
 	ErrNotFound      = repository.ErrNotFound
@@ -815,7 +815,7 @@ func normalizeStartKernelInput(input *StartKernelInput) {
 		input.KernelType = "mihomo"
 	}
 	if input.BinaryPath == "" {
-		input.BinaryPath = defaultBinaryPath
+		input.BinaryPath = kernelctrl.DefaultMihomoBinaryPath()
 	}
 	input.BinaryPath = kernelctrl.ResolveProjectDataPath(input.BinaryPath)
 	if input.WorkDir == "" {
@@ -1152,21 +1152,21 @@ func extractKernelError(logs []string) string {
 
 func (s *Service) InspectKernelBinary(ctx context.Context, installPath string) (*kernelctrl.InstalledKernelBinary, error) {
 	if installPath == "" {
-		installPath = defaultBinaryPath
+		installPath = kernelctrl.DefaultMihomoBinaryPath()
 	}
 	return kernelctrl.InspectMihomoBinary(ctx, installPath)
 }
 
 func (s *Service) UploadKernelBinary(ctx context.Context, fileName string, installPath string, reader io.Reader) (*kernelctrl.InstalledKernelBinary, error) {
 	if installPath == "" {
-		installPath = defaultBinaryPath
+		installPath = kernelctrl.DefaultMihomoBinaryPath()
 	}
 	return kernelctrl.InstallUploadedMihomoBinary(ctx, fileName, installPath, reader)
 }
 
 func (s *Service) DownloadKernelBinary(ctx context.Context, installPath string) (*kernelctrl.InstalledKernelBinary, error) {
 	if installPath == "" {
-		installPath = defaultBinaryPath
+		installPath = kernelctrl.DefaultMihomoBinaryPath()
 	}
 	return kernelctrl.DownloadAndInstallMihomoBinary(ctx, installPath)
 }
@@ -1185,7 +1185,7 @@ func (s *Service) AutoStartKernel(ctx context.Context, logger interface {
 	Info(msg string, args ...any)
 	Warn(msg string, args ...any)
 }) {
-	const defaultBinary = defaultBinaryPath
+	defaultBinary := kernelctrl.DefaultMihomoBinaryPath()
 	const defaultWorkDir = "./data/runtime"
 
 	// 检查活动端口配置

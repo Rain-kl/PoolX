@@ -2,7 +2,7 @@ ARG NODE_VERSION=22
 ARG GO_VERSION=1.26
 ARG ALPINE_VERSION=3.23
 
-FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-aldocpine AS frontend-builder
+FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS frontend-builder
 
 WORKDIR /src/frontend
 RUN corepack enable
@@ -50,10 +50,42 @@ RUN --mount=type=cache,id=foam-go-mod,target=/go/pkg/mod,sharing=locked \
       -o /out/poolx ./cmd/foam
 
 
+# Download latest mihomo for TARGETARCH (runs on build platform; asset selected by arch).
+FROM --platform=$BUILDPLATFORM alpine:${ALPINE_VERSION} AS mihomo-downloader
+ARG TARGETARCH
+RUN apk add --no-cache ca-certificates curl gzip jq
+RUN set -eu; \
+    ARCH="${TARGETARCH:-amd64}"; \
+    case "$ARCH" in \
+      amd64|arm64) ;; \
+      *) echo "unsupported TARGETARCH=$ARCH" >&2; exit 1 ;; \
+    esac; \
+    API="https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"; \
+    JSON=$(curl -fsSL -H "Accept: application/vnd.github+json" -H "User-Agent: Foam-Docker-Build" "$API"); \
+    if [ "$ARCH" = "amd64" ]; then \
+      URL=$(echo "$JSON" | jq -r '[.assets[] | select(.name|test("^mihomo-linux-amd64-compatible-.*\\.gz$"))][0].browser_download_url // empty'); \
+      if [ -z "$URL" ]; then \
+        URL=$(echo "$JSON" | jq -r '[.assets[] | select(.name|test("^mihomo-linux-amd64-v1-.*\\.gz$"))][0].browser_download_url // empty'); \
+      fi; \
+      if [ -z "$URL" ]; then \
+        URL=$(echo "$JSON" | jq -r '[.assets[] | select(.name|test("^mihomo-linux-amd64-v[0-9.]+\\.gz$"))][0].browser_download_url // empty'); \
+      fi; \
+    else \
+      URL=$(echo "$JSON" | jq -r '[.assets[] | select(.name|test("^mihomo-linux-arm64-.*\\.gz$"))][0].browser_download_url // empty'); \
+    fi; \
+    if [ -z "$URL" ] || [ "$URL" = "null" ]; then echo "no mihomo asset for $ARCH" >&2; exit 1; fi; \
+    echo "Downloading $URL"; \
+    mkdir -p /out; \
+    curl -fsSL -o /tmp/mihomo.gz "$URL"; \
+    gzip -dc /tmp/mihomo.gz > /out/mihomo; \
+    chmod 0755 /out/mihomo
+
+
 FROM alpine:${ALPINE_VERSION}
 
 ENV TZ=Asia/Shanghai \
-    FOAM_CONFIG_SOURCE=/run/foam/config.yaml
+    FOAM_CONFIG_SOURCE=/run/foam/config.yaml \
+    FOAM_CLASH_MIHOMO_BINARY_PATH=/opt/mihomo
 
 RUN apk add --no-cache ca-certificates su-exec tzdata && \
     addgroup -S -g 10001 foam && \
@@ -66,6 +98,7 @@ WORKDIR /app
 ARG VERSION=canary
 COPY --from=backend-builder --chmod=0755 /out/poolx /app/poolx
 COPY --from=frontend-builder /src/frontend/dist /app/frontend/dist
+COPY --from=mihomo-downloader --chmod=0755 /out/mihomo /opt/mihomo
 # Prefer ldflags-injected Version; keep VERSION file as runtime fallback.
 RUN printf '%s\n' "${VERSION}" > /app/VERSION
 COPY --chmod=0755 docker/entrypoint.sh /usr/local/bin/foam-entrypoint

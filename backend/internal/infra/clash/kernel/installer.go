@@ -18,7 +18,21 @@ import (
 const (
 	DefaultMihomoRepo = "MetaCubeX/mihomo"
 	GitHubReleasesAPI = "https://api.github.com/repos"
+
+	// EnvClashMihomoBinaryPath matches config.EnvClashMihomoBinaryPath.
+	// Duplicated here to avoid infra/clash/kernel → infra/config dependency.
+	envClashMihomoBinaryPath = "FOAM_CLASH_MIHOMO_BINARY_PATH"
+	fallbackMihomoBinaryPath = "./data/core/mihomo"
 )
+
+// DefaultMihomoBinaryPath returns FOAM_CLASH_MIHOMO_BINARY_PATH when set,
+// otherwise ./data/core/mihomo.
+func DefaultMihomoBinaryPath() string {
+	if v := strings.TrimSpace(os.Getenv(envClashMihomoBinaryPath)); v != "" {
+		return v
+	}
+	return fallbackMihomoBinaryPath
+}
 
 var installerHTTPClient = &http.Client{
 	Timeout: 3 * time.Minute,
@@ -245,7 +259,7 @@ func ResolveProjectRoot() string {
 func ResolveProjectDataPath(target string) string {
 	target = strings.TrimSpace(target)
 	if target == "" {
-		target = "./data/core/mihomo"
+		target = DefaultMihomoBinaryPath()
 	}
 	if filepath.IsAbs(target) {
 		return target

@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	settingsdomain "github.com/Rain-kl/Foam/backend/internal/domain/settings"
+	"github.com/Rain-kl/Foam/backend/internal/infra/clash/kernel"
 	"github.com/Rain-kl/Foam/backend/internal/infra/config"
 	"github.com/Rain-kl/Foam/backend/internal/repository"
 )
@@ -167,7 +168,7 @@ func (s *Service) snapshotLocked() Snapshot {
 		clashConfig.KernelType = "mihomo"
 	}
 	if clashConfig.MihomoBinaryPath == "" {
-		clashConfig.MihomoBinaryPath = "./data/core/mihomo"
+		clashConfig.MihomoBinaryPath = kernel.DefaultMihomoBinaryPath()
 	}
 	if clashConfig.ClashExternalController == "" {
 		clashConfig.ClashExternalController = "127.0.0.1:9090"

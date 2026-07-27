@@ -38,6 +38,10 @@ const (
 	EnvDatabasePostgresDSN          = "FOAM_DATABASE_POSTGRES_DSN"
 	EnvDatabasePostgresMaxOpenConns = "FOAM_DATABASE_POSTGRES_MAX_OPEN_CONNS"
 	EnvDatabasePostgresMaxIdleConns = "FOAM_DATABASE_POSTGRES_MAX_IDLE_CONNS"
+
+	// EnvClashMihomoBinaryPath overrides the default mihomo binary path
+	// (./data/core/mihomo). Docker images set this to /opt/mihomo.
+	EnvClashMihomoBinaryPath = "FOAM_CLASH_MIHOMO_BINARY_PATH"
 )
 
 // loadDotEnvIfPresent loads KEY=VALUE pairs from the first existing candidate
