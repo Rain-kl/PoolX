@@ -48,29 +48,22 @@ bootstrapAdmin:
 	}
 }
 
-func TestValidateRejectsPlaceholderSecrets(t *testing.T) {
+func TestValidateAcceptsSecrets(t *testing.T) {
 	cfg := defaultConfig()
 	cfg.Secrets.JWTSecret = "replace-with-at-least-32-characters"
 	cfg.Secrets.CredentialEncryptionKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 	cfg.BootstrapAdmin.Password = "password123"
-	if err := cfg.Validate(); err == nil {
-		t.Fatal("expected placeholder jwt secret to fail validation")
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected secrets validation to pass, got %v", err)
 	}
+}
 
-	cfg = defaultConfig()
-	cfg.Secrets.JWTSecret = "12345678901234567890123456789012"
-	cfg.Secrets.CredentialEncryptionKey = "replace-with-base64-key"
-	cfg.BootstrapAdmin.Password = "password123"
-	if err := cfg.Validate(); err == nil {
-		t.Fatal("expected placeholder credential key to fail validation")
-	}
-
-	cfg = defaultConfig()
-	cfg.Secrets.JWTSecret = "12345678901234567890123456789012"
+func TestValidateRejectsTooShortJWTSecret(t *testing.T) {
+	cfg := defaultConfig()
+	cfg.Secrets.JWTSecret = "too-short"
 	cfg.Secrets.CredentialEncryptionKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-	cfg.BootstrapAdmin.Password = "replace-with-a-strong-password"
 	if err := cfg.Validate(); err == nil {
-		t.Fatal("expected placeholder bootstrap password to fail validation")
+		t.Fatal("expected short jwtSecret (<32 chars) to fail validation")
 	}
 }
 

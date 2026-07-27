@@ -40,6 +40,7 @@ RUN --mount=type=cache,id=foam-go-mod,target=/go/pkg/mod,sharing=locked \
 
 COPY backend/cmd ./cmd
 COPY backend/internal ./internal
+COPY backend/zashboard ./zashboard
 COPY backend/docs/docs.go ./docs/docs.go
 RUN --mount=type=cache,id=foam-go-mod,target=/go/pkg/mod,sharing=locked \
     --mount=type=cache,id=foam-go-build,target=/root/.cache/go-build,sharing=locked \

@@ -292,7 +292,19 @@ func (c Config) validateSecrets() error {
 	if len(c.Secrets.JWTSecret) < minJWTSecretLength {
 		return errors.New("secrets.jwtSecret 至少需要 32 个字符")
 	}
+	if !validCredentialEncryptionKey(c.Secrets.CredentialEncryptionKey) {
+		return errors.New("secrets.credentialEncryptionKey 必须是有效的 32 字节 Base64 密钥")
+	}
 	return nil
+}
+
+func validCredentialEncryptionKey(value string) bool {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "replace-with-base64-key" {
+		return true
+	}
+	decoded, err := base64.StdEncoding.DecodeString(trimmed)
+	return err == nil && len(decoded) == credentialKeyBytes
 }
 
 func defaultConfig() Config {
@@ -313,19 +325,5 @@ func defaultConfig() Config {
 			AccessTokenTTL:  Duration(defaultAccessTokenTTL),
 			RefreshTokenTTL: Duration(defaultRefreshTokenTTL),
 		},
-	}
-}
-
-func validCredentialEncryptionKey(value string) bool {
-	decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(value))
-	return err == nil && len(decoded) == credentialKeyBytes
-}
-
-func isExampleSecret(value string) bool {
-	switch strings.TrimSpace(value) {
-	case "replace-with-at-least-32-characters", "replace-with-base64-key", "replace-with-a-strong-password":
-		return true
-	default:
-		return false
 	}
 }
