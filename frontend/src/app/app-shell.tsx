@@ -57,13 +57,26 @@ import { useAuth } from '@/shared/auth/use-auth';
 import { SiteFooter } from '@/shared/components/site-footer';
 import { cn } from '@/shared/lib/cn';
 
+/** Same-origin Clash API proxy; AdminAuth cookie + reverse proxy inject mihomo secret. */
+function zashboardHref(): string {
+  const { protocol, hostname, port } = window.location;
+  const resolvedPort =
+    port || (protocol === 'https:' ? '443' : '80');
+  const params = new URLSearchParams({
+    hostname,
+    port: resolvedPort,
+    secondaryPath: '/api/zashboard/clash',
+  });
+  return `/zashboard/?${params.toString()}`;
+}
+
 const clashNavigation = [
   { href: '/clash/dashboard', label: '仪表盘', icon: LayoutDashboard },
   { href: '/clash/port-profiles', label: '工作台', icon: Sliders },
   { href: '/clash/source-configs', label: '配置源', icon: DownloadCloud },
   { href: '/clash/nodes', label: '节点池', icon: Server },
   {
-    href: '/zashboard/',
+    href: 'zashboard',
     label: 'Zashboard',
     icon: ExternalLink,
     external: true,
@@ -103,10 +116,11 @@ export function AppShell() {
     return items.map(({ href, label, icon: Icon, ...rest }) => {
       const isExternal = (rest as { external?: boolean }).external;
       if (isExternal) {
+        const externalHref = href === 'zashboard' ? zashboardHref() : href;
         return (
           <a
             key={href}
-            href={href}
+            href={externalHref}
             target='_blank'
             rel='noopener noreferrer'
             onClick={() => setMobileOpen(false)}

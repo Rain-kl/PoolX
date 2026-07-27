@@ -3,7 +3,9 @@ package httpserver
 import (
 	"io/fs"
 	"mime"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -62,17 +64,52 @@ func registerZashboard(router *gin.Engine, adminAuth *adminauthapp.Service) {
 		target := "/zashboard/"
 		if raw := c.Request.URL.RawQuery; raw != "" {
 			target += "?" + raw
+		} else {
+			target += "?" + zashboardDefaultQuery(c)
 		}
 		c.Redirect(http.StatusTemporaryRedirect, target)
 	})
 	zGroup.GET("/*any", func(c *gin.Context) {
 		// Allow same-origin admin iframe embedding explicitly on static assets too.
 		c.Header("X-Frame-Options", "SAMEORIGIN")
+		// Bare /zashboard/ without backend params → inject proxy path so zashboard
+		// skips setup and uses AdminAuth-protected Clash reverse proxy.
+		anyPath := strings.Trim(c.Param("any"), "/")
+		if anyPath == "" && c.Request.URL.RawQuery == "" {
+			c.Redirect(http.StatusTemporaryRedirect, "/zashboard/?"+zashboardDefaultQuery(c))
+			return
+		}
 		if servePrefixedFS(c, zFS, "/zashboard") {
 			return
 		}
 		c.Status(http.StatusNotFound)
 	})
+}
+
+// zashboardDefaultQuery builds URL params that point zashboard at the same-origin
+// Clash API reverse proxy (/api/zashboard/clash/*). Auth is AdminAuth (cookie/JWT);
+// the proxy injects the mihomo secret — no second login for the core API.
+func zashboardDefaultQuery(c *gin.Context) string {
+	hostname := c.Request.Host
+	port := ""
+	if h, p, err := net.SplitHostPort(c.Request.Host); err == nil {
+		hostname = h
+		port = p
+	}
+	if port == "" {
+		proto := strings.ToLower(strings.TrimSpace(c.GetHeader("X-Forwarded-Proto")))
+		switch {
+		case proto == "https", c.Request.TLS != nil:
+			port = "443"
+		default:
+			port = "80"
+		}
+	}
+	q := url.Values{}
+	q.Set("hostname", hostname)
+	q.Set("port", port)
+	q.Set("secondaryPath", "/api/zashboard/clash")
+	return q.Encode()
 }
 
 func servePrefixedFS(c *gin.Context, embedFS fs.FS, prefix string) bool {
