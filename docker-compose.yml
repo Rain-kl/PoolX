@@ -14,14 +14,12 @@ services:
       # Base64 编码的 32 字节密钥。快速生成：openssl rand -base64 32
       FOAM_SECRETS_CREDENTIAL_ENCRYPTION_KEY: "${FOAM_SECRETS_CREDENTIAL_ENCRYPTION_KEY:-JxVGNK7es4aC+uK/lKyOT5FW0EbcfTDTXM0hWz4SuSs=}"
       # 系统登录密码, 仅在数据库中没有管理员时使用该密码初始化。
+      FOAM_BOOTSTRAP_ADMIN_USERNAME: "admin"
       FOAM_BOOTSTRAP_ADMIN_PASSWORD: "12345678"
     volumes:
-      - poolx-data:/app/data
+      - ./data:/app/data
     restart: unless-stopped
     init: true
     stop_grace_period: 30s
     security_opt:
       - no-new-privileges:true
-
-volumes:
-  poolx-data:
