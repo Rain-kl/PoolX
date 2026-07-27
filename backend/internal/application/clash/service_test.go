@@ -3,6 +3,7 @@ package clash_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/Rain-kl/Foam/backend/internal/application/clash"
@@ -439,6 +440,66 @@ func TestGetKernelCapabilities(t *testing.T) {
 	}
 	if caps[0].KernelType != "mihomo" {
 		t.Errorf("expected mihomo, got %s", caps[0].KernelType)
+	}
+}
+
+func TestTestNodesBatch_ResolvesDefaultBinaryPath(t *testing.T) {
+	svc, ctx := setupTestService(t)
+
+	// Import one node so batch test has work to do.
+	yamlContent := `
+proxies:
+  - name: "Node-1"
+    type: ss
+    server: 1.1.1.1
+    port: 8388
+    cipher: aes-256-gcm
+    password: "secretpassword"
+`
+	cfg, _, err := svc.UploadSourceConfig(ctx, clash.UploadSourceConfigInput{
+		Filename:   "nodes.yaml",
+		RawContent: yamlContent,
+	})
+	if err != nil {
+		t.Fatalf("UploadSourceConfig: %v", err)
+	}
+	if _, err := svc.ConfirmSourceConfig(ctx, cfg.ID); err != nil {
+		t.Fatalf("ConfirmSourceConfig: %v", err)
+	}
+	nodes, _, err := svc.ListNodes(ctx, 1, 10, domainclash.ProxyNodeFilter{})
+	if err != nil || len(nodes) == 0 {
+		t.Fatalf("ListNodes: err=%v len=%d", err, len(nodes))
+	}
+
+	// Empty BinaryPath must NOT fall back to bare "mihomo".
+	// Without a real binary the test fails with a path error — assert the path is resolved.
+	results, err := svc.TestNodesBatch(ctx, clash.TestNodesBatchInput{
+		NodeIDs: []int{nodes[0].ID},
+		// BinaryPath intentionally empty
+	})
+	if err != nil {
+		t.Fatalf("TestNodesBatch: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("want 1 result, got %d", len(results))
+	}
+	if results[0].Success {
+		// Real mihomo present and node reachable — fine.
+		return
+	}
+	msg := results[0].ErrorMessage
+	if msg == "" {
+		t.Fatal("expected error message when binary missing or test fails")
+	}
+	// Regression: previously used bare "mihomo" → "未找到 Mihomo 二进制文件: mihomo"
+	if msg == "未找到 Mihomo 二进制文件: mihomo" {
+		t.Fatalf("binary path not resolved (still bare mihomo): %s", msg)
+	}
+	if strings.Contains(msg, "未找到 Mihomo 二进制文件") {
+		// Must mention a resolved path (project data/core), not a bare name.
+		if !strings.Contains(msg, "data") || !strings.Contains(msg, "core") {
+			t.Fatalf("expected resolved data/core path in error, got: %s", msg)
+		}
 	}
 }
 

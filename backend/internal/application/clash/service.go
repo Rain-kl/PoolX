@@ -84,6 +84,31 @@ func (s *Service) getDefaultTestURL(ctx context.Context) string {
 	return "https://cp.cloudflare.com/generate_204"
 }
 
+// resolveMihomoBinaryPath picks binary path in order:
+// explicit request value → runtime settings → DefaultMihomoBinaryPath / env,
+// then resolves relative paths against the project root.
+func (s *Service) resolveMihomoBinaryPath(ctx context.Context, explicit string) string {
+	path := strings.TrimSpace(explicit)
+	if path == "" && s.settingsRepo != nil {
+		if cfg, _, _, ok, err := s.settingsRepo.Get(ctx); err == nil && ok {
+			path = strings.TrimSpace(cfg.Clash.MihomoBinaryPath)
+		}
+	}
+	if path == "" {
+		path = kernelctrl.DefaultMihomoBinaryPath()
+	}
+	return kernelctrl.ResolveProjectDataPath(path)
+}
+
+func (s *Service) getDefaultNodeTestTimeout(ctx context.Context) time.Duration {
+	if s.settingsRepo != nil {
+		if cfg, _, _, ok, err := s.settingsRepo.Get(ctx); err == nil && ok && cfg.Clash.NodeTestDefaultTimeoutMS > 0 {
+			return time.Duration(cfg.Clash.NodeTestDefaultTimeoutMS) * time.Millisecond
+		}
+	}
+	return 8 * time.Second
+}
+
 // --- SourceConfig & Imports ---
 
 type UploadSourceConfigInput struct {
@@ -492,15 +517,14 @@ func (s *Service) TestNodesBatch(ctx context.Context, input TestNodesBatchInput)
 		return []TestNodeResultView{}, nil
 	}
 
-	if input.BinaryPath == "" {
-		input.BinaryPath = "mihomo"
-	}
+	// Same path resolution as StartKernel — never fall back to bare "mihomo".
+	input.BinaryPath = s.resolveMihomoBinaryPath(ctx, input.BinaryPath)
 	if input.TestURL == "" {
-		input.TestURL = "https://cp.cloudflare.com/generate_204"
+		input.TestURL = s.getDefaultTestURL(ctx)
 	}
 	timeout := time.Duration(input.TimeoutSec) * time.Second
 	if timeout <= 0 {
-		timeout = 8 * time.Second
+		timeout = s.getDefaultNodeTestTimeout(ctx)
 	}
 
 	results := make([]TestNodeResultView, len(nodes))
@@ -814,6 +838,7 @@ func normalizeStartKernelInput(input *StartKernelInput) {
 	if input.KernelType == "" {
 		input.KernelType = "mihomo"
 	}
+	// Relative / empty paths are resolved against project root (same as node test).
 	if input.BinaryPath == "" {
 		input.BinaryPath = kernelctrl.DefaultMihomoBinaryPath()
 	}
