@@ -265,6 +265,17 @@ export function AppShell() {
             to='/clash/dashboard'
             className='flex h-7 items-center gap-2 text-base font-semibold text-foreground'
           >
+            <svg
+              className='size-5 text-sky-500'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2.8'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            >
+              <path d='M18 6L6 18M6 6l12 12' />
+            </svg>
             <span>{t('appName')}</span>
             <ChevronRight className='size-3 text-muted-foreground' />
             <span className='text-xs font-normal text-muted-foreground'>
@@ -296,7 +307,18 @@ export function AppShell() {
               className='flex w-72 flex-col gap-0 bg-sidebar px-3 py-4 [&>button]:right-2 [&>button]:top-3.5 [&>button]:flex [&>button]:size-7 [&>button]:items-center [&>button]:justify-center [&>nav]:mt-5 [&>nav]:pr-1'
             >
               <SheetHeader className='h-7 shrink-0 px-2.5 text-left'>
-                <SheetTitle className='flex h-7 items-center text-base'>
+                <SheetTitle className='flex h-7 items-center gap-2 text-base'>
+                  <svg
+                    className='size-5 text-sky-500'
+                    viewBox='0 0 24 24'
+                    fill='none'
+                    stroke='currentColor'
+                    strokeWidth='2.8'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                  >
+                    <path d='M18 6L6 18M6 6l12 12' />
+                  </svg>
                   {t('appName')}
                 </SheetTitle>
                 <SheetDescription className='sr-only'>
