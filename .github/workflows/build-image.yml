@@ -17,7 +17,7 @@ permissions:
   id-token: write
 
 env:
-  IMAGE_NAME: foam
+  IMAGE_NAME: poolx
   DOCKERFILE: Dockerfile
 
 jobs:

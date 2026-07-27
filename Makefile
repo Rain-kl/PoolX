@@ -8,7 +8,7 @@
 
 CONFIG     ?= $(CURDIR)/config.yaml
 MODULE     := github.com/Rain-kl/Foam/backend
-BIN_NAME   := foam
+BIN_NAME   := poolx
 BIN_DIR    := $(CURDIR)/bin
 BACKEND    := $(CURDIR)/backend
 FRONTEND   := $(CURDIR)/frontend

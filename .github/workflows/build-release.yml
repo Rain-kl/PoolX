@@ -14,7 +14,7 @@ on:
         type: string
 
 env:
-  APP_NAME: foam
+  APP_NAME: poolx
   GO_MODULE: github.com/Rain-kl/Foam/backend
   GO_MAIN: ./cmd/foam
   GO_WORKDIR: backend

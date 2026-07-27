@@ -47,7 +47,7 @@ RUN --mount=type=cache,id=foam-go-mod,target=/go/pkg/mod,sharing=locked \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -buildvcs=false -trimpath \
       -ldflags="-s -w -X 'github.com/Rain-kl/Foam/backend/internal/buildinfo.Version=${VERSION}' -X 'github.com/Rain-kl/Foam/backend/internal/buildinfo.BuildTime=${BUILD_DATE}'" \
-      -o /out/foam ./cmd/foam
+      -o /out/poolx ./cmd/foam
 
 
 FROM alpine:${ALPINE_VERSION}
@@ -64,7 +64,7 @@ RUN apk add --no-cache ca-certificates su-exec tzdata && \
 WORKDIR /app
 
 ARG VERSION=canary
-COPY --from=backend-builder --chmod=0755 /out/foam /app/foam
+COPY --from=backend-builder --chmod=0755 /out/poolx /app/poolx
 COPY --from=frontend-builder /src/frontend/dist /app/frontend/dist
 # Prefer ldflags-injected Version; keep VERSION file as runtime fallback.
 RUN printf '%s\n' "${VERSION}" > /app/VERSION
@@ -76,4 +76,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD wget -qO- http://127.0.0.1:8000/healthz >/dev/null || exit 1
 
 ENTRYPOINT ["/usr/local/bin/foam-entrypoint"]
-CMD ["/app/foam", "--config", "/app/config.yaml", "--listen", "0.0.0.0:8000"]
+CMD ["/app/poolx", "--config", "/app/config.yaml", "--listen", "0.0.0.0:8000"]
