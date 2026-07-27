@@ -1,8 +1,17 @@
-PoolX
-Copyright 2022-2026 PoolX Authors
+Foam
+====
 
-This product includes software developed by the PoolX authors and
-contributors and is licensed under the Apache License, Version 2.0.
+This product includes software derived from Grok2API (MIT License).
 
-You may obtain a copy of the License at:
-http://www.apache.org/licenses/LICENSE-2.0
+Grok2API:
+  Copyright (c) 2026 Chenyme
+  Licensed under the MIT License.
+  See the LICENSE file in this distribution for the full license text.
+
+This distribution includes modifications and the Foam scaffold by Arctel:
+  Copyright (c) 2026 Arctel
+  Licensed under the MIT License.
+
+Third-party dependencies bundled or linked at build time retain their own
+licenses; consult their respective LICENSE / NOTICE files and your dependency
+lockfiles (e.g. go.mod / pnpm-lock.yaml) for details.

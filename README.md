@@ -1,12 +1,12 @@
 <p align="right">
-  <a href="./README_CN.md">中文</a>
+  <a href="./README.zh-CN.md">中文</a>
 </p>
 
 <div align="center">
 
 # PoolX
 
-A proxy pool control panel built with Gin and Next.js. Its core goal is to organize Clash/Mihomo nodes into reusable proxy pools for web scraping, data collection, proxy requests, and automated outbound network scenarios.
+A proxy pool control panel built with Gin and React. Its core goal is to organize Clash/Mihomo nodes into reusable proxy pools for web scraping, data collection, proxy requests, and automated outbound network scenarios.
 
 </div>
 
@@ -17,7 +17,7 @@ A proxy pool control panel built with Gin and Next.js. Its core goal is to organ
 > This project is only a proxy pool control panel and does NOT provide nodes or methods to obtain them. It is intended for learning, research, and technical exchange only. Any illegal use is strictly prohibited.
 
 > [!WARNING]
-> After logging in with the root account for the first time, be sure to change the default password `123456` immediately!
+> After logging in with the bootstrap admin account for the first time, be sure to change the default password immediately!
 
 ---
 
@@ -30,7 +30,7 @@ A common solution is to use a proxy pool. However, existing solutions have drawb
 - Free proxy pools often have poor quality, with low stability and availability
 - Paid proxy services can be expensive and exceed practical needs
 
-A more cost-effective approach is to utilize nodes provided by proxy service providers (“airports”), combined with open-source proxy cores, to build reusable proxy pools.
+A more cost-effective approach is to utilize nodes provided by proxy service providers ("airports"), combined with open-source proxy cores, to build reusable proxy pools.
 
 This project provides a clean and user-friendly UI for efficiently managing and organizing proxy nodes, eliminating the need to manually write or maintain complex configuration files. It also offers unified core control for centralized management of the proxy engine.
 
@@ -41,6 +41,7 @@ This project provides a clean and user-friendly UI for efficiently managing and 
 - Provide stable local proxy endpoints for crawlers, automation tasks, and proxy systems
 - Support load balancing, automatic fallback, and latency-based node selection
 - Visual dashboard for managing core runtime status
+- Auto-start the kernel on application launch when configuration is available
 
 ---
 
@@ -66,68 +67,35 @@ This project provides a clean and user-friendly UI for efficiently managing and 
 
 ## Quick Start
 
-Login URL: `http://IP:3000/`  
-Username: `root`  
-Password: `123456`
-
-### Docker Deployment
-
-```yaml
-services:
-  postgres:
-    image: postgres:17-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: poolx
-      POSTGRES_USER: poolx
-      POSTGRES_PASSWORD: replace-with-strong-password
-    volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U poolx -d poolx"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  poolx:
-    image: ghcr.io/rain-kl/poolx:latest
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    ports:
-      - "3000:3000"
-#     Expose proxy listening ports as needed
-    environment:
-      SESSION_SECRET: replace-with-random-string
-#     If SQL_DSN is specified, the following will be ignored
-      SQLITE_PATH: /data/poolx.db
-#     To use SQLite, comment out SQL_DSN and remove postgres service
-      SQL_DSN: postgres://poolx:replace-with-strong-password@postgres:5432/poolx?sslmode=disable
-      GIN_MODE: release
-      LOG_LEVEL: info
-
-    volumes:
-      - ./data/poolx:/data
-```
-
-### Local Deployment
-
-Download the precompiled binary from the Release page:
+### Docker
 
 ```bash
-# Start with SQLite
-SESSION_SECRET=replace-with-random-string \
-SQLITE_PATH=/path/to/poolx.db \
-./poolx
+cp config.example.yaml config.yaml
+# set secrets.jwtSecret, secrets.credentialEncryptionKey, bootstrapAdmin.password
+docker compose up -d
+docker compose logs -f foam
 ```
 
-Access URL: http://localhost:3000
+Default backend listen address: `http://127.0.0.1:8000`
 
-Default credentials:
-* Username: root
-* Password: 123456
+### Local Development
 
+```bash
+cp config.example.yaml config.yaml
+# set secrets, then:
+make dev              # frontend :8010 + backend :8000
+```
+
+Or run separately:
+
+```bash
+cd backend && go run ./cmd/foam --config ../config.yaml
+cd frontend && pnpm install && pnpm dev
+```
+
+Dev UI: `http://127.0.0.1:8010` → API proxy → `http://127.0.0.1:8000`
+
+---
 
 ## Configuration
 
@@ -139,11 +107,23 @@ Its core workflow is:
 * Define workspace listening configurations
 * Automatically render the final runtime configuration for the core
 
-For runtime parameters, deployment methods, and system configuration, refer to:
-* [docs/app-config.md](./docs/app-config.md)
-* [docs/deployment.md](./docs/deployment.md)
+Copy the template and fill in required secrets:
 
+```bash
+cp config.example.yaml config.yaml
+```
+
+Key fields:
+- `secrets.jwtSecret` — at least 32 characters
+- `secrets.credentialEncryptionKey` — base64-encoded 32-byte key
+- `bootstrapAdmin.password` — initial admin password
+
+For runtime parameters, deployment methods, and system configuration, refer to:
+* [docs/architecture.md](./docs/architecture.md)
+* [docs/backend-development.md](./docs/backend-development.md)
+
+---
 
 ## License
 
-This project is licensed under the [Apache License 2.0](./LICENSE) ￼.
+MIT — see [LICENSE](./LICENSE).

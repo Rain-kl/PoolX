@@ -1,0 +1,96 @@
+name: Cleanup Prerelease
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version metadata
+        id: version
+        run: |
+          SHOULD_RUN=true
+          VERSION="all-prerelease-tags"
+
+          echo "should_run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" =~ ^v[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Delete prerelease, dangling, and unbound releases/tags
+        if: steps.version.outputs.should_run == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Fetch all tags from remote to ensure full synchronization
+          git fetch --tags --force
+
+          # Get all local/remote git tags starting with 'v'
+          mapfile -t GIT_TAGS < <(git tag --list 'v*' | sort -V)
+
+          # Get all GitHub releases (tags associated with releases)
+          mapfile -t GH_RELEASES < <(gh release list --limit 1000 --json tagName --jq '.[].tagName' 2>/dev/null || true)
+
+          # Helper function to check array containment
+          contains_element() {
+            local e match="$1"
+            shift
+            for e; do [[ "$e" == "$match" ]] && return 0; done
+            return 1
+          }
+
+          DELETED_TAGS=0
+          DELETED_RELEASES=0
+
+          echo "=== Phase 1: Checking and cleaning Git tags ==="
+          for TAG in "${GIT_TAGS[@]}"; do
+            if [[ "$TAG" =~ ^v[0-9]+(\.[0-9]+)*$ ]]; then
+              # Formal release tag
+              if ! contains_element "$TAG" "${GH_RELEASES[@]}"; then
+                echo "Delete formal tag not bound to any GitHub release: $TAG"
+                git push origin --delete "refs/tags/$TAG" || true
+                git tag -d "$TAG" || true
+                DELETED_TAGS=$((DELETED_TAGS + 1))
+              else
+                echo "Keep formal release tag (bound to release): $TAG"
+              fi
+            else
+              # Prerelease tag
+              if contains_element "$TAG" "${GH_RELEASES[@]}"; then
+                echo "Delete prerelease release: $TAG"
+                gh release delete "$TAG" --yes || true
+                DELETED_RELEASES=$((DELETED_RELEASES + 1))
+              fi
+
+              echo "Delete prerelease tag: $TAG"
+              git push origin --delete "refs/tags/$TAG" || true
+              git tag -d "$TAG" || true
+              DELETED_TAGS=$((DELETED_TAGS + 1))
+            fi
+          done
+
+          echo "=== Phase 2: Checking and cleaning dangling GitHub releases ==="
+          for REL_TAG in "${GH_RELEASES[@]}"; do
+            if ! contains_element "$REL_TAG" "${GIT_TAGS[@]}"; then
+              echo "Delete GitHub release not bound to any Git tag: $REL_TAG"
+              gh release delete "$REL_TAG" --yes || true
+              DELETED_RELEASES=$((DELETED_RELEASES + 1))
+            fi
+          done
+
+          echo "=== Summary ==="
+          echo "Successfully deleted $DELETED_TAGS tag(s) and $DELETED_RELEASES release(s)."

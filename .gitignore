@@ -1,51 +1,47 @@
-.cache
-.gocache*
-.idea
-.vscode
-upload
-*.exe
-*.db
-build
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+/config.yaml
+/config.local.yaml
+/config.*.local.yaml
+/backend/docs/goal/
+*.har
+*.pcap
+*.pcapng
+
+# Runtime data
+/data/
+/backend/data/
 *.log
-/logs
-.gocache
 
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary, built with `go test -c`
+# Go
+/.gocache/
+/.gocache-*/
+/bin/
+/backend/grok2api
+/backend/coverage.out
+*.coverprofile
 *.test
 
-# Code coverage profiles and other test artifacts
-*.out
-coverage.*
-*.coverprofile
-profile.cov
+# Frontend
+/.pnpm-store/
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.cache/
+/frontend/*.tsbuildinfo
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
-go.work
-go.work.sum
-
-# env file
-.env
-
-# Editor/IDE
-# .idea/
-# .vscode/
-
-*.log
-
-.DS_Store
-.codex-cache
-/.gomodcache/
-/server/internal/service/data/
+# Temporary files
+/release/
+/.tmp/
+/tmp/
+/.superpowers/

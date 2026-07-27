@@ -1,0 +1,220 @@
+name: Build Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Image version/tag to publish, for example v1.0.0-beta"
+        required: false
+        type: string
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
+env:
+  IMAGE_NAME: foam
+  DOCKERFILE: Dockerfile
+
+jobs:
+  build:
+    name: Build (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set image metadata
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          POINTED_TAG="$(git tag --points-at HEAD --list 'v*' | sort -V | tail -n1)"
+          INPUT_VERSION="${INPUT_VERSION//[[:space:]]/}"
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+
+          # Tag / explicit version → inject that tag; otherwise canary-<sha>.
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          elif [[ -n "$INPUT_VERSION" ]]; then
+            VERSION="$INPUT_VERSION"
+            if [[ "$VERSION" != v* && "$VERSION" != canary && "$VERSION" != canary-* && "$VERSION" != canary.* ]]; then
+              VERSION="v${VERSION}"
+            fi
+          elif [[ -n "$POINTED_TAG" ]]; then
+            VERSION="$POINTED_TAG"
+          else
+            VERSION="canary-${SHORT_SHA}"
+          fi
+
+          echo "IMAGE=ghcr.io/${OWNER}/${IMAGE_NAME}" >> "$GITHUB_ENV"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+          echo "Resolved image version: $VERSION"
+       
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log into registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ env.DOCKERFILE }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          build-args: |
+            VERSION=${{ env.VERSION }}
+            BUILD_DATE=${{ env.BUILD_DATE }}
+          cache-from: type=gha,scope=docker-${{ env.IMAGE_NAME }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,ignore-error=true,timeout=20m,scope=docker-${{ env.IMAGE_NAME }}-${{ matrix.arch }}
+
+      - name: Export digest
+        shell: bash
+        run: |
+          mkdir -p "/tmp/${{ env.IMAGE_NAME }}-digests"
+          touch "/tmp/${{ env.IMAGE_NAME }}-digests/${DIGEST#sha256:}"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.IMAGE_NAME }}-digests-${{ matrix.arch }}
+          path: /tmp/${{ env.IMAGE_NAME }}-digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  merge:
+    name: Merge multi-arch manifest
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set image metadata
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          POINTED_TAG="$(git tag --points-at HEAD --list 'v*' | sort -V | tail -n1)"
+          INPUT_VERSION="${INPUT_VERSION//[[:space:]]/}"
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          elif [[ -n "$INPUT_VERSION" ]]; then
+            VERSION="$INPUT_VERSION"
+            if [[ "$VERSION" != v* && "$VERSION" != canary && "$VERSION" != canary-* && "$VERSION" != canary.* ]]; then
+              VERSION="v${VERSION}"
+            fi
+          elif [[ -n "$POINTED_TAG" ]]; then
+            VERSION="$POINTED_TAG"
+          else
+            VERSION="canary-${SHORT_SHA}"
+          fi
+
+          echo "IMAGE=ghcr.io/${OWNER}/${IMAGE_NAME}" >> "$GITHUB_ENV"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Resolved image version: $VERSION"
+
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/${{ env.IMAGE_NAME }}-digests
+          pattern: ${{ env.IMAGE_NAME }}-digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log into registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest list
+        working-directory: /tmp/${{ env.IMAGE_NAME }}-digests
+        shell: bash
+        run: |
+          shopt -s nullglob
+          references=()
+          for digest in *; do
+            references+=("${IMAGE}@sha256:${digest}")
+          done
+
+          if [ ${#references[@]} -eq 0 ]; then
+            echo "No digests found in /tmp/${{ env.IMAGE_NAME }}-digests" >&2
+            exit 1
+          fi
+
+          if [[ "${VERSION}" == canary || "${VERSION}" == canary-* || "${VERSION}" == canary.* ]]; then
+            FLOATING_TAG="canary"
+          elif [[ "${VERSION}" =~ (alpha|beta|rc) ]]; then
+            FLOATING_TAG="beta"
+          else
+            FLOATING_TAG="latest"
+          fi
+
+          docker buildx imagetools create \
+            -t "${IMAGE}:${VERSION}" \
+            -t "${IMAGE}:${FLOATING_TAG}" \
+            "${references[@]}"
+        env:
+          IMAGE: ${{ env.IMAGE }}
+
+      - name: Inspect image
+        run: docker buildx imagetools inspect "${{ env.IMAGE }}:${{ env.VERSION }}"
+
+      - name: Trigger webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          if [ -n "$WEBHOOK_URL" ]; then
+            curl -fsSL "$WEBHOOK_URL"
+          else
+            echo "Webhook URL is not set, skipping."
+          fi

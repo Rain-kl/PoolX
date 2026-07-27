@@ -1,0 +1,285 @@
+name: Build Release
+
+# Version injection rules (Go ldflags → buildinfo.Version):
+#   - Tag push / explicit tag input: use tag as-is (e.g. v1.2.3, v1.2.3-beta.1)
+#   - No tag: inject canary version (canary-<shortsha>)
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version/tag (e.g. v1.0.0-beta). Leave empty for canary-<sha>."
+        required: false
+        type: string
+
+env:
+  APP_NAME: foam
+  GO_MODULE: github.com/Rain-kl/Foam/backend
+  GO_MAIN: ./cmd/foam
+  GO_WORKDIR: backend
+  GO_LDFLAGS: -s -w
+  NODE_VERSION: "22"
+  PNPM_VERSION: "11.5.2"
+  FRONTEND_DIR: frontend
+  FRONTEND_BUILD_COMMAND: pnpm build
+  FRONTEND_OUT_DIR: frontend/dist
+  EXTRA_FILES: |
+    LICENSE
+    NOTICE
+    README.md
+    README.zh-CN.md
+    config.example.yaml
+    .env.example
+    VERSION
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      version_without_v: ${{ steps.metadata.outputs.version_without_v }}
+      build_date: ${{ steps.metadata.outputs.build_date }}
+      is_canary: ${{ steps.metadata.outputs.is_canary }}
+      is_prerelease: ${{ steps.metadata.outputs.is_prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set release metadata
+        id: metadata
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+
+          input_version="${INPUT_VERSION//[[:space:]]/}"
+          short_sha="$(git rev-parse --short=7 HEAD)"
+
+          # Prefer git tag (vX.Y.Z or vX.Y.Z-ext...), else explicit input, else canary.
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            version="$GITHUB_REF_NAME"
+            is_canary=false
+          elif [[ -n "$input_version" ]]; then
+            version="$input_version"
+            if [[ "$version" == canary || "$version" == canary-* || "$version" == canary.* ]]; then
+              is_canary=true
+            else
+              is_canary=false
+            fi
+          else
+            version="canary-${short_sha}"
+            is_canary=true
+          fi
+
+          # Normalize: tags should start with v for semver-ish releases (not canary).
+          if [[ "$is_canary" != true && "$version" != v* ]]; then
+            version="v${version}"
+          fi
+
+          if [[ "$is_canary" == true ]] \
+            || [[ "$version" == *alpha* || "$version" == *beta* || "$version" == *rc* ]]; then
+            is_prerelease=true
+          else
+            is_prerelease=false
+          fi
+
+          {
+            echo "version=$version"
+            echo "version_without_v=${version#v}"
+            echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "is_canary=$is_canary"
+            echo "is_prerelease=$is_prerelease"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Resolved release version: $version (canary=$is_canary prerelease=$is_prerelease)"
+
+      - name: Write VERSION file for packaging
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' "${{ steps.metadata.outputs.version }}" > VERSION
+          cat VERSION
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.metadata.outputs.version }}
+          name: ${{ steps.metadata.outputs.version }}
+          generate_release_notes: true
+          prerelease: ${{ steps.metadata.outputs.is_prerelease == 'true' }}
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: create-release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          # Available for future frontend branding; Vite ignores unknown env.
+          VITE_APP_VERSION: ${{ needs.create-release.outputs.version }}
+          VITE_APP_BUILD_DATE: ${{ needs.create-release.outputs.build_date }}
+        run: ${{ env.FRONTEND_BUILD_COMMAND }}
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: ${{ env.FRONTEND_OUT_DIR }}
+          if-no-files-found: error
+          retention-days: 1
+
+  build-binaries:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    needs:
+      - create-release
+      - build-frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            archive: tar.gz
+          - goos: linux
+            goarch: arm64
+            archive: tar.gz
+          - goos: darwin
+            goarch: amd64
+            archive: tar.gz
+          - goos: darwin
+            goarch: arm64
+            archive: tar.gz
+          - goos: windows
+            goarch: amd64
+            archive: zip
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: ${{ env.FRONTEND_OUT_DIR }}
+
+      - name: Write VERSION
+        shell: bash
+        run: printf '%s\n' "${{ needs.create-release.outputs.version }}" > VERSION
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ env.GO_WORKDIR }}/go.mod
+          cache-dependency-path: ${{ env.GO_WORKDIR }}/go.sum
+          cache: true
+
+      - name: Build binary (inject Version + BuildTime)
+        shell: bash
+        working-directory: ${{ env.GO_WORKDIR }}
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+          VERSION: ${{ needs.create-release.outputs.version }}
+          BUILD_DATE: ${{ needs.create-release.outputs.build_date }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p ../dist
+          binary_name="$APP_NAME"
+          if [[ "$GOOS" == "windows" ]]; then
+            binary_name="${binary_name}.exe"
+          fi
+
+          # Inject release tag (vX.Y.Z[-ext]) or canary version into the binary.
+          ldflags="$GO_LDFLAGS"
+          ldflags+=" -X '${GO_MODULE}/internal/buildinfo.Version=${VERSION}'"
+          ldflags+=" -X '${GO_MODULE}/internal/buildinfo.BuildTime=${BUILD_DATE}'"
+
+          go build -buildvcs=false -trimpath \
+            -ldflags "$ldflags" \
+            -o "../dist/$binary_name" \
+            "$GO_MAIN"
+
+          echo "Built dist/$binary_name with Version=${VERSION} BuildTime=${BUILD_DATE}"
+
+      - name: Package artifact
+        id: package
+        shell: bash
+        env:
+          VERSION: ${{ needs.create-release.outputs.version }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          ARCHIVE_FORMAT: ${{ matrix.archive }}
+        run: |
+          set -euo pipefail
+
+          package_name="${APP_NAME}_${VERSION}_${GOOS}_${GOARCH}"
+          staging_dir="dist/$package_name"
+          mkdir -p "$staging_dir"
+
+          if [[ "$GOOS" == "windows" ]]; then
+            cp "dist/${APP_NAME}.exe" "$staging_dir/"
+          else
+            cp "dist/${APP_NAME}" "$staging_dir/"
+          fi
+
+          while IFS= read -r extra_file; do
+            [[ -z "$extra_file" ]] && continue
+            if [[ -e "$extra_file" ]]; then
+              cp -R "$extra_file" "$staging_dir/"
+            fi
+          done <<< "$EXTRA_FILES"
+
+          # SPA assets for frontend.staticPath (optional host layout).
+          if [[ -d "$FRONTEND_OUT_DIR" ]]; then
+            mkdir -p "$staging_dir/frontend"
+            cp -R "$FRONTEND_OUT_DIR" "$staging_dir/frontend/dist"
+          fi
+
+          if [[ "$ARCHIVE_FORMAT" == "zip" ]]; then
+            (cd dist && zip -r "${package_name}.zip" "$package_name")
+            artifact="dist/${package_name}.zip"
+          else
+            tar -C dist -czf "dist/${package_name}.tar.gz" "$package_name"
+            artifact="dist/${package_name}.tar.gz"
+          fi
+
+          echo "artifact=$artifact" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.create-release.outputs.version }}
+          files: ${{ steps.package.outputs.artifact }}

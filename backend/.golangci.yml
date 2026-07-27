@@ -1,0 +1,140 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: false
+
+linters:
+  default: none
+  enable:
+    # 基础检查
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+
+    # 代码坏味道
+    - dupl
+    - mnd
+    - goconst
+    - cyclop
+    - nestif
+    - maintidx
+    - revive
+    - gocritic
+    - funlen
+
+    - gosec
+    - bodyclose
+    - noctx
+    - contextcheck
+    - sqlclosecheck
+    - unconvert
+    - nilerr
+
+  settings:
+    dupl:
+      threshold: 120
+
+    cyclop:
+      max-complexity: 20
+      package-average: 12
+
+    nestif:
+      min-complexity: 5
+
+    funlen:
+      lines: 200
+      statements: 100
+
+    goconst:
+      min-len: 3
+      min-occurrences: 4
+
+    mnd:
+      checks:
+        - argument
+        - condition
+      ignored-numbers:
+        - "0"
+        - "1"
+        - "2"
+        - "3"
+        - "5"
+        - "8"
+        - "10"
+        - "12"
+        - "15"
+        - "16"
+        - "20"
+        - "24"
+        - "30"
+        - "32"
+        - "36"
+        - "50"
+        - "64"
+        - "100"
+        - "128"
+        - "255"
+        - "448"
+        - "700"
+        - "1000"
+        - "1024"
+        - "4096"
+      ignored-functions:
+        - make
+        - append
+        - time\..*
+        - strconv\..*
+        - strings\..*
+        - filepath\..*
+        - context\.WithTimeout
+        - context\.WithDeadline
+
+    gosec:
+      excludes:
+        # Env var *names* like FOAM_SECRETS_JWT_SECRET are not credentials.
+        - G101
+        # Config / VERSION paths come from CLI or known candidates, not user-controlled web input.
+        - G304
+
+    revive:
+      enable-all-rules: false
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+          disabled: true
+        - name: if-return
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: package-comments
+          disabled: true
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unused-parameter
+        - name: unreachable-code
+        - name: redefines-builtin-id
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - mnd
+          - goconst
+          - dupl
+          - funlen
+          - cyclop

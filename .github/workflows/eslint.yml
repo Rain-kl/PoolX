@@ -1,0 +1,35 @@
+name: ESLint
+
+on:
+  pull_request:
+    branches: [ "*" ]
+  push:
+    branches:
+      - "dev"
+      - "main"
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.10.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install
+
+      - name: Run ESLint
+        working-directory: frontend
+        run: npx eslint . --max-warnings 0

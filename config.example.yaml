@@ -1,0 +1,56 @@
+# 配置标记：
+# - [必须修改] 首次启动前必须替换，否则服务会拒绝启动或存在安全风险。
+# - [按需修改] 仅在部署方式发生变化时调整。
+# - [通常不要修改] 已采用推荐默认值。
+#
+# 优先级: 环境变量 (FOAM_*) > 本文件 > 代码默认值；CLI 标志更高。
+# 环境变量清单见仓库根 .env.example（可复制为 .env；进程已设置的变量不会被 .env 覆盖）。
+
+server:
+  # [通常不要修改] Docker 镜像会通过启动参数覆盖为 0.0.0.0:8000。
+  listen: "127.0.0.1:8000"
+  # [通常不要修改] 单次请求体上限 32 MiB。
+  maxBodyBytes: 33554432
+  # [通常不要修改] 仅限制客户端上传完整请求体的时间。
+  readTimeout: 15m
+  # [通常不要修改] 管理 API 请求的最长生命周期。
+  requestTimeout: 2h
+
+auth:
+  # [通常不要修改] 管理端访问与刷新令牌有效期。
+  accessTokenTTL: 15m
+  refreshTokenTTL: 720h
+  # [按需修改] 外部地址使用 HTTPS 时必须设为 true。
+  secureCookies: false
+
+secrets:
+  # [必须修改] 至少 32 个字符。快速生成：openssl rand -hex 32
+  jwtSecret: "replace-with-at-least-32-characters"
+  # [必须修改] Base64 编码的 32 字节密钥。快速生成：openssl rand -base64 32
+  # 脚手架保留该字段用于敏感数据加密约定；示例 CRUD 本身不强制使用。
+  credentialEncryptionKey: "replace-with-base64-key"
+
+bootstrapAdmin:
+  # [按需修改] 仅在数据库中没有管理员时使用。
+  username: "admin"
+  # [必须修改] 首次启动前替换为强密码；管理员创建成功后建议删除本段。
+  password: "replace-with-a-strong-password"
+
+frontend:
+  # [按需修改] 前端或外部调用方看到的公开 API 根地址。
+  publicApiBaseURL: "http://127.0.0.1:8000"
+  # [通常不要修改] Go 服务同源托管的前端构建目录。
+  staticPath: "./frontend/dist"
+
+database:
+  # [按需修改] 单实例使用 sqlite；多实例改为 postgres。
+  driver: sqlite # sqlite | postgres
+  sqlite:
+    # [通常不要修改] 相对路径以本配置文件所在目录为基准。
+    path: "./data/backend.db"
+  postgres:
+    # [必须修改：仅 driver=postgres] 填写真实 DSN，并按需启用 sslmode。
+    dsn: "postgres://user:password@127.0.0.1:5432/foam?sslmode=disable"
+    # [按需修改] 根据数据库连接容量调整。
+    maxOpenConns: 50
+    maxIdleConns: 10

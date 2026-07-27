@@ -1,86 +1,170 @@
-# AGENTS.md
+# AGENTS.md — Foam AI 助手工作操作手册
 
-本文件是当前项目的 AI 接手入口。
+本文件面向 AI 开发助手，定义其职责与操作规范。
 
-当前项目不再以“纯模板工程维护”为唯一主线，而是以 `PoolX` 为底座，持续开发 Proxy Kernel Control Plane 业务。后续默认开发目标是在保留模板基础设施能力的前提下，交付代理池控制端的业务闭环。
+**Foam** 是可二次开发的全栈脚手架（Go 后端 + React 管理端示例画廊），不是空目录模板：
 
-本文件不承载详细设计、规范和计划。接手项目时，先按顺序阅读以下文档：
+- 后端：薄组合根 + 管理员认证 + 系统设置 + `example` 垂直切片 CRUD
+- 前端：admin shell 上的组件 / 页面示例画廊（`/example/*`）
+- 扩展方式：复制 `example` 切片，而不是从零发明分层
 
-1. [docs/design.md](./docs/design.md)
-   作用：理解当前产品范围、系统边界、核心对象和整体架构。
+| 项 | 值 |
+| --- | --- |
+| Go module | `github.com/Rain-kl/Foam/backend` |
+| 二进制 / cmd | `foam`（`backend/cmd/foam`） |
+| 前端包名 | `foam-frontend` |
+| 默认配置 | 仓库根 `config.yaml`（从 `config.example.yaml` 复制） |
 
-2. [docs/development-guidelines.md](./docs/development-guidelines.md)
-   作用：理解当前开发规范，包括技术基线、分层约束、数据模型边界、API 约定和测试要求。
+更细的长文按需阅读：`docs/architecture.md`、`docs/backend-development.md`、`docs/frontend-development.md`、`docs/directory-map.md`。
 
-3. [docs/development-plan.md](./docs/development-plan.md)
-   作用：理解当前阶段的开发重点、默认迭代顺序和准入规则。
+## Git 提交规范
 
-4. [docs/frontend-development-guidelines.md](./docs/frontend-development-guidelines.md)
-   作用：理解前端技术选型、目录分层、组件规范、请求层、状态管理、样式和测试约束。
+遵循 Conventional Commits：`<type>(<scope>): <subject>`（例：`feat(example): add list filter`）。
 
-5. [docs/deployment.md](./docs/deployment.md)
-   作用：理解当前部署方式、启动步骤和最小验证方法。
+- `type`：`feat` / `fix` / `docs` / `refactor` / `test` / `chore` 等
+- 文案中性：使用 Foam / 通用 demo 用语，不要引入已剥离的业务产品话术
 
-6. [docs/app-config.md](./docs/app-config.md)
-   作用：理解系统支持的环境变量、命令行参数和运行时配置项。
+## 务必阅读匹配的 Skill
 
-## 当前主线
+技能目录：`.agent/skills/<name>/SKILL.md`。
 
-当前项目默认主线是 Proxy Kernel Control Plane 业务开发：
+| Skill | 何时使用 |
+| :--- | :--- |
+| `new-api` | 添加或修改业务 API、垂直切片、Handler、application service、repository、路由注册（**优先读**） |
+| `go-testing` | 编写或改造 Go 测试、表驱动、集成测试约定 |
+| `go-logging` | 结构化日志、上下文日志字段 |
+| `shadcn` | 添加、修改或组合 shadcn/ui 组件 |
+| `code-review-skill` | 代码评审、PR 检查清单 |
+| `release-guide` | 版本发布、Version Bump、Release 说明 |
+| `database-migration` | 新增/修改表结构、索引、goose SQL（`migrator/goose/{postgres,sqlite}`）；**禁止生产 AutoMigrate** |
 
-* 保留并持续复用模板基础能力：用户、邮箱、文件上传、安全、系统设置、应用日志、服务端升级
-* 新增并持续演进业务能力：配置导入、节点池、节点测试、工作台配置、运行控制、能力协商
-* 服务端工作重心集中在 `server`
-* 服务端继续按 MVC 思路演进，避免职责回流
-* 前后端能力保持同步演进，避免残留失效入口
-* 工程结构围绕当前仓库基线演进，不为了概念图而平移目录
+## 严格遵循事项 (Guardrails)
 
-当前不属于 MVP 主线的能力：
+- 切勿删除 `frontend/node_modules`。
+- **分层依赖**：`transport → application → domain`；`infra` / `repository` 实现通过接口注入；`domain` 禁止依赖 HTTP / DB / Gin / GORM。
+- **扩展靠复制**：新业务资源优先完整复制 `example` 切片（domain / application / repository 接口 / relational 实现 / HTTP handler），再改名并接线到 `internal/app` 与 `transport/http/server.go`。
+- **禁止**套用 Wavelet 的 `internal/apps/*`、`logics.go`、`internal/router/v1/*` 结构；Foam 的 HTTP 入口是 `backend/internal/transport/http/server.go`。
+- 测试禁止硬编码相对路径创建临时目录，统一使用 `t.TempDir()`。
+- API JSON 字段使用 **snake_case**；统一响应信封 `{ "error_msg": "", "data": ... }`（`internal/shared/response`）。
+- 成功用 `response.Success` / `response.OK`；失败用 `response.Error` 或 `response.Abort*`（HTTP 状态码表达错误，body 不写独立 `error.code` 对象）。
+- 管理端业务路由默认挂在 `/api/v1/admin/...`，使用 `middleware.AdminAuth`（`Authorization: Bearer`）；用户鉴权在 `/api/v1/user/*`。
+- 组合根只在 `internal/app` wiring；禁止在 handler 里 new 全局单例或直接拼 SQL。
+- 中性文案：UI、注释、提交说明使用 Foam / demo 用语。
+- **证据再收工**：声称完成 / 通过 / 修好前，必须实际跑验证命令并贴出关键输出（`go test` / build / 路由 smoke）。
+- 修改 API Handler 后视需要运行 `make swagger`；完成开发后应运行 `make format` 与 `make code-check`（或等价命令）。
 
-* 多租户平台化
-* 多实例并行运行
-* 分布式 Agent 集群
-* 对外暴露内核控制 API
-* 复杂规则编辑器
+## 技术栈与项目目录结构
 
-## 当前工程基线
+### 技术栈
 
-当前服务端目录基线位于 `server/`，主要结构如下：
+- **后端**：Go 1.26、Gin、GORM、SQLite / PostgreSQL、JWT + refresh cookie、Swaggo（可选）。
+- **前端**：React 19、Vite、TypeScript、Tailwind CSS、pnpm、shadcn/ui、React Router、TanStack Query、i18next。
 
-* `server/cmd/server`：服务启动入口
-* `server/internal/app`：启动装配
-* `server/internal/handler`：接口层
-* `server/internal/service`：业务逻辑层
-* `server/internal/model`：数据模型与迁移
-* `server/internal/middleware`：中间件
-* `server/internal/router`：路由注册
-* `server/internal/pkg`：项目内公共能力与可复用基础设施
-* `server/web`：前端工程与静态构建产物
+### 顶层目录
 
-如果后续确有收益，可以继续演进出 `repository/`、`dto/` 或顶层 `pkg/`，但不为了形式而迁移。
+- `AGENTS.md`：本文件（AI 操作手册入口）。
+- `config.example.yaml` / `config.yaml`：配置模板与本地配置（勿提交 secrets）。
+- `.env.example` / `.env`：环境变量模板与本地密钥（`FOAM_*`；优先级高于 YAML；勿提交 `.env`）。
+- `Makefile`：`dev` / `format` / `code-check` / `build-*` / `run` / `swagger` 等。
+- `backend/`：Go module（`github.com/Rain-kl/Foam/backend`）。
+- `frontend/`：React 管理端 SPA。
+- `docs/`：架构与开发指南（人工维护）。
+- `docker/` · `Dockerfile` · `docker-compose.yml`：容器化。
+- `.agent/skills/`：按任务触发的技能说明。
+- `bin/` · `data/` · `VERSION`：本地二进制、运行数据、版本号。
 
-## 执行要求
+### 后端目录 (`backend/internal/`)
 
-* 如果实现内容超出当前产品边界，先修改 `docs/design.md`，再同步更新相关规范与计划文档后继续编码。
-* 如果 `docs/design.md`、`docs/development-plan.md` 与当前实现冲突，优先以 `docs/design.md` 和当前已确认业务主线为准，并补齐相关文档。
-* 如果实现方式违反 `docs/development-guidelines.md`，应优先调整方案，而不是绕过规范。
-* 如果任务涉及前端改造或管理端 UI，必须同时阅读 `docs/frontend-development-guidelines.md`。
-* 如果任务涉及删除或替换能力，接口与界面必须同步处理；同时检查后端路由、模型、前端入口、导航、API client、类型定义、Swagger、部署文档和配置项，避免出现残留入口。
-* 新增业务能力应优先复用现有通用基础设施，不要绕开既有用户、设置、日志、上传、安全能力重复造轮子。
-* 服务端开发必须遵循当前分层：`handler` 负责请求处理和响应封装，`service` 负责业务逻辑与流程编排，`model` 负责数据模型与迁移，`middleware` 负责横切能力，`router` 负责路由组织。
-* Runtime IR、解析器、渲染器、启动器、状态读取器等抽象应吸收到当前工程分层中，不直接照搬 `docs/dev/Tech.md` 的推荐目录树。
-* 如果任务涉及数据库 schema 变更，迁移基础设施统一收敛在 `server/internal/model/migrate/` 下的公共实现中，具体版本升级步骤、执行顺序和校验逻辑必须内聚在 `server/internal/model/migrate/v*.go` 中。
-* 数据库版本升级实现应借鉴 Android 的逐级升级思想：从旧版本按 `vN -> vN+1` 顺序依次执行，而不是在入口层拼接一次性迁移。
-* 新增的方法、类型、函数、结构和模块，必须放在符合其功能定义的包下；开发时应始终优先考虑代码仓库整洁度与可维护性，禁止把任意代码写进职责含糊的包里。
-* 目录调整属于允许范围，但必须围绕当前基线演进，不要重新扩张旧式平铺结构。
+- `cmd/foam/`：进程入口。
+- `cli/`：flags / `--config` / 启动参数。
+- `app/`：**唯一组合根**（DB、bootstrap admin、DI、HTTP Server）。
+- `domain/<name>/`：实体与纯领域类型。
+- `application/<name>/`：用例服务（`context.Context`，无 Gin）。
+- `repository/`：持久化接口与分页等共享查询类型。
+- `infra/config` · `security` · `persistence/relational` · `observability`：配置、JWT/密码、GORM 实现、日志。
+- `transport/http/`：Gin 引擎、中间件、各域 handler（`adminauth` / `example` / `settings` / `system`）。
+- `shared/response/`：Wavelet 风格 API 信封。
+- `buildinfo/`：版本注入。
 
-## 文档维护要求
+### 前端目录 (`frontend/`)
 
-当以下内容发生变化时，应同步更新对应文档：
+- `src/app/`：providers、auth boundary、app shell、router、懒加载出口。
+- `src/features/auth` · `example` · `settings`：登录、示例画廊、系统设置。
+- `src/components/ui/`：shadcn/ui 原子组件。
+- `src/shared/api` · `auth` · `components` · `config` · `i18n` · `lib`：HTTP 客户端、鉴权、跨页组件、运行时配置。
+- `public/` · `vite.config.ts`：静态资源；开发服 `:8010` 反代 `/api` → 后端 `:8000`。
 
-* 产品范围或系统边界变化：更新 `docs/design.md`
-* 开发约束、代码规范、接口约定变化：更新 `docs/development-guidelines.md`
-* 当前开发重点、默认顺序、准入规则变化：更新 `docs/development-plan.md`
-* 前端目录分层、组件规范、样式体系、测试基线变化：更新 `docs/frontend-development-guidelines.md`
-* 产品启动配置、部署方式或联调步骤变化：更新 `docs/deployment.md` 和 `README.md`
-* 环境变量、命令行参数或运行时配置项变化：更新 `docs/app-config.md`
+## 后端开发规范
+
+### API 路径与响应
+
+- **前缀**：`/api` + `/api/v1/...`；管理端 `/api/v1/admin/...`；用户鉴权 `/api/v1/user/...`。
+- **探活**：`GET /api/health`（信封）；`/healthz`、`/readyz` 为探针别名。
+- **信封**：
+
+```json
+{ "error_msg": "", "data": {} }
+{ "error_msg": "未登录", "data": null }
+```
+
+- **成功**：`response.Success(c, status, data)` 或 `c.JSON(status, response.OK(data))`。
+- **失败**：`response.Error(c, status, code, message)` 或 `Abort*`；禁止用 HTTP 200 携带业务失败。
+- **列表**：`data` 内建议 `{ "items", "total", "page", "page_size" }`。
+- **鉴权**：`Authorization: Bearer <access_token>`；refresh cookie `foam_admin_refresh` Path=`/api/v1/user`。
+
+### 分层与新增资源
+
+1. 复制 `example` 垂直切片并改名（见 skill `new-api`）。
+2. `relational`：`models.go` / `schema.go` / mapping / repository 实现。
+3. `app.New` 注入 service → `httpserver.Dependencies`。
+4. `server.go` 将 handler 挂到 `admin`（或明确公开的）组。
+5. 补 application / handler 测试；`cd backend && go test ./...`。
+
+### 数据库
+
+- 驱动：`sqlite`（本地默认）或 `postgres`（`config.yaml` → `database.driver`）。
+- **Schema 迁移**：`pressly/goose` + 嵌入 SQL（`internal/infra/persistence/migrator/goose/{postgres,sqlite}`），启动时 `InitializeSchema` → `migrator.Up`。
+- GORM model 仅做读写映射；**生产路径禁止 AutoMigrate**。双方言同版本号、同文件名；无物理外键。
+- 禁止在 Handler 写复杂 SQL；映射错误经 repository 边界处理，勿把底层错误细节直接返回客户端。
+
+## 前端开发规范
+
+- 开发：`pnpm dev`（`:8010` HMR + API 反代）；出包：`pnpm build` → 后端 `frontend.staticPath` 托管 `dist`（嵌入模式）。
+- 画廊页优先 **mock/static**；真 API 仅登录会话、设置、可选 example CRUD。
+- 路由与导航：`src/app/router.tsx`、`app-shell.tsx`；设置入口在侧栏底部「更多」右侧。
+- API 调用走 `shared/api/client.ts`（解析 `error_msg` + `data`）；路径与后端 Wavelet 风格一致。
+- 原子 UI 放 `components/ui`；跨页模式放 `shared/components`；域内逻辑放 `features/<area>`。
+- 优先 shadcn `variant` 与 CSS 变量，避免业务里硬编码颜色。
+- 文案走 i18n（`zh-CN` + `en`）；产品名 **Foam**。
+
+## 常用命令
+
+```bash
+# 配置
+cp config.example.yaml config.yaml   # 填 secrets + bootstrapAdmin
+
+# 开发
+make dev              # 前端 :8010 + 后端 :8000
+make dev-f / make dev-b
+make run              # 仅后端
+
+# 质量
+make format
+make code-check
+cd backend && go test ./...
+cd frontend && pnpm exec tsc -b
+
+# 构建
+make build-frontend   # → frontend/dist
+make build-backend    # → bin/foam
+make build-embedded   # dist + 二进制
+make cross-build
+make swagger
+```
+
+## 优先级
+
+1. 用户当前明确指令  
+2. 本文件（`AGENTS.md`）与匹配的 `.agent/skills/*`  
+3. `docs/*` 中的详细约定  
+4. 现有 `example` 切片与邻近代码风格  
