@@ -607,7 +607,7 @@ func (h *Handler) uploadKernel(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, "openFileFailed", err.Error())
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	res, err := h.service.UploadKernelBinary(c.Request.Context(), fileHeader.Filename, installPath, f)
 	if err != nil {
@@ -651,8 +651,8 @@ func (h *Handler) ProxyZashboardClash(c *gin.Context) {
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
-	originalDirector := proxy.Director
-	proxy.Director = func(req *http.Request) {
+	originalDirector := proxy.Director         //nolint:staticcheck
+	proxy.Director = func(req *http.Request) { //nolint:staticcheck
 		originalDirector(req)
 		req.URL.Path = path
 		req.URL.RawPath = path
@@ -664,7 +664,7 @@ func (h *Handler) ProxyZashboardClash(c *gin.Context) {
 			req.URL.RawQuery = query.Encode()
 		}
 	}
-	proxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, proxyErr error) {
+	proxy.ErrorHandler = func(_ http.ResponseWriter, _ *http.Request, proxyErr error) {
 		c.JSON(http.StatusBadGateway, gin.H{
 			"success": false,
 			"message": "连接 Clash 控制接口失败: " + proxyErr.Error(),

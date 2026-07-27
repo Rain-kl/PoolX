@@ -22,6 +22,8 @@ import (
 	"github.com/Rain-kl/Foam/backend/internal/repository"
 )
 
+const defaultBinaryPath = "./data/core/mihomo"
+
 var (
 	ErrNotFound      = repository.ErrNotFound
 	ErrInvalidInput  = errors.New("请求参数无效")
@@ -762,7 +764,7 @@ func (s *Service) GetKernelStatus(ctx context.Context, kernelType string) (*Runt
 	}, nil
 }
 
-func (s *Service) RenderAggregatedConfig(ctx context.Context, kernelType string, allowLAN bool, mode string, controllerAddress string, controllerSecret string) (*renderpkg.FinalRenderResult, error) {
+func (s *Service) RenderAggregatedConfig(ctx context.Context, _ string, allowLAN bool, mode string, controllerAddress string, controllerSecret string) (*renderpkg.FinalRenderResult, error) {
 	profiles, err := s.ListPortProfiles(ctx)
 	if err != nil {
 		return nil, err
@@ -808,18 +810,14 @@ type StartKernelInput struct {
 	ControllerSecret  string
 }
 
-func (s *Service) StartKernel(ctx context.Context, input StartKernelInput) (*clash.KernelInstance, error) {
-	// NOTE: Do NOT hold s.mu across any blocking I/O or cmd.Wait().
-	// stringLogWriter.Write acquires logMu; s.mu is only held for short pointer swaps.
-
+func normalizeStartKernelInput(input *StartKernelInput) {
 	if input.KernelType == "" {
 		input.KernelType = "mihomo"
 	}
 	if input.BinaryPath == "" {
-		input.BinaryPath = "./data/core/mihomo"
+		input.BinaryPath = defaultBinaryPath
 	}
 	input.BinaryPath = kernelctrl.ResolveProjectDataPath(input.BinaryPath)
-
 	if input.WorkDir == "" {
 		input.WorkDir = "./data/runtime"
 	}
@@ -827,8 +825,15 @@ func (s *Service) StartKernel(ctx context.Context, input StartKernelInput) (*cla
 	if input.ControllerAddress == "" {
 		input.ControllerAddress = "127.0.0.1:9090"
 	}
+}
 
-	if err := os.MkdirAll(input.WorkDir, 0o755); err != nil {
+func (s *Service) StartKernel(ctx context.Context, input StartKernelInput) (*clash.KernelInstance, error) {
+	// NOTE: Do NOT hold s.mu across any blocking I/O or cmd.Wait().
+	// stringLogWriter.Write acquires logMu; s.mu is only held for short pointer swaps.
+
+	normalizeStartKernelInput(&input)
+
+	if err := os.MkdirAll(input.WorkDir, 0o755); err != nil { //nolint:gosec,mnd
 		return nil, fmt.Errorf("创建工作目录失败: %w", err)
 	}
 
@@ -856,7 +861,7 @@ func (s *Service) StartKernel(ctx context.Context, input StartKernelInput) (*cla
 	s.logMu.Unlock()
 
 	logWriter := &stringLogWriter{service: s}
-	cmd, err := kernelctrl.StartMihomoProcess(input.BinaryPath, input.WorkDir, configPath, logWriter, logWriter)
+	cmd, err := kernelctrl.StartMihomoProcess(ctx, input.BinaryPath, input.WorkDir, configPath, logWriter, logWriter)
 	if err != nil {
 		return nil, fmt.Errorf("启动 Mihomo 进程失败: %w", err)
 	}
@@ -931,7 +936,7 @@ func (s *Service) StartKernel(ctx context.Context, input StartKernelInput) (*cla
 	}
 
 	// Async: continue watching for later runtime exit
-	go func() {
+	go func() { //nolint:gosec,contextcheck
 		waitErr := <-done
 		s.mu.Lock()
 		if s.activeCmd == cmd {
@@ -1066,7 +1071,7 @@ func (s *Service) GetActiveRuntimeConfig(ctx context.Context, kernelType string)
 	return s.RenderAggregatedConfig(ctx, kernelType, false, "rule", "127.0.0.1:9090", "")
 }
 
-func (s *Service) GetKernelLogs(ctx context.Context, kernelType string) ([]string, error) {
+func (s *Service) GetKernelLogs(_ context.Context, _ string) ([]string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	logs := make([]string, len(s.processLogBuf))
@@ -1074,7 +1079,7 @@ func (s *Service) GetKernelLogs(ctx context.Context, kernelType string) ([]strin
 	return logs, nil
 }
 
-func (s *Service) GetKernelCapabilities(ctx context.Context) ([]*clash.KernelCapability, error) {
+func (s *Service) GetKernelCapabilities(_ context.Context) ([]*clash.KernelCapability, error) {
 	return []*clash.KernelCapability{
 		{
 			KernelType:          "mihomo",
@@ -1109,23 +1114,32 @@ func (w *stringLogWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+func isKernelErrorLine(l string) bool {
+	return strings.Contains(l, "level=error") ||
+		strings.Contains(l, "level=fatal") ||
+		strings.Contains(l, "bind: address already in use") ||
+		strings.Contains(l, "listen error") ||
+		strings.Contains(l, "listen err")
+}
+
 func extractKernelError(logs []string) string {
 	var errs []string
 	for _, l := range logs {
-		if strings.Contains(l, "level=error") || strings.Contains(l, "level=fatal") || strings.Contains(l, "bind: address already in use") || strings.Contains(l, "listen error") || strings.Contains(l, "listen err") {
-			trimmed := strings.TrimSpace(l)
-			if idx := strings.Index(trimmed, "msg=\""); idx != -1 {
-				msg := trimmed[idx+5:]
-				if endIdx := strings.Index(msg, "\""); endIdx != -1 {
-					msg = msg[:endIdx]
-				}
-				if msg != "" {
-					errs = append(errs, msg)
-					continue
-				}
-			}
-			errs = append(errs, trimmed)
+		if !isKernelErrorLine(l) {
+			continue
 		}
+		trimmed := strings.TrimSpace(l)
+		if idx := strings.Index(trimmed, "msg=\""); idx != -1 {
+			msg := trimmed[idx+5:]
+			if endIdx := strings.Index(msg, "\""); endIdx != -1 {
+				msg = msg[:endIdx]
+			}
+			if msg != "" {
+				errs = append(errs, msg)
+				continue
+			}
+		}
+		errs = append(errs, trimmed)
 	}
 	if len(errs) == 0 {
 		return ""
@@ -1138,21 +1152,21 @@ func extractKernelError(logs []string) string {
 
 func (s *Service) InspectKernelBinary(ctx context.Context, installPath string) (*kernelctrl.InstalledKernelBinary, error) {
 	if installPath == "" {
-		installPath = "./data/core/mihomo"
+		installPath = defaultBinaryPath
 	}
 	return kernelctrl.InspectMihomoBinary(ctx, installPath)
 }
 
 func (s *Service) UploadKernelBinary(ctx context.Context, fileName string, installPath string, reader io.Reader) (*kernelctrl.InstalledKernelBinary, error) {
 	if installPath == "" {
-		installPath = "./data/core/mihomo"
+		installPath = defaultBinaryPath
 	}
 	return kernelctrl.InstallUploadedMihomoBinary(ctx, fileName, installPath, reader)
 }
 
 func (s *Service) DownloadKernelBinary(ctx context.Context, installPath string) (*kernelctrl.InstalledKernelBinary, error) {
 	if installPath == "" {
-		installPath = "./data/core/mihomo"
+		installPath = defaultBinaryPath
 	}
 	return kernelctrl.DownloadAndInstallMihomoBinary(ctx, installPath)
 }
@@ -1171,7 +1185,7 @@ func (s *Service) AutoStartKernel(ctx context.Context, logger interface {
 	Info(msg string, args ...any)
 	Warn(msg string, args ...any)
 }) {
-	const defaultBinary = "./data/core/mihomo"
+	const defaultBinary = defaultBinaryPath
 	const defaultWorkDir = "./data/runtime"
 
 	// 检查活动端口配置

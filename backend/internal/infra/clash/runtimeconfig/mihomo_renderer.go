@@ -125,7 +125,7 @@ func buildListenerName(profileName string, kind string, port int) string {
 	return fmt.Sprintf("%s-%s-%d", base, kind, port)
 }
 
-func buildStrategyGroup(profile clash.PortProfile, proxySettings clash.PortProfileProxySettings, groupName string, proxyNames []string) map[string]any {
+func buildStrategyGroup(_ clash.PortProfile, proxySettings clash.PortProfileProxySettings, groupName string, proxyNames []string) map[string]any {
 	result := map[string]any{
 		"name":    groupName,
 		"type":    normalizeStrategyType(proxySettings.StrategyType),

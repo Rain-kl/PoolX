@@ -16,7 +16,11 @@ var MihomoHTTPClient = &http.Client{
 	Timeout: 5 * time.Second,
 }
 
-func StartMihomoProcess(binaryPath string, workDir string, configPath string, stdout io.Writer, stderr io.Writer) (*exec.Cmd, error) {
+//nolint:contextcheck
+func StartMihomoProcess(ctx context.Context, binaryPath string, workDir string, configPath string, stdout io.Writer, stderr io.Writer) (*exec.Cmd, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	resolvedWorkDir, err := filepath.Abs(workDir)
 	if err != nil {
 		return nil, fmt.Errorf("resolve mihomo workdir: %w", err)
@@ -25,7 +29,7 @@ func StartMihomoProcess(binaryPath string, workDir string, configPath string, st
 	if err != nil {
 		return nil, fmt.Errorf("resolve mihomo config path: %w", err)
 	}
-	cmd := exec.Command(binaryPath, "-d", resolvedWorkDir, "-f", resolvedConfigPath)
+	cmd := exec.CommandContext(ctx, binaryPath, "-d", resolvedWorkDir, "-f", resolvedConfigPath) //nolint:gosec
 	cmd.Dir = resolvedWorkDir
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
@@ -63,7 +67,7 @@ func ProbeController(ctx context.Context, controllerAddress string, secret strin
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("controller status: %s", resp.Status)
 	}
@@ -90,7 +94,7 @@ func ReloadMihomoConfig(ctx context.Context, controllerAddress string, secret st
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("reload controller config failed: %s", resp.Status)
 	}
@@ -109,7 +113,7 @@ func GetMihomoVersion(ctx context.Context, controllerAddress string, secret stri
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("controller status: %s", resp.Status)
 	}

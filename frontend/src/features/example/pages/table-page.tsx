@@ -120,7 +120,10 @@ export function ExampleTablePage() {
     });
   }
 
-  const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'bulk'; id?: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: 'single' | 'bulk';
+    id?: string;
+  } | null>(null);
 
   function confirmDelete(): void {
     if (!deleteTarget) return;
@@ -153,7 +156,11 @@ export function ExampleTablePage() {
         actions={
           <>
             {selected.size > 0 ? (
-              <Button variant='secondary' size='sm' onClick={() => setDeleteTarget({ type: 'bulk' })}>
+              <Button
+                variant='secondary'
+                size='sm'
+                onClick={() => setDeleteTarget({ type: 'bulk' })}
+              >
                 <Trash2 />
                 {t('example.table.bulkDelete', { count: selected.size })}
               </Button>
@@ -377,7 +384,9 @@ export function ExampleTablePage() {
                           {t('example.table.view')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => setDeleteTarget({ type: 'single', id: row.id })}
+                          onClick={() =>
+                            setDeleteTarget({ type: 'single', id: row.id })
+                          }
                         >
                           {t('common.delete')}
                         </DropdownMenuItem>
@@ -396,7 +405,11 @@ export function ExampleTablePage() {
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
-        title={deleteTarget?.type === 'bulk' ? t('example.table.bulkDelete', { count: selected.size }) : t('common.delete')}
+        title={
+          deleteTarget?.type === 'bulk'
+            ? t('example.table.bulkDelete', { count: selected.size })
+            : t('common.delete')
+        }
         description={
           deleteTarget?.type === 'bulk'
             ? `确定删除选中的 ${selected.size} 项数据？此操作不可撤销。`

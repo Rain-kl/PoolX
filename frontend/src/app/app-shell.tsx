@@ -62,7 +62,12 @@ const clashNavigation = [
   { href: '/clash/port-profiles', label: '工作台', icon: Sliders },
   { href: '/clash/source-configs', label: '配置源', icon: DownloadCloud },
   { href: '/clash/nodes', label: '节点池', icon: Server },
-  { href: '/zashboard/', label: 'Zashboard', icon: ExternalLink, external: true },
+  {
+    href: '/zashboard/',
+    label: 'Zashboard',
+    icon: ExternalLink,
+    external: true,
+  },
 ] as const;
 
 export function AppShell() {
@@ -102,13 +107,16 @@ export function AppShell() {
           <a
             key={href}
             href={href}
-            target="_blank"
-            rel="noopener noreferrer"
+            target='_blank'
+            rel='noopener noreferrer'
             onClick={() => setMobileOpen(false)}
-            className="group flex h-8 items-center gap-2 rounded-md px-2.5 text-xs font-normal text-muted-foreground transition-colors hover:bg-secondary/55 hover:text-foreground"
+            className='group flex h-8 items-center gap-2 rounded-md px-2.5 text-xs font-normal text-muted-foreground transition-colors hover:bg-secondary/55 hover:text-foreground'
           >
-            <span className="flex size-5 shrink-0 items-center justify-center">
-              <Icon className="size-4 text-muted-foreground" strokeWidth={1.8} />
+            <span className='flex size-5 shrink-0 items-center justify-center'>
+              <Icon
+                className='size-4 text-muted-foreground'
+                strokeWidth={1.8}
+              />
             </span>
             {label.startsWith('nav.') ? t(label) : label}
           </a>
@@ -156,7 +164,7 @@ export function AppShell() {
         <div className='px-2.5 pb-2 text-xs font-semibold text-foreground uppercase tracking-wider'>
           Clash Meta
         </div>
-        <div className='space-y-1'>{navigationLinks(clashNavigation as any)}</div>
+        <div className='space-y-1'>{navigationLinks(clashNavigation)}</div>
       </div>
     </nav>
   );

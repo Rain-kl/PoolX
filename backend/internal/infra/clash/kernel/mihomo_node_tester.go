@@ -32,6 +32,7 @@ type MihomoNodeTestResult struct {
 	LatencyMS int
 }
 
+//nolint:contextcheck
 func TestNodeWithMihomo(ctx context.Context, input MihomoNodeTestInput) (*MihomoNodeTestResult, error) {
 	binaryPath := strings.TrimSpace(input.BinaryPath)
 	if binaryPath == "" {
@@ -70,7 +71,7 @@ func TestNodeWithMihomo(ctx context.Context, input MihomoNodeTestInput) (*Mihomo
 	}
 	proxyMap["name"] = proxyName
 
-	port, err := allocateLocalPort()
+	port, err := allocateLocalPort(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -92,11 +93,14 @@ func TestNodeWithMihomo(ctx context.Context, input MihomoNodeTestInput) (*Mihomo
 		return nil, fmt.Errorf("写入临时测试配置失败: %v", err)
 	}
 
-	commandCtx := defaultContext(ctx, timeout+8*time.Second)
-	defer commandCtx.Cancel()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	commandCtx, cancel := context.WithTimeout(ctx, timeout+8*time.Second)
+	defer cancel()
 
 	var output bytes.Buffer
-	cmd := execCommandContext(commandCtx.Context, binaryPath, "-d", tempDir, "-f", configPath)
+	cmd := execCommandContext(commandCtx, binaryPath, "-d", tempDir, "-f", configPath)
 	cmd.Stdout = &output
 	cmd.Stderr = &output
 
@@ -109,30 +113,17 @@ func TestNodeWithMihomo(ctx context.Context, input MihomoNodeTestInput) (*Mihomo
 		waitCh <- cmd.Wait()
 	}()
 
-	if err := waitForProxyPort(commandCtx.Context, waitCh, &output, port); err != nil {
+	if err := waitForProxyPort(commandCtx, waitCh, &output, port); err != nil {
 		terminateProcess(cmd, waitCh)
 		return nil, err
 	}
 
-	testResult, err := executeHTTPRequestThroughProxy(commandCtx.Context, port, testURL, timeout)
+	testResult, err := executeHTTPRequestThroughProxy(commandCtx, port, testURL, timeout)
 	terminateProcess(cmd, waitCh)
 	if err != nil {
 		return nil, err
 	}
 	return testResult, nil
-}
-
-type contextHandle struct {
-	Context context.Context
-	Cancel  context.CancelFunc
-}
-
-func defaultContext(ctx context.Context, timeout time.Duration) contextHandle {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	child, cancel := context.WithTimeout(ctx, timeout)
-	return contextHandle{Context: child, Cancel: cancel}
 }
 
 func decodeProxyMetadata(raw string) (map[string]any, error) {
@@ -168,8 +159,9 @@ func buildSingleProxyConfig(proxyMap map[string]any, proxyName string, mixedPort
 	return yaml.Marshal(config)
 }
 
-func allocateLocalPort() (int, error) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+func allocateLocalPort(ctx context.Context) (int, error) {
+	var lc net.ListenConfig
+	listener, err := lc.Listen(ctx, "tcp", "127.0.0.1:0")
 	if err != nil {
 		return 0, fmt.Errorf("分配本地测试端口失败: %v", err)
 	}
@@ -188,18 +180,19 @@ func waitForProxyPort(ctx context.Context, waitCh <-chan error, output *bytes.Bu
 	address := fmt.Sprintf("127.0.0.1:%d", port)
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
+	dialer := &net.Dialer{Timeout: 200 * time.Millisecond}
 
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("等待 Mihomo 测试代理启动超时: %v | logs=%s", ctx.Err(), strings.TrimSpace(output.String()))
+			return fmt.Errorf("等待 mihomo 测试代理启动超时: %v | logs=%s", ctx.Err(), strings.TrimSpace(output.String()))
 		case err := <-waitCh:
 			if err == nil {
-				return fmt.Errorf("Mihomo 测试进程提前退出 | logs=%s", strings.TrimSpace(output.String()))
+				return fmt.Errorf("mihomo 测试进程提前退出 | logs=%s", strings.TrimSpace(output.String()))
 			}
-			return fmt.Errorf("Mihomo 测试进程启动失败: %v | logs=%s", err, strings.TrimSpace(output.String()))
+			return fmt.Errorf("mihomo 测试进程启动失败: %v | logs=%s", err, strings.TrimSpace(output.String()))
 		case <-ticker.C:
-			conn, err := net.DialTimeout("tcp", address, 200*time.Millisecond)
+			conn, err := dialer.DialContext(ctx, "tcp", address)
 			if err == nil {
 				_ = conn.Close()
 				return nil
@@ -235,7 +228,7 @@ func executeHTTPRequestThroughProxy(ctx context.Context, port int, targetURL str
 	if err != nil {
 		return nil, fmt.Errorf("通过内核发起测试请求失败: %v", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	_, _ = io.Copy(io.Discard, response.Body)
 
 	if response.StatusCode >= http.StatusBadRequest {

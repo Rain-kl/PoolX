@@ -9,12 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   fetchSettings,
   updateSettings,
@@ -43,11 +38,13 @@ function toFormValues(snapshot: SettingsSnapshot): SettingsFormValues {
     publicApiBaseURL: snapshot.config.frontend.public_api_base_url,
     kernelType: clash.kernel_type || 'mihomo',
     mihomoBinaryPath: clash.mihomo_binary_path || './data/core/mihomo',
-    clashExternalController: clash.clash_external_controller || '127.0.0.1:9090',
+    clashExternalController:
+      clash.clash_external_controller || '127.0.0.1:9090',
     clashMode: clash.clash_mode || 'rule',
     clashSecret: clash.clash_secret || '3ebc195c9fbe81c01eb9299e3c6bf644',
     clashAllowLAN: !!clash.clash_allow_lan,
-    nodeTestDefaultURL: clash.node_test_default_url || 'https://cp.cloudflare.com/generate_204',
+    nodeTestDefaultURL:
+      clash.node_test_default_url || 'https://cp.cloudflare.com/generate_204',
     nodeTestDefaultTimeoutMS: clash.node_test_default_timeout_ms || 5000,
   };
 }
@@ -99,7 +96,9 @@ export function SettingsPage() {
             clash_secret: values.clashSecret.trim(),
             clash_allow_lan: values.clashAllowLAN,
             node_test_default_url: values.nodeTestDefaultURL.trim(),
-            node_test_default_timeout_ms: Number(values.nodeTestDefaultTimeoutMS),
+            node_test_default_timeout_ms: Number(
+              values.nodeTestDefaultTimeoutMS,
+            ),
           },
         },
       });
@@ -233,62 +232,98 @@ export function SettingsPage() {
             </SettingsPane>
 
             <SettingsPane value='clash'>
-              <SettingsSection title="Clash 代理内核与全局设置">
+              <SettingsSection title='Clash 代理内核与全局设置'>
                 <div className='space-y-4 py-2'>
                   <SettingsField
                     controlId='settings-kernel-type'
-                    label="内核类型"
-                    description="当前仅开放 Mihomo，Xray 与 sing-box 入口已预留。"
+                    label='内核类型'
+                    description='当前仅开放 Mihomo，Xray 与 sing-box 入口已预留。'
                   >
-                    <Input id='settings-kernel-type' readOnly value="mihomo" className="bg-muted font-mono text-xs" />
+                    <Input
+                      id='settings-kernel-type'
+                      readOnly
+                      value='mihomo'
+                      className='bg-muted font-mono text-xs'
+                    />
                   </SettingsField>
 
                   <SettingsField
                     controlId='settings-mihomo-path'
-                    label="Mihomo 二进制路径"
-                    description="已存在的可执行二进制物理路径。"
+                    label='Mihomo 二进制路径'
+                    description='已存在的可执行二进制物理路径。'
                   >
-                    <Input id='settings-mihomo-path' placeholder="./data/core/mihomo" {...form.register('mihomoBinaryPath')} className="font-mono text-xs" />
+                    <Input
+                      id='settings-mihomo-path'
+                      placeholder='./data/core/mihomo'
+                      {...form.register('mihomoBinaryPath')}
+                      className='font-mono text-xs'
+                    />
                   </SettingsField>
 
                   <SettingsField
                     controlId='settings-clash-controller'
-                    label="external-controller"
-                    description="控制接口监听地址，格式为 host:port。"
+                    label='external-controller'
+                    description='控制接口监听地址，格式为 host:port。'
                   >
-                    <Input id='settings-clash-controller' placeholder="127.0.0.1:9090" {...form.register('clashExternalController')} className="font-mono text-xs" />
+                    <Input
+                      id='settings-clash-controller'
+                      placeholder='127.0.0.1:9090'
+                      {...form.register('clashExternalController')}
+                      className='font-mono text-xs'
+                    />
                   </SettingsField>
 
                   <SettingsField
                     controlId='settings-clash-mode'
-                    label="mode"
-                    description="控制 Clash 模式 (rule / global / direct)。"
+                    label='mode'
+                    description='控制 Clash 模式 (rule / global / direct)。'
                   >
-                    <Input id='settings-clash-mode' placeholder="rule" {...form.register('clashMode')} className="font-mono text-xs" />
+                    <Input
+                      id='settings-clash-mode'
+                      placeholder='rule'
+                      {...form.register('clashMode')}
+                      className='font-mono text-xs'
+                    />
                   </SettingsField>
 
                   <SettingsField
                     controlId='settings-clash-secret'
-                    label="secret"
-                    description="控制接口访问密钥。"
+                    label='secret'
+                    description='控制接口访问密钥。'
                   >
-                    <Input id='settings-clash-secret' placeholder="密钥..." {...form.register('clashSecret')} className="font-mono text-xs" />
+                    <Input
+                      id='settings-clash-secret'
+                      placeholder='密钥...'
+                      {...form.register('clashSecret')}
+                      className='font-mono text-xs'
+                    />
                   </SettingsField>
 
                   <SettingsField
                     controlId='settings-node-test-url'
-                    label="默认测速 URL"
-                    description="测速探测目标 URL 地址。"
+                    label='默认测速 URL'
+                    description='测速探测目标 URL 地址。'
                   >
-                    <Input id='settings-node-test-url' placeholder="https://cp.cloudflare.com/generate_204" {...form.register('nodeTestDefaultURL')} className="font-mono text-xs" />
+                    <Input
+                      id='settings-node-test-url'
+                      placeholder='https://cp.cloudflare.com/generate_204'
+                      {...form.register('nodeTestDefaultURL')}
+                      className='font-mono text-xs'
+                    />
                   </SettingsField>
 
                   <SettingsField
                     controlId='settings-node-test-timeout'
-                    label="默认超时 (毫秒)"
-                    description="建议在 3000 到 15000 毫秒之间。"
+                    label='默认超时 (毫秒)'
+                    description='建议在 3000 到 15000 毫秒之间。'
                   >
-                    <Input id='settings-node-test-timeout' type="number" placeholder="5000" {...form.register('nodeTestDefaultTimeoutMS')} className="font-mono text-xs" />
+                    <Input
+                      id='settings-node-test-timeout'
+                      type='number'
+                      placeholder='5000'
+                      {...form.register('nodeTestDefaultTimeoutMS')}
+                      className='font-mono text-xs'
+                    />
                   </SettingsField>
                 </div>
               </SettingsSection>
@@ -392,7 +427,9 @@ function SettingsField({
               {description}
             </p>
           ) : null}
-          {error ? <p className='mt-1 text-xs text-destructive'>{error}</p> : null}
+          {error ? (
+            <p className='mt-1 text-xs text-destructive'>{error}</p>
+          ) : null}
         </div>
         <div className='min-w-0'>{children}</div>
       </div>
@@ -400,13 +437,7 @@ function SettingsField({
   );
 }
 
-function SettingsReadOnly({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function SettingsReadOnly({ label, value }: { label: string; value: string }) {
   return (
     <div className='min-w-0 py-4'>
       <div className='grid min-w-0 gap-2.5 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] sm:items-center sm:gap-8'>

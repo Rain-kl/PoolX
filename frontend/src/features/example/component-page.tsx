@@ -355,7 +355,7 @@ export function ExampleComponentPage() {
               description={t('example.component.alertDescription')}
               confirmText={t('common.confirm', { defaultValue: 'Confirm' })}
               cancelText={t('common.cancel')}
-              variant="default"
+              variant='default'
               onConfirm={() => {
                 toast.message(t('example.component.alertConfirmed'));
                 setConfirmOpen(false);

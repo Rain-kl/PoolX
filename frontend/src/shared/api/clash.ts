@@ -130,7 +130,13 @@ export interface PortProfileTemplate {
 export interface KernelInstance {
   id: number;
   kernel_type: string;
-  status: 'stopped' | 'starting' | 'running' | 'stopping' | 'error' | 'reloading';
+  status:
+    | 'stopped'
+    | 'starting'
+    | 'running'
+    | 'stopping'
+    | 'error'
+    | 'reloading';
   pid?: number;
   work_dir: string;
   config_path: string;
@@ -175,36 +181,83 @@ function decoder<T>(): ApiDecoder<T> {
 
 // --- API Methods ---
 
-export async function uploadSourceConfig(filename: string, rawContent: string): Promise<UploadSourceConfigResponse> {
-  return apiRequest<UploadSourceConfigResponse>('/api/v1/admin/clash/source-configs/upload', {
-    method: 'POST',
-    body: { filename, raw_content: rawContent },
-  }, decoder<UploadSourceConfigResponse>());
+export async function uploadSourceConfig(
+  filename: string,
+  rawContent: string,
+): Promise<UploadSourceConfigResponse> {
+  return apiRequest<UploadSourceConfigResponse>(
+    '/api/v1/admin/clash/source-configs/upload',
+    {
+      method: 'POST',
+      body: { filename, raw_content: rawContent },
+    },
+    decoder<UploadSourceConfigResponse>(),
+  );
 }
 
-export async function fetchSubscription(sourceUrl: string): Promise<UploadSourceConfigResponse> {
-  return apiRequest<UploadSourceConfigResponse>('/api/v1/admin/clash/source-configs/subscription', {
-    method: 'POST',
-    body: { source_url: sourceUrl },
-  }, decoder<UploadSourceConfigResponse>());
+export async function fetchSubscription(
+  sourceUrl: string,
+): Promise<UploadSourceConfigResponse> {
+  return apiRequest<UploadSourceConfigResponse>(
+    '/api/v1/admin/clash/source-configs/subscription',
+    {
+      method: 'POST',
+      body: { source_url: sourceUrl },
+    },
+    decoder<UploadSourceConfigResponse>(),
+  );
 }
 
-export async function listSourceConfigs(page = 1, pageSize = 20): Promise<{ items: SourceConfig[]; total: number; page: number; page_size: number }> {
-  return apiRequest<{ items: SourceConfig[]; total: number; page: number; page_size: number }>(`/api/v1/admin/clash/source-configs?page=${page}&page_size=${pageSize}`, {
-    method: 'GET',
-  }, decoder<{ items: SourceConfig[]; total: number; page: number; page_size: number }>());
+export async function listSourceConfigs(
+  page = 1,
+  pageSize = 20,
+): Promise<{
+  items: SourceConfig[];
+  total: number;
+  page: number;
+  page_size: number;
+}> {
+  return apiRequest<{
+    items: SourceConfig[];
+    total: number;
+    page: number;
+    page_size: number;
+  }>(
+    `/api/v1/admin/clash/source-configs?page=${page}&page_size=${pageSize}`,
+    {
+      method: 'GET',
+    },
+    decoder<{
+      items: SourceConfig[];
+      total: number;
+      page: number;
+      page_size: number;
+    }>(),
+  );
 }
 
-export async function deleteSourceConfig(id: number): Promise<{ deleted: boolean }> {
-  return apiRequest<{ deleted: boolean }>(`/api/v1/admin/clash/source-configs/${id}`, {
-    method: 'DELETE',
-  }, decoder<{ deleted: boolean }>());
+export async function deleteSourceConfig(
+  id: number,
+): Promise<{ deleted: boolean }> {
+  return apiRequest<{ deleted: boolean }>(
+    `/api/v1/admin/clash/source-configs/${id}`,
+    {
+      method: 'DELETE',
+    },
+    decoder<{ deleted: boolean }>(),
+  );
 }
 
-export async function confirmSourceConfig(id: number): Promise<{ imported_nodes: number }> {
-  return apiRequest<{ imported_nodes: number }>(`/api/v1/admin/clash/source-configs/${id}/confirm`, {
-    method: 'POST',
-  }, decoder<{ imported_nodes: number }>());
+export async function confirmSourceConfig(
+  id: number,
+): Promise<{ imported_nodes: number }> {
+  return apiRequest<{ imported_nodes: number }>(
+    `/api/v1/admin/clash/source-configs/${id}/confirm`,
+    {
+      method: 'POST',
+    },
+    decoder<{ imported_nodes: number }>(),
+  );
 }
 
 export interface SyncSourceResult {
@@ -216,67 +269,142 @@ export interface SyncSourceResult {
   imported_nodes: number;
 }
 
-export async function refreshSourceConfig(id: number): Promise<SyncSourceResult> {
-  return apiRequest<SyncSourceResult>(`/api/v1/admin/clash/source-configs/${id}/refresh`, {
-    method: 'POST',
-  }, decoder<SyncSourceResult>());
+export async function refreshSourceConfig(
+  id: number,
+): Promise<SyncSourceResult> {
+  return apiRequest<SyncSourceResult>(
+    `/api/v1/admin/clash/source-configs/${id}/refresh`,
+    {
+      method: 'POST',
+    },
+    decoder<SyncSourceResult>(),
+  );
 }
 
-export async function reuploadSourceConfig(id: number, filename: string, rawContent: string): Promise<SyncSourceResult> {
-  return apiRequest<SyncSourceResult>(`/api/v1/admin/clash/source-configs/${id}/reupload`, {
-    method: 'POST',
-    body: { filename, raw_content: rawContent },
-  }, decoder<SyncSourceResult>());
+export async function reuploadSourceConfig(
+  id: number,
+  filename: string,
+  rawContent: string,
+): Promise<SyncSourceResult> {
+  return apiRequest<SyncSourceResult>(
+    `/api/v1/admin/clash/source-configs/${id}/reupload`,
+    {
+      method: 'POST',
+      body: { filename, raw_content: rawContent },
+    },
+    decoder<SyncSourceResult>(),
+  );
 }
 
-export async function listProxyNodes(params: { page?: number; pageSize?: number; keyword?: string; sourceConfigId?: number; enabled?: boolean }): Promise<{ items: ProxyNode[]; total: number; page: number; page_size: number }> {
+export async function listProxyNodes(params: {
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+  sourceConfigId?: number;
+  enabled?: boolean;
+}): Promise<{
+  items: ProxyNode[];
+  total: number;
+  page: number;
+  page_size: number;
+}> {
   const query = new URLSearchParams();
   if (params.page) query.set('page', params.page.toString());
   if (params.pageSize) query.set('page_size', params.pageSize.toString());
   if (params.keyword) query.set('keyword', params.keyword);
-  if (params.sourceConfigId) query.set('source_config_id', params.sourceConfigId.toString());
-  if (params.enabled !== undefined) query.set('enabled', params.enabled ? 'true' : 'false');
-  return apiRequest<{ items: ProxyNode[]; total: number; page: number; page_size: number }>(`/api/v1/admin/clash/nodes?${query.toString()}`, {
-    method: 'GET',
-  }, decoder<{ items: ProxyNode[]; total: number; page: number; page_size: number }>());
-}
-
-export async function testProxyNodes(nodeIds: number[], binaryPath?: string, testUrl?: string, timeoutSeconds?: number): Promise<{ results: TestNodeResult[] }> {
-  return apiRequest<{ results: TestNodeResult[] }>('/api/v1/admin/clash/nodes/test', {
-    method: 'POST',
-    body: {
-      node_ids: nodeIds,
-      binary_path: binaryPath,
-      test_url: testUrl,
-      timeout_seconds: timeoutSeconds,
+  if (params.sourceConfigId)
+    query.set('source_config_id', params.sourceConfigId.toString());
+  if (params.enabled !== undefined)
+    query.set('enabled', params.enabled ? 'true' : 'false');
+  return apiRequest<{
+    items: ProxyNode[];
+    total: number;
+    page: number;
+    page_size: number;
+  }>(
+    `/api/v1/admin/clash/nodes?${query.toString()}`,
+    {
+      method: 'GET',
     },
-  }, decoder<{ results: TestNodeResult[] }>());
+    decoder<{
+      items: ProxyNode[];
+      total: number;
+      page: number;
+      page_size: number;
+    }>(),
+  );
 }
 
-export async function deleteProxyNode(id: number): Promise<{ deleted: boolean }> {
-  return apiRequest<{ deleted: boolean }>(`/api/v1/admin/clash/nodes/${id}`, {
-    method: 'DELETE',
-  }, decoder<{ deleted: boolean }>());
+export async function testProxyNodes(
+  nodeIds: number[],
+  binaryPath?: string,
+  testUrl?: string,
+  timeoutSeconds?: number,
+): Promise<{ results: TestNodeResult[] }> {
+  return apiRequest<{ results: TestNodeResult[] }>(
+    '/api/v1/admin/clash/nodes/test',
+    {
+      method: 'POST',
+      body: {
+        node_ids: nodeIds,
+        binary_path: binaryPath,
+        test_url: testUrl,
+        timeout_seconds: timeoutSeconds,
+      },
+    },
+    decoder<{ results: TestNodeResult[] }>(),
+  );
 }
 
-export async function deleteProxyNodesBatch(ids: number[]): Promise<{ deleted_count: number }> {
-  return apiRequest<{ deleted_count: number }>('/api/v1/admin/clash/nodes/batch-delete', {
-    method: 'POST',
-    body: { ids },
-  }, decoder<{ deleted_count: number }>());
+export async function deleteProxyNode(
+  id: number,
+): Promise<{ deleted: boolean }> {
+  return apiRequest<{ deleted: boolean }>(
+    `/api/v1/admin/clash/nodes/${id}`,
+    {
+      method: 'DELETE',
+    },
+    decoder<{ deleted: boolean }>(),
+  );
 }
 
-export async function toggleProxyNodesBatch(ids: number[], enabled: boolean): Promise<{ toggled_count: number; enabled: boolean }> {
-  return apiRequest<{ toggled_count: number; enabled: boolean }>('/api/v1/admin/clash/nodes/batch-toggle', {
-    method: 'POST',
-    body: { ids, enabled },
-  }, decoder<{ toggled_count: number; enabled: boolean }>());
+export async function deleteProxyNodesBatch(
+  ids: number[],
+): Promise<{ deleted_count: number }> {
+  return apiRequest<{ deleted_count: number }>(
+    '/api/v1/admin/clash/nodes/batch-delete',
+    {
+      method: 'POST',
+      body: { ids },
+    },
+    decoder<{ deleted_count: number }>(),
+  );
 }
 
-export async function listPortProfiles(): Promise<{ items: PortProfileWithNodes[] }> {
-  return apiRequest<{ items: PortProfileWithNodes[] }>('/api/v1/admin/clash/port-profiles', {
-    method: 'GET',
-  }, decoder<{ items: PortProfileWithNodes[] }>());
+export async function toggleProxyNodesBatch(
+  ids: number[],
+  enabled: boolean,
+): Promise<{ toggled_count: number; enabled: boolean }> {
+  return apiRequest<{ toggled_count: number; enabled: boolean }>(
+    '/api/v1/admin/clash/nodes/batch-toggle',
+    {
+      method: 'POST',
+      body: { ids, enabled },
+    },
+    decoder<{ toggled_count: number; enabled: boolean }>(),
+  );
+}
+
+export async function listPortProfiles(): Promise<{
+  items: PortProfileWithNodes[];
+}> {
+  return apiRequest<{ items: PortProfileWithNodes[] }>(
+    '/api/v1/admin/clash/port-profiles',
+    {
+      method: 'GET',
+    },
+    decoder<{ items: PortProfileWithNodes[] }>(),
+  );
 }
 
 export async function createPortProfile(payload: {
@@ -289,50 +417,83 @@ export async function createPortProfile(payload: {
   include_in_runtime?: boolean;
   node_ids?: number[];
 }): Promise<PortProfileWithNodes> {
-  return apiRequest<PortProfileWithNodes>('/api/v1/admin/clash/port-profiles', {
-    method: 'POST',
-    body: payload,
-  }, decoder<PortProfileWithNodes>());
+  return apiRequest<PortProfileWithNodes>(
+    '/api/v1/admin/clash/port-profiles',
+    {
+      method: 'POST',
+      body: payload,
+    },
+    decoder<PortProfileWithNodes>(),
+  );
 }
 
-export async function updatePortProfile(id: number, payload: {
-  name: string;
-  listen_host?: string;
-  mixed_port: number;
-  socks_port?: number;
-  http_port?: number;
-  proxy_settings: PortProfileProxySettings;
-  include_in_runtime?: boolean;
-  node_ids?: number[];
-}): Promise<PortProfileWithNodes> {
-  return apiRequest<PortProfileWithNodes>(`/api/v1/admin/clash/port-profiles/${id}`, {
-    method: 'PUT',
-    body: payload,
-  }, decoder<PortProfileWithNodes>());
+export async function updatePortProfile(
+  id: number,
+  payload: {
+    name: string;
+    listen_host?: string;
+    mixed_port: number;
+    socks_port?: number;
+    http_port?: number;
+    proxy_settings: PortProfileProxySettings;
+    include_in_runtime?: boolean;
+    node_ids?: number[];
+  },
+): Promise<PortProfileWithNodes> {
+  return apiRequest<PortProfileWithNodes>(
+    `/api/v1/admin/clash/port-profiles/${id}`,
+    {
+      method: 'PUT',
+      body: payload,
+    },
+    decoder<PortProfileWithNodes>(),
+  );
 }
 
-export async function deletePortProfile(id: number): Promise<{ deleted: boolean }> {
-  return apiRequest<{ deleted: boolean }>(`/api/v1/admin/clash/port-profiles/${id}`, {
-    method: 'DELETE',
-  }, decoder<{ deleted: boolean }>());
+export async function deletePortProfile(
+  id: number,
+): Promise<{ deleted: boolean }> {
+  return apiRequest<{ deleted: boolean }>(
+    `/api/v1/admin/clash/port-profiles/${id}`,
+    {
+      method: 'DELETE',
+    },
+    decoder<{ deleted: boolean }>(),
+  );
 }
 
 export async function previewPortProfile(id: number): Promise<RenderResult> {
-  return apiRequest<RenderResult>(`/api/v1/admin/clash/port-profiles/${id}/preview`, {
-    method: 'GET',
-  }, decoder<RenderResult>());
+  return apiRequest<RenderResult>(
+    `/api/v1/admin/clash/port-profiles/${id}/preview`,
+    {
+      method: 'GET',
+    },
+    decoder<RenderResult>(),
+  );
 }
 
-export async function listPortProfileTemplates(): Promise<{ items: PortProfileTemplate[] }> {
-  return apiRequest<{ items: PortProfileTemplate[] }>('/api/v1/admin/clash/port-profile-templates', {
-    method: 'GET',
-  }, decoder<{ items: PortProfileTemplate[] }>());
+export async function listPortProfileTemplates(): Promise<{
+  items: PortProfileTemplate[];
+}> {
+  return apiRequest<{ items: PortProfileTemplate[] }>(
+    '/api/v1/admin/clash/port-profile-templates',
+    {
+      method: 'GET',
+    },
+    decoder<{ items: PortProfileTemplate[] }>(),
+  );
 }
 
-export async function getRuntimeStatus(kernelType = 'mihomo'): Promise<RuntimeStatusView> {
-  return apiRequest<RuntimeStatusView>(`/api/v1/admin/clash/runtime/status?kernel_type=${kernelType}`, {
-    method: 'GET',
-  }, decoder<RuntimeStatusView>());
+export async function getRuntimeStatus(
+  kernelType = 'mihomo',
+): Promise<RuntimeStatusView> {
+  return apiRequest<RuntimeStatusView>(
+    `/api/v1/admin/clash/runtime/status?kernel_type=${kernelType}`,
+    {
+      method: 'GET',
+    },
+    decoder<RuntimeStatusView>(),
+  );
 }
 
 export async function startKernel(payload: {
@@ -344,17 +505,27 @@ export async function startKernel(payload: {
   controller_address?: string;
   controller_secret?: string;
 }): Promise<KernelInstance> {
-  return apiRequest<KernelInstance>('/api/v1/admin/clash/runtime/start', {
-    method: 'POST',
-    body: payload,
-  }, decoder<KernelInstance>());
+  return apiRequest<KernelInstance>(
+    '/api/v1/admin/clash/runtime/start',
+    {
+      method: 'POST',
+      body: payload,
+    },
+    decoder<KernelInstance>(),
+  );
 }
 
-export async function stopKernel(kernelType = 'mihomo'): Promise<{ stopped: boolean }> {
-  return apiRequest<{ stopped: boolean }>('/api/v1/admin/clash/runtime/stop', {
-    method: 'POST',
-    body: { kernel_type: kernelType },
-  }, decoder<{ stopped: boolean }>());
+export async function stopKernel(
+  kernelType = 'mihomo',
+): Promise<{ stopped: boolean }> {
+  return apiRequest<{ stopped: boolean }>(
+    '/api/v1/admin/clash/runtime/stop',
+    {
+      method: 'POST',
+      body: { kernel_type: kernelType },
+    },
+    decoder<{ stopped: boolean }>(),
+  );
 }
 
 export async function reloadKernel(payload: {
@@ -364,22 +535,38 @@ export async function reloadKernel(payload: {
   controller_address?: string;
   controller_secret?: string;
 }): Promise<KernelInstance> {
-  return apiRequest<KernelInstance>('/api/v1/admin/clash/runtime/reload', {
-    method: 'POST',
-    body: payload,
-  }, decoder<KernelInstance>());
+  return apiRequest<KernelInstance>(
+    '/api/v1/admin/clash/runtime/reload',
+    {
+      method: 'POST',
+      body: payload,
+    },
+    decoder<KernelInstance>(),
+  );
 }
 
-export async function getActiveRuntimeConfig(kernelType = 'mihomo'): Promise<RenderResult> {
-  return apiRequest<RenderResult>(`/api/v1/admin/clash/runtime/config?kernel_type=${kernelType}`, {
-    method: 'GET',
-  }, decoder<RenderResult>());
+export async function getActiveRuntimeConfig(
+  kernelType = 'mihomo',
+): Promise<RenderResult> {
+  return apiRequest<RenderResult>(
+    `/api/v1/admin/clash/runtime/config?kernel_type=${kernelType}`,
+    {
+      method: 'GET',
+    },
+    decoder<RenderResult>(),
+  );
 }
 
-export async function getKernelLogs(kernelType = 'mihomo'): Promise<{ logs: string[] }> {
-  return apiRequest<{ logs: string[] }>(`/api/v1/admin/clash/runtime/logs?kernel_type=${kernelType}`, {
-    method: 'GET',
-  }, decoder<{ logs: string[] }>());
+export async function getKernelLogs(
+  kernelType = 'mihomo',
+): Promise<{ logs: string[] }> {
+  return apiRequest<{ logs: string[] }>(
+    `/api/v1/admin/clash/runtime/logs?kernel_type=${kernelType}`,
+    {
+      method: 'GET',
+    },
+    decoder<{ logs: string[] }>(),
+  );
 }
 
 export type InstalledKernelBinary = {
@@ -392,34 +579,59 @@ export type InstalledKernelBinary = {
   installed_at: string;
 };
 
-export async function getKernelCapabilities(): Promise<{ capabilities: KernelCapability[] }> {
-  return apiRequest<{ capabilities: KernelCapability[] }>('/api/v1/admin/clash/kernels/capabilities', {
-    method: 'GET',
-  }, decoder<{ capabilities: KernelCapability[] }>());
+export async function getKernelCapabilities(): Promise<{
+  capabilities: KernelCapability[];
+}> {
+  return apiRequest<{ capabilities: KernelCapability[] }>(
+    '/api/v1/admin/clash/kernels/capabilities',
+    {
+      method: 'GET',
+    },
+    decoder<{ capabilities: KernelCapability[] }>(),
+  );
 }
 
-export async function inspectKernelBinary(installPath?: string): Promise<InstalledKernelBinary> {
-  return apiRequest<InstalledKernelBinary>('/api/v1/admin/clash/kernels/inspect', {
-    method: 'POST',
-    body: { install_path: installPath },
-  }, decoder<InstalledKernelBinary>());
+export async function inspectKernelBinary(
+  installPath?: string,
+): Promise<InstalledKernelBinary> {
+  return apiRequest<InstalledKernelBinary>(
+    '/api/v1/admin/clash/kernels/inspect',
+    {
+      method: 'POST',
+      body: { install_path: installPath },
+    },
+    decoder<InstalledKernelBinary>(),
+  );
 }
 
-export async function downloadKernelBinary(installPath?: string): Promise<InstalledKernelBinary> {
-  return apiRequest<InstalledKernelBinary>('/api/v1/admin/clash/kernels/download', {
-    method: 'POST',
-    body: { install_path: installPath },
-  }, decoder<InstalledKernelBinary>());
+export async function downloadKernelBinary(
+  installPath?: string,
+): Promise<InstalledKernelBinary> {
+  return apiRequest<InstalledKernelBinary>(
+    '/api/v1/admin/clash/kernels/download',
+    {
+      method: 'POST',
+      body: { install_path: installPath },
+    },
+    decoder<InstalledKernelBinary>(),
+  );
 }
 
-export async function uploadKernelBinary(file: File, installPath?: string): Promise<InstalledKernelBinary> {
+export async function uploadKernelBinary(
+  file: File,
+  installPath?: string,
+): Promise<InstalledKernelBinary> {
   const formData = new FormData();
   formData.append('binary', file);
   if (installPath) {
     formData.append('install_path', installPath);
   }
-  return apiRequest<InstalledKernelBinary>('/api/v1/admin/clash/kernels/upload', {
-    method: 'POST',
-    body: formData,
-  }, decoder<InstalledKernelBinary>());
+  return apiRequest<InstalledKernelBinary>(
+    '/api/v1/admin/clash/kernels/upload',
+    {
+      method: 'POST',
+      body: formData,
+    },
+    decoder<InstalledKernelBinary>(),
+  );
 }

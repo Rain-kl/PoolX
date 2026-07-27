@@ -33,8 +33,14 @@ export const router = createBrowserRouter([
           { path: '/clash/source-configs', element: <SourceConfigsPage /> },
           { path: '/clash/nodes', element: <NodePoolPage /> },
           { path: '/clash/port-profiles', element: <PortProfilesPage /> },
-          { path: '/clash/runtime', element: <Navigate to="/clash/dashboard" replace /> },
-          { path: '/clash/settings', element: <Navigate to="/settings" replace /> },
+          {
+            path: '/clash/runtime',
+            element: <Navigate to='/clash/dashboard' replace />,
+          },
+          {
+            path: '/clash/settings',
+            element: <Navigate to='/settings' replace />,
+          },
           {
             path: '/example/component',
             element: <DeferredExampleComponentPage />,

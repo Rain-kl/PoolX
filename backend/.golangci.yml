@@ -51,6 +51,7 @@ linters:
     goconst:
       min-len: 3
       min-occurrences: 4
+      ignore-string-values: "updated_at|items|deleted|mihomo"
 
     mnd:
       checks:
@@ -76,12 +77,20 @@ linters:
         - "64"
         - "100"
         - "128"
+        - "200"
         - "255"
+        - "300"
         - "448"
+        - "488"
+        - "500"
         - "700"
         - "1000"
         - "1024"
         - "4096"
+        - "0600"
+        - "0o600"
+        - "0755"
+        - "0o755"
       ignored-functions:
         - make
         - append

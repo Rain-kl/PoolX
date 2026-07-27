@@ -45,9 +45,9 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
-          <div className="flex items-start gap-3">
+          <div className='flex items-start gap-3'>
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
                 isDestructive
@@ -56,36 +56,40 @@ export function ConfirmDialog({
               }`}
             >
               {isDestructive ? (
-                <Trash2 className="h-5 w-5" />
+                <Trash2 className='h-5 w-5' />
               ) : (
-                <HelpCircle className="h-5 w-5" />
+                <HelpCircle className='h-5 w-5' />
               )}
             </div>
-            <div className="flex flex-col gap-1 text-left pt-0.5">
+            <div className='flex flex-col gap-1 text-left pt-0.5'>
               <DialogTitle>
-                {title || (isDestructive ? t('common.delete') : t('common.confirm'))}
+                {title ||
+                  (isDestructive ? t('common.delete') : t('common.confirm'))}
               </DialogTitle>
-              {description && <DialogDescription>{description}</DialogDescription>}
+              {description && (
+                <DialogDescription>{description}</DialogDescription>
+              )}
             </div>
           </div>
         </DialogHeader>
-        <DialogFooter className="mt-2 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+        <DialogFooter className='mt-2 flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2'>
           <Button
-            type="button"
-            variant="outline"
+            type='button'
+            variant='outline'
             disabled={loading}
             onClick={() => onOpenChange(false)}
           >
             {cancelText || t('common.cancel')}
           </Button>
           <Button
-            type="button"
+            type='button'
             variant={variant}
             disabled={loading}
             onClick={handleConfirm}
           >
-            {loading && <Spinner className="mr-2 h-4 w-4 animate-spin" />}
-            {confirmText || (isDestructive ? t('common.delete') : t('common.confirm'))}
+            {loading && <Spinner className='mr-2 h-4 w-4 animate-spin' />}
+            {confirmText ||
+              (isDestructive ? t('common.delete') : t('common.confirm'))}
           </Button>
         </DialogFooter>
       </DialogContent>

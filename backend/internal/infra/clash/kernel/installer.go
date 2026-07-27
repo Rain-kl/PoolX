@@ -108,7 +108,7 @@ func DownloadAndInstallMihomoBinary(ctx context.Context, installPath string) (*I
 	if err != nil {
 		return nil, fmt.Errorf("下载 Mihomo 二进制失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("下载 Mihomo 二进制失败: %s", resp.Status)
@@ -120,7 +120,7 @@ func DownloadAndInstallMihomoBinary(ctx context.Context, installPath string) (*I
 		if err != nil {
 			return nil, fmt.Errorf("解压 Mihomo 发行包失败: %w", err)
 		}
-		defer gzipReader.Close()
+		defer func() { _ = gzipReader.Close() }()
 		reader = gzipReader
 	}
 
@@ -144,7 +144,7 @@ func fetchLatestRelease(ctx context.Context) (*githubReleaseResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("查询 Mihomo 官方版本失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("查询 Mihomo 官方版本失败: %s", resp.Status)
@@ -162,7 +162,7 @@ func fetchLatestRelease(ctx context.Context) (*githubReleaseResponse, error) {
 
 func selectAsset(assets []githubAsset) (*githubAsset, error) {
 	if len(assets) == 0 {
-		return nil, fmt.Errorf("Mihomo 官方 Release 中无资源列表")
+		return nil, fmt.Errorf("mihomo 官方 release 中无资源列表")
 	}
 
 	goos := strings.ToLower(runtime.GOOS)
@@ -204,7 +204,7 @@ func installPreparedBinary(ctx context.Context, tempPath string, installPath str
 		return nil, fmt.Errorf("检测 Mihomo 版本失败: %w", err)
 	}
 
-	if err = os.MkdirAll(filepath.Dir(installPath), 0o755); err != nil {
+	if err = os.MkdirAll(filepath.Dir(installPath), 0o755); err != nil { //nolint:gosec,mnd
 		_ = os.Remove(tempPath)
 		return nil, fmt.Errorf("创建目标安装目录失败: %w", err)
 	}
@@ -218,7 +218,7 @@ func installPreparedBinary(ctx context.Context, tempPath string, installPath str
 		}
 		_ = os.Remove(tempPath)
 	}
-	_ = os.Chmod(installPath, 0o755)
+	_ = os.Chmod(installPath, 0o755) //nolint:gosec // executable permissions required
 
 	return &InstalledKernelBinary{
 		KernelType:      "mihomo",
@@ -262,11 +262,11 @@ func resolveExecutablePath(installPath string) (string, error) {
 	return filepath.Abs(resolved)
 }
 
-func writeTempFile(tempDir string, patternPrefix string, fileName string, reader io.Reader) (string, error) {
+func writeTempFile(tempDir string, patternPrefix string, _ string, reader io.Reader) (string, error) {
 	if strings.TrimSpace(tempDir) == "" {
 		tempDir = os.TempDir()
 	}
-	_ = os.MkdirAll(tempDir, 0o755)
+	_ = os.MkdirAll(tempDir, 0o755) //nolint:gosec,mnd
 	tempFile, err := os.CreateTemp(tempDir, patternPrefix+"*")
 	if err != nil {
 		return "", fmt.Errorf("创建临时文件失败: %w", err)
@@ -278,7 +278,7 @@ func writeTempFile(tempDir string, patternPrefix string, fileName string, reader
 		return "", fmt.Errorf("保存二进制流失败: %w", err)
 	}
 	_ = tempFile.Close()
-	_ = os.Chmod(tempPath, 0o755)
+	_ = os.Chmod(tempPath, 0o755) //nolint:gosec // executable permissions required
 	return tempPath, nil
 }
 
@@ -300,12 +300,12 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 	out, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 	_, err = io.Copy(out, in)
 	return err
 }
