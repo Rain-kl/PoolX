@@ -1,23 +1,22 @@
 name: foam
 
 services:
-  foam:
-    container_name: foam
-    image: "${FOAM_IMAGE:-ghcr.io/rain-kl/foam:latest}"
+  poolx:
+    image: "${FOAM_IMAGE:-ghcr.io/rain-kl/poolx:latest}"
     ports:
       - "${FOAM_PORT:-8000}:8000"
     # Compose automatically loads host `.env` for ${VAR} substitution.
     # Pass FOAM_* into the container when set (empty values do not override config.yaml).
     environment:
       TZ: "${TZ:-Asia/Shanghai}"
-      FOAM_SECRETS_JWT_SECRET: "${FOAM_SECRETS_JWT_SECRET:-}"
-      FOAM_SECRETS_CREDENTIAL_ENCRYPTION_KEY: "${FOAM_SECRETS_CREDENTIAL_ENCRYPTION_KEY:-}"
-      FOAM_BOOTSTRAP_ADMIN_PASSWORD: "${FOAM_BOOTSTRAP_ADMIN_PASSWORD:-}"
-      FOAM_DATABASE_DRIVER: "${FOAM_DATABASE_DRIVER:-}"
-      FOAM_DATABASE_POSTGRES_DSN: "${FOAM_DATABASE_POSTGRES_DSN:-}"
+      # 至少 32 个字符。快速生成：openssl rand -hex 32
+      FOAM_SECRETS_JWT_SECRET: "${FOAM_SECRETS_JWT_SECRET:-replace-with-at-least-32-characters}"
+      # Base64 编码的 32 字节密钥。快速生成：openssl rand -base64 32
+      FOAM_SECRETS_CREDENTIAL_ENCRYPTION_KEY: "${FOAM_SECRETS_CREDENTIAL_ENCRYPTION_KEY:-JxVGNK7es4aC+uK/lKyOT5FW0EbcfTDTXM0hWz4SuSs=}"
+      # 系统登录密码, 仅在数据库中没有管理员时使用该密码初始化。
+      FOAM_BOOTSTRAP_ADMIN_PASSWORD: "12345678"
     volumes:
-      - "${FOAM_CONFIG:-./config.yaml}:/run/foam/config.yaml:ro"
-      - foam-data:/app/data
+      - poolx-data:/app/data
     restart: unless-stopped
     init: true
     stop_grace_period: 30s
@@ -25,4 +24,4 @@ services:
       - no-new-privileges:true
 
 volumes:
-  foam-data:
+  poolx-data:

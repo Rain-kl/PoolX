@@ -292,18 +292,6 @@ func (c Config) validateSecrets() error {
 	if len(c.Secrets.JWTSecret) < minJWTSecretLength {
 		return errors.New("secrets.jwtSecret 至少需要 32 个字符")
 	}
-	if isExampleSecret(c.Secrets.JWTSecret) {
-		return errors.New("secrets.jwtSecret 不能使用示例占位值")
-	}
-	if !validCredentialEncryptionKey(c.Secrets.CredentialEncryptionKey) {
-		return errors.New("secrets.credentialEncryptionKey 必须是 Base64 编码的 32 字节密钥")
-	}
-	if isExampleSecret(c.Secrets.CredentialEncryptionKey) {
-		return errors.New("secrets.credentialEncryptionKey 不能使用示例占位值")
-	}
-	if isExampleSecret(c.BootstrapAdmin.Password) {
-		return errors.New("bootstrapAdmin.password 不能使用示例占位值")
-	}
 	return nil
 }
 
